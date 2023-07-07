@@ -12,14 +12,7 @@ from . import config
 from app import app
 
 #Lists
-control_options = ["n_genes_by_counts","log1p_n_genes_by_counts","total_counts","log1p_total_counts"]
-
-data = {
-    'Name': ['Alice', 'Bob', 'Charlie'],
-    'Age': [25, 30, 35],
-    'City': ['New York', 'London', 'Paris']
-}
-df = pd.DataFrame(data)
+control_options = ["n_genes_by_counts","total_counts"]
 
 layout = dbc.Container(
     [
@@ -183,8 +176,8 @@ layout = dbc.Container(
                         id='table',
                         figure=go.Figure(
                             data=[go.Table(
-                                header=dict(values=df.columns),
-                                cells=dict(values=[df[col] for col in df.columns])
+                                header=dict(values=config.df_qc.columns),
+                                cells=dict(values=[config.df_qc[col] for col in config.df_qc.columns])
                             )],
                             layout=go.Layout(
                                 title='Data Table'
@@ -238,10 +231,6 @@ layout = dbc.Container(
 )
 def update_qc(plot_type, var1_select, var1_min_threshold, var1_max_threshold, var2_select, var2_min_threshold, var2_max_threshold, var3_select):
     
-    # Perform necessary computations or filtering on the adata object
-    if "total_counts" not in config.adata.obs.columns.values:
-        sc.pp.calculate_qc_metrics(config.adata,percent_top=(3,),inplace=True)#np.round(np.int,np.linspace(1,adata.shape[1],5)))
-
     # Example: Plot histogram of the selected column from adata.obs
     var1_selected_data = config.adata.obs[var1_select].values
     var2_selected_data = config.adata.obs[var2_select].values
