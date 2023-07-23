@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from . import config
 from .functions import *
+from .args.doublet_args import doublet_args
 
 from app import app
 
@@ -18,47 +19,58 @@ layout = dbc.Container(
     [
         dbc.Row(
             [
-                dbc.Col(html.H1("Additional tags"), width="auto"),
+                dbc.Col(html.H1("Quality control metrics"), width="auto"),
             ],
             justify="center",
-            className="mb-4"
+            className="mb-4",
         ),
-        dash_table.DataTable(
-                id='qc_pattern_table',
-                columns=[
-                    {"name": i, "id": i, "deletable": False, "editable": True if i == 'Pattern' else False} for i in config.qc_df_patterns.columns
-                ],
-                data=config.qc_df_patterns.to_dict('records'),
-                editable=True,
-                row_deletable=True,
-                style_table={'overflowY': 'auto', 'overflowX': 'auto'},
-                style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
+        dbc.Row(
+                dash_table.DataTable(
+                    id='table_qc_metrics',
+                    columns=[
+                        {"name": i, "id": i, "deletable": False, "editable": False} for i in ["Name"]
+                    ],
+                    data=[{"Name":"total_counts"},{"Name":"n_genes_by_counts"}],
+                    editable=False,
+                    row_deletable=True,
+                    style_table={'overflowY': 'auto', 'overflowX': 'auto'},
+                    style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
+                ),
+                # style={"margin-bottom":"1cm"}        
             ),
         dbc.Row(
-            dbc.Button('Add Row', id='add-row-button', n_clicks=0,
-                       style={
-                           "background-color":"#343A40",
-                        }
-                        ),
+            [
+                dbc.Col(dcc.Dropdown(
+                    id = "dropdown_add_metric",
+                    value = ([[i for i in config.adata.uns["gene_lists"].keys()]]+[None])[0],
+                    options = [i for i in config.adata.uns["gene_lists"].keys()]
+                )),
+                dbc.Col(dbc.Button("Add metric")),
+            ],
+            justify="Left",
+            className="mb-4",
         ),
         dbc.Row(
             [
                 dbc.Col(html.H1("Global Quality control"), width="auto"),
             ],
             justify="center",
-            className="mb-4"
+            className="mb-4",
         ),
-        dash_table.DataTable(
-                id='qc_thresholds_table',
-                columns=[
-                    {"name": i, "id": i, "deletable": False, "editable": True if ("Min" in i) or ("Max" in i) else False} for i in config.qc_df_threshold.columns
-                ],
-                data=config.qc_df_threshold.to_dict('records'),
-                editable=False,
-                row_deletable=False,
-                style_table={'overflowY': 'auto', 'overflowX': 'auto'},
-                style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
-            ),
+        dbc.Row(
+            dash_table.DataTable(
+                    id='qc_thresholds_table',
+                    columns=[
+                        {"name": i, "id": i, "deletable": False, "editable": True if ("Min" in i) or ("Max" in i) else False} for i in config.qc_df_threshold.columns
+                    ],
+                    data=config.qc_df_threshold.to_dict('records'),
+                    editable=False,
+                    row_deletable=False,
+                    style_table={'overflowY': 'auto', 'overflowX': 'auto'},
+                    style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
+                ),
+                style={"margin-bottom":"1cm"}
+        ),
         dbc.Row(
             [
                 dbc.Col([
@@ -79,7 +91,7 @@ layout = dbc.Container(
                                 html.Div(
                                     dcc.Dropdown(
                                         id='qc_hist_dropdown',
-                                        options=[],
+                                        options=f_options(config.adata,"qc_"),
                                         value="qc_total_counts",
                                         placeholder="Select a column",
                                         clearable=False
@@ -110,7 +122,7 @@ layout = dbc.Container(
                                     html.Div(
                                         dcc.Dropdown(
                                             id='qc_scatter1_dropdown',
-                                            options=[],
+                                            options=f_options(config.adata,"qc_"),
                                             value="qc_total_counts",
                                             placeholder="Select a column",
                                             clearable=False
@@ -137,7 +149,7 @@ layout = dbc.Container(
                                     html.Div(
                                         dcc.Dropdown(
                                             id='qc_scatter2_dropdown',
-                                            options=[],
+                                            options=f_options(config.adata,"qc_"),
                                             value="qc_n_genes_by_counts",
                                             placeholder="Select a column",
                                             clearable=False
@@ -164,7 +176,7 @@ layout = dbc.Container(
                                     html.Div(
                                         dcc.Dropdown(
                                             id='qc_scatter3_dropdown',
-                                            options=[],
+                                            options=f_options(config.adata,"qc_"),
                                             value="qc_total_counts",
                                             placeholder="Select a column",
                                             clearable=False
@@ -189,6 +201,7 @@ layout = dbc.Container(
                         dcc.Graph(id='qc_plot_scatter'),
             )
         ]),
+        html.Hr(),
         dbc.Row(
             [
                 dbc.Col(html.H1("Per Condition Quality control"), width="auto"),
@@ -200,7 +213,7 @@ layout = dbc.Container(
             dcc.Dropdown(
                 id='qc_per_condition_dropdown1',
                 options=[i for i in config.adata.obs.columns.values if i.startswith("condition_")],
-                value=[i for i in config.adata.obs.columns.values if i.startswith("condition_")][0],
+                value=([i for i in config.adata.obs.columns.values if i.startswith("condition_")]+[0])[0],
                 placeholder="Select a column",
                 clearable=False
             )
@@ -228,6 +241,7 @@ layout = dbc.Container(
                 style_table={'overflowY': 'auto', 'overflowX': 'auto'},
                 style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
             ),
+        html.Hr(),
         dbc.Row(
             id = "data",
             children = [
@@ -242,6 +256,7 @@ layout = dbc.Container(
             justify="center",
             className="mb-4"
         ),
+        html.Hr(),
         dbc.Row(
             [
                 dbc.Col(html.H1("Summary"), width="auto"),
@@ -417,72 +432,63 @@ def update_qc_global_scatter(var_selected_data1, var_selected_data2, var_selecte
 #     app.run_server(debug=True)
 
 # Callback to handle adding and deleting rows
-@app.callback(
-     dash.Output('qc_pattern_table', 'data'),
-     dash.Output('qc_hist_dropdown', 'options'),
-     dash.Output('qc_scatter1_dropdown', 'options'),
-     dash.Output('qc_scatter2_dropdown', 'options'),
-     dash.Output('qc_scatter3_dropdown', 'options'),
-     dash.Output('qc_per_condition_dropdown2', 'options'),
-    [dash.Input('add-row-button', 'n_clicks'),
-     dash.Input('qc_pattern_table', 'data')],
-    [dash.State('qc_pattern_table', 'data_previous'),
-     dash.State('qc_pattern_table', 'data'),
-     dash.State('qc_pattern_table', 'columns')]
-)
-def update_qc_pattern_table(n_clicks, data_, previous_rows, current_rows, columns):
-    # print(current_rows)
-    if n_clicks > config.qc_n_clicks_old:
-        current_rows.append({col['id']: '' for col in columns})
-        config.qc_n_clicks_old += 1
+# @app.callback(
+#      dash.Output('qc_pattern_table', 'data'),
+#      dash.Output('qc_thresholds_table', 'data'),
+#      dash.Output('qc_hist_dropdown', 'options'),
+#      dash.Output('qc_scatter1_dropdown', 'options'),
+#      dash.Output('qc_scatter2_dropdown', 'options'),
+#      dash.Output('qc_scatter3_dropdown', 'options'),
+#      dash.Output('qc_per_condition_dropdown2', 'options'),
+#     [
+#      dash.Input('add-row-button', 'n_clicks'),
+#      dash.Input('qc_pattern_table', 'data'),
+#      dash.Input('qc_pattern_table', 'active_cell'),
+#     ],
+#     [
+#      dash.State('qc_pattern_table', 'columns')
+#     ]
+# )
+# def update_qc_pattern_table(n_clicks, table_patterns, _, columns):
 
-    if previous_rows is not None:
-        deleted_rows = [row for row in previous_rows if row not in current_rows]
-        if deleted_rows:
-            print(f"Deleted rows: {deleted_rows}")
+#     # print(n_clicks," ",config.qc_n_clicks_old)
+#     if n_clicks > config.qc_n_clicks_old:
+#         config.qc_n_clicks_old += 1
+#         table_patterns.append({col['id']: '' for col in columns})
 
-    # print(current_rows)
-    for i in range(len(current_rows)):
-        pattern = current_rows[i]['Pattern']
-        if pattern != '':
-            c = [j for j in config.adata.var.loc[:,"Gene"] if j.startswith(pattern)]
-        else:
-            c = ''
-        current_rows[i] = {'Pattern':pattern, 'Genes following the pattern':str(c)}
-        
-        f_qc_pattern(config.adata,pattern)
+#     f_qc_update_patterns(config.adata, table_patterns)
+#     table_patterns = f_qc_table_pattern(config.adata) #get the updated table
+#     table_threshold = f_qc_table_threshold(config.adata) #update thresholds table
+#     options = f_options(config.adata,"qc_")
 
-    # print(config.adata.obs.columns.values)
-    options = [i for i in config.adata.obs.columns.values if i.startswith("qc_")]
+#     return table_patterns, table_threshold, options, options, options, options, options
 
-    return current_rows, options, options, options, options, options
+# @app.callback(
+#      dash.Output('qc_thresholds_table', 'data'),
+#     [
+#         dash.Input('qc_pattern_table', 'data'),
+#         dash.Input('qc_thresholds_table', 'data')        
+#     ]
+# )
+# def update_qc_threshold_table(current_rows, table):
 
-@app.callback(
-     dash.Output('qc_thresholds_table', 'data'),
-    [
-        dash.Input('qc_pattern_table', 'data'),
-        dash.Input('qc_thresholds_table', 'data')        
-    ]
-)
-def update_qc_threshold_table(current_rows, table):
+#     data = []
+#     for m in table:
+#         if m["Control measure"] in config.adata.uns["qc"].keys():
+#             try:
+#                 config.adata.uns["qc"][m["Control measure"]]["Minimum threshold"] = float(m["Minimum Threshold"])
+#             except:
+#                 config.adata.uns["qc"][m["Control measure"]]["Minimum threshold"] = config.adata.obs[m["Control measure"]].min()
 
-    data = []
-    for m in table:
-        if m["Control measure"] in config.adata.uns["qc"].keys():
-            try:
-                config.adata.uns["qc"][m["Control measure"]]["Minimum threshold"] = float(m["Minimum Threshold"])
-            except:
-                config.adata.uns["qc"][m["Control measure"]]["Minimum threshold"] = config.adata.obs[m["Control measure"]].min()
+#             try:
+#                 config.adata.uns["qc"][m["Control measure"]]["Maximum threshold"] = float(m["Maximum Threshold"])
+#             except:
+#                 config.adata.uns["qc"][m["Control measure"]]["Maximum threshold"] = config.adata.obs[m["Control measure"]].max()
 
-            try:
-                config.adata.uns["qc"][m["Control measure"]]["Maximum threshold"] = float(m["Maximum Threshold"])
-            except:
-                config.adata.uns["qc"][m["Control measure"]]["Maximum threshold"] = config.adata.obs[m["Control measure"]].max()
+#     for i in config.adata.uns["qc"]:
+#         data.append({'Control measure':i, 'Minimum Threshold':config.adata.uns["qc"][i]["Minimum threshold"], 'Maximum Threshold':config.adata.uns["qc"][i]["Maximum threshold"]})
 
-    for i in config.adata.uns["qc"]:
-        data.append({'Control measure':i, 'Minimum Threshold':config.adata.uns["qc"][i]["Minimum threshold"], 'Maximum Threshold':config.adata.uns["qc"][i]["Maximum threshold"]})
-
-    return data
+#     return data
 
 @app.callback(
      dash.Output('qc_plot_violin', 'figure'),
@@ -588,91 +594,38 @@ def update_qc_threshold_per_condition_table(condition):
                             }      
                             )]
     else:
+
+        l = make_arguments("doublet_",doublet_args,title="Scrublet arguments")
+
         return  [
-                    dbc.Col(
-                        html.H1("Doublet Analysis")
-                    ),
-                    dbc.Col(
-                        dbc.Button(id='doublets-button', n_clicks=1, children="Remove Doublet Analysis",
-                                size="lg",
-                                style={
-                                    "background-color":"#343A40",
-                                    'width': '280px', 
-                                }      
-                                ),
-                    ),
                     dbc.Row(
-                        dcc.Dropdown(id='qc_doublet_scrolldown'),
-                    ),  
-
-                    dbc.Col(
                         [
-                            dbc.Tooltip(
-                                "float, optional (default: 1.0) Rate for sampling UMIs when creating synthetic doublets. If 1.0, each doublet is created by simply adding the UMIs from two randomly sampled observed transcriptomes. For values less than 1, the UMI counts are added and then randomly sampled at the specified rate.",
-                                target="doublet_arg1",
-                                placement="bottom",
+                            dbc.Col(
+                                html.H1("Doublet Analysis")
                             ),
-                            html.Label("synthetic_doublet_umi_subsampling",id="doublet_arg1"),
-                            dbc.Input(id="doublet_arg1",value=1.0,type="number")
-                        ]
+                            dbc.Col(
+                                dbc.Button(id='doublets-button', n_clicks=1, children="Remove Doublet Analysis",
+                                        size="lg",
+                                        style={
+                                            "background-color":"#343A40",
+                                            'width': '280px', 
+                                        }      
+                                        ),
+                                width=2
+                            ),
+                        ],
+                        style={"margin-bottom":"1cm"}
                     ),
-
-        # use_approx_neighbors : bool, optional (default: True)
-        #     Use approximate nearest neighbor method (annoy) for the KNN 
-        #     classifier.
-
-        # distance_metric : str, optional (default: 'euclidean')
-        #     Distance metric used when finding nearest neighbors. For list of
-        #     valid values, see the documentation for annoy (if `use_approx_neighbors`
-        #     is True) or sklearn.neighbors.NearestNeighbors (if `use_approx_neighbors`
-        #     is False).
-            
-        # get_doublet_neighbor_parents : bool, optional (default: False)
-        #     If True, return the parent transcriptomes that generated the 
-        #     doublet neighbors of each observed transcriptome. This information can 
-        #     be used to infer the cell states that generated a given 
-        #     doublet state.
-
-        # min_counts : float, optional (default: 3)
-        #     Used for gene filtering prior to PCA. Genes expressed at fewer than 
-        #     `min_counts` in fewer than `min_cells` (see below) are excluded.
-
-        # min_cells : int, optional (default: 3)
-        #     Used for gene filtering prior to PCA. Genes expressed at fewer than 
-        #     `min_counts` (see above) in fewer than `min_cells` are excluded.
-
-        # min_gene_variability_pctl : float, optional (default: 85.0)
-        #     Used for gene filtering prior to PCA. Keep the most highly variable genes
-        #     (in the top min_gene_variability_pctl percentile), as measured by 
-        #     the v-statistic [Klein et al., Cell 2015].
-
-        # log_transform : bool, optional (default: False)
-        #     If True, log-transform the counts matrix (log10(1+TPM)). 
-        #     `sklearn.decomposition.TruncatedSVD` will be used for dimensionality
-        #     reduction, unless `mean_center` is True.
-
-        # mean_center : bool, optional (default: True)
-        #     If True, center the data such that each gene has a mean of 0.
-        #     `sklearn.decomposition.PCA` will be used for dimensionality
-        #     reduction.
-
-        # normalize_variance : bool, optional (default: True)
-        #     If True, normalize the data such that each gene has a variance of 1.
-        #     `sklearn.decomposition.TruncatedSVD` will be used for dimensionality
-        #     reduction, unless `mean_center` is True.
-
-        # n_prin_comps : int, optional (default: 30)
-        #     Number of principal components used to embed the transcriptomes prior
-        #     to k-nearest-neighbor graph construction.
-
-        # svd_solver : str, optional (default: 'arpack')
-        #     SVD solver to use. See available options for 
-        #     `svd_solver` from `sklearn.decomposition.PCA` or
-        #     `algorithm` from `sklearn.decomposition.TruncatedSVD`
-
                     dbc.Row(
+                            dcc.Dropdown(id='qc_doublet_scrolldown'),
+                            style={"margin-bottom":"1cm"}
+                        ),  
+                ] + \
+                [
+                    dbc.Col(l,width=4,
+                            style={"background-color":"lightgray"}
+                            ),
+                    dbc.Col(
                         dcc.Graph(id='qc_plot_doublet'),
                     ),  
                 ]
-
-
