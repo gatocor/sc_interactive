@@ -9,7 +9,7 @@ import scanpy as sc
 from app import server
 from app import app
 # import all pages in the app
-from pages import config, home, gene, quality_control
+from pages import config, home, quality_control
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -27,8 +27,7 @@ navbar = dbc.Navbar(
             ),
             dbc.Nav([
                 dbc.DropdownMenu([
-                    dbc.DropdownMenuItem("Load Dataset", href="/home"),                     
-                    dbc.DropdownMenuItem("Gene List", href="/gene"),                        
+                    dbc.DropdownMenuItem("Dataset", href="/home"),                     
                     dbc.DropdownMenuItem("Quality Control", href="/quality_control")                        
                 ],
                 in_navbar = True,
@@ -65,9 +64,7 @@ app.layout = html.Div([
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
-    if pathname == '/gene':
-        return gene.layout
-    elif pathname == '/quality_control':
+    if pathname == '/quality_control':
         return quality_control.layout
     else:
         return home.layout

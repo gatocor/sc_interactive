@@ -7,10 +7,12 @@ import dash_html_components as html
 import dash_daq as daq
 
 def f_qc(adata):
+    if "X_raw" not in adata.obsm.keys():
+        adata.obsm["X_raw"] = adata.X.copy()
     if "qc_total_counts" not in adata.obs.columns.values:
         # sc.pp.calculate_qc_metrics(adata,percent_top=(3,),inplace=True)#np.round(np.int,np.linspace(1,adata.shape[1],5)))
-        adata.obs["qc_total_counts"] = np.array(adata.layers["X_raw"].sum(axis=1)).reshape(-1)
-        adata.obs["qc_n_genes_by_counts"] = np.array((adata.layers["X_raw"] > 0).sum(axis=1)).reshape(-1)
+        adata.obs["qc_total_counts"] = np.array(adata.obsm["X_raw"].sum(axis=1)).reshape(-1)
+        adata.obs["qc_n_genes_by_counts"] = np.array((adata.obsm["X_raw"] > 0).sum(axis=1)).reshape(-1)
     if "qc" not in adata.uns.keys():
         adata.uns["qc"] = {
             "qc_total_counts":{"Minimum threshold":adata.obs["qc_total_counts"].min(), "Maximum threshold":adata.obs["qc_total_counts"].max()},
@@ -32,14 +34,19 @@ def f_update_patterns(adata, pattern):
             if i["Concept"] != '':
                 if i["Pattern"] != '' and i["Pattern"] != None:
                     pp = [j.startswith(i["Pattern"]) for j in adata.var["Gene"].values]
-                    # adata.obs["qc_"+i["Pattern"]] = np.array(adata.layers["X_raw"][:,pp].sum(axis=1)).reshape(-1)/adata.obs["qc_total_counts"]
+                    # adata.obs["qc_"+i["Pattern"]] = np.array(adata.obsm["X_raw"][:,pp].sum(axis=1)).reshape(-1)/adata.obs["qc_total_counts"]
                     adata.uns["gene_lists"][i["Concept"]] = {"Pattern":i["Pattern"], "Genes":list(adata.var["Gene"].values[pp])}
+                elif "[" not in i["Genes"]:
+                    adata.uns["gene_lists"][i["Concept"]] = {"Pattern":i["Pattern"], "Genes":list([j for j in i["Genes"].split(" ")])}
                 else:
-                    adata.uns["gene_lists"][i["Concept"]] = {"Pattern":i["Pattern"], "Genes":i["Genes"]}
+                    adata.uns["gene_lists"][i["Concept"]] = {"Pattern":i["Pattern"], "Genes":adata.uns["gene_lists"][i["Concept"]["Genes"]]}
     
-    for i in [i for i in p.keys()]:
+    for i in [j for j in p.keys()]:
         if i not in [j["Concept"] for j in pattern]:
             del p[i]
+            adata.var.drop(i,axis=1,inplace=True)
+        elif i != '':
+            adata.var[i] = [j in adata.uns["gene_lists"][i]["Genes"] for j in adata.var["Gene"].values]
 
     return
 
