@@ -19,7 +19,7 @@ navbar = dbc.Navbar(
                 dbc.Row(
                     [
                         dbc.Col(html.Img(src="/assets/scRNAseq.png", height="60px")),
-                        dbc.Col(dbc.NavbarBrand("scRNAseq analysis", className="ml-2")),
+                        dbc.Col(dbc.NavbarBrand("scRNAseq analysis", id="nav_brand", className="ml-2")),
                     ],
                     align="center",
                 ),
@@ -65,9 +65,14 @@ app.layout = html.Div([
               [Input('url', 'pathname')])
 def display_page(pathname):
     if pathname == '/quality_control':
-        return quality_control.layout
+        return quality_control.layout()
     else:
-        return home.layout
+        return home.layout()
+
+@app.callback(Output('nav_brand', 'children'),
+              [Input('h5ad-dropdown', 'value')])
+def display_page(name):
+        return "scRNAseq analysis: "+name
 
 if __name__ == '__main__':
     app.run_server(debug=True)
