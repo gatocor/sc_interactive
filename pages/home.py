@@ -18,7 +18,11 @@ from app import app
 #app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 # change to app.layout if running as single page app instead
-layout = dbc.Container(
+def layout():
+
+    config.h5ad_files = np.sort([f for f in os.listdir(config.folder_path) if f.endswith('.h5ad')])
+
+    return dbc.Container(
     [
         dbc.Row(
             [
@@ -240,8 +244,6 @@ def update_pattern_table(selected_file, n_clicks, table_patterns, _, columns):
         config.qc_n_clicks_old = np.Inf
 
         config.f_qc(config.adata)
-
-    print(n_clicks," ", config.qc_n_clicks_old)
 
     add_clicks = 0
 

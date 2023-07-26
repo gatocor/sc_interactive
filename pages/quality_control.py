@@ -15,7 +15,8 @@ from .args.doublet_args import doublet_args
 from app import app
 
 #Lists
-layout = dbc.Container(
+def layout():
+    return dbc.Container(
     [
         dbc.Row(
             [
