@@ -176,7 +176,7 @@ layout = dbc.Container(
             className="mb-4"
         ),
         dbc.Row(
-            dash_renderjson.DashRenderjson(id="output_uns", data=config.adata.uns, max_depth=1, invert_theme=True)
+            dash_renderjson.DashRenderjson(id="output_uns", data=json_serializable(config.adata.uns), max_depth=1, invert_theme=True)
         ),
         dbc.Row(
             [
@@ -274,7 +274,7 @@ def update_pattern_table(selected_file, n_clicks, table_patterns, _, columns):
 
     x = [{"cells": str(config.adata.X.shape[0]), "genes": str(config.adata.X.shape[1]), "dtype": str(type(config.adata.X))}]
 
-    return add_clicks, table_patterns, x, columns_obs, data_obs, columns_var, data_var, config.adata.uns
+    return add_clicks, table_patterns, x, columns_obs, data_obs, columns_var, data_var, json_serializable(config.adata.uns)
 
 @app.callback(
      dash.Output('gene-list-save-button', 'children'),

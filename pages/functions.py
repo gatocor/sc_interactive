@@ -130,3 +130,17 @@ def make_arguments(id, arglist, title="Arguments", add_execution_button=True):
         )
 
     return l
+
+def json_serializable(uns):
+
+    d = {}
+
+    for i in uns:
+        if type(uns[i]) == dict:
+            d[i] = json_serializable(uns[i])
+        elif type(uns[i]) in [int, float, str, list, np.int_, np.float_]:
+            d[i] = uns[i]
+        else:
+            d[i] = str(type(uns[i]))
+
+    return d
