@@ -193,9 +193,9 @@ def layout():
         ),
         html.Hr(),
         dbc.Row(
-            [
-                dbc.Col(html.H1("Per Condition Quality control"), width="auto"),
-            ],
+            id = 'qc_per_condition',
+            children = make_qc_per_condition(config.adata)
+            ,
             justify="center",
             className="mb-4"
         ),
@@ -279,7 +279,6 @@ def update_qc_global_histogram(n_clicks, qc_metrics, data, value):
     if value != None:
         qc_metrics.append({"Name":str(value)})
 
-    print(data)
     f_qc(config.adata, qc_metrics, data)
 
     for var_selected_data in [i for i in config.adata.uns["qc"]]:
@@ -332,8 +331,6 @@ def update_qc_global_histogram(n_clicks, qc_metrics, data, value):
                 )
             ]
         
-    print(config.adata.uns["qc"])
-    print()
     options = [str(i) for i in config.adata.var.columns.values if (config.adata.var.dtypes[i] in [bool]) and (i not in config.adata.uns["qc"])]
         
     options_dropdown = list(config.adata.uns["qc"].keys())
@@ -508,12 +505,131 @@ def update_qc_threshold_per_condition_table(condition,qc):
     return cols, data 
 
 @app.callback(
+     dash.Output('qc_per_condition', 'children'),
+    [
+        dash.Input('qc_per_condition-button', 'n_clicks'),
+    ]
+)
+def make_qc_per_condition_(condition):
+        
+    return make_qc_per_condition(config.adata)
+
+@app.callback(
+     dash.Output('per_condition_plot', 'children'),
+     dash.Output('table_qc_per_condition_metrics', 'data'),
+     dash.Output('dropdown_add_per_condition_metrics', 'value'),
+    [
+        dash.Input('add_qc_per_condition-button', 'n_clicks'),
+        dash.Input('table_qc_per_condition_metrics', 'data'),
+    ],
+    dash.State('dropdown_add_per_condition_metrics', 'value'),
+)
+def update_qc_threshold_per_condition_table(condition, data, value):
+
+    conditions = [i["Name"] for i in data]
+    if value != None and value not in conditions:
+        data.append({"Name":str(value)})
+
+    conditions = [i["Name"] for i in data]
+
+    l = []
+
+    for var_selected_data in [i for i in config.adata.uns["qc"]]:          
+        
+        if len(data) != 0:                
+            for condition in conditions:
+                if condition not in config.adata.uns["qc"][var_selected_data]["per_condition"].keys():
+                    config.adata.uns["qc"][var_selected_data]["per_condition"][condition] = \
+                        {
+                            ci:{
+                                "Min":config.adata.uns["qc"][var_selected_data]["Minimum threshold"],
+                                "Max":config.adata.uns["qc"][var_selected_data]["Maximum threshold"]                                                              
+                            }
+                            for ci in np.unique(config.adata.obs[condition].values)
+                        }
+
+    for condition in conditions:
+        l += [
+                dbc.Row(
+                    html.H1(condition),
+                    justify="left"
+                )
+        ]
+        for var_selected_data in [i for i in config.adata.uns["qc"]]:                
+            #Plot_type
+            # Create a vertical line at the specified input value
+            var1_vertical_line_min = go.Scatter(
+                x=config.adata.obs[condition].values,
+                y=[config.adata.uns["qc"][var_selected_data]["Minimum threshold"] for i in range(len(config.adata.obs[var_selected_data].values))],
+                mode='lines',
+                name='Min threshold',
+                line=dict(color='red')
+            )
+            var1_vertical_line_max = go.Scatter(
+                x=config.adata.obs[condition].values,
+                y=[config.adata.uns["qc"][var_selected_data]["Maximum threshold"] for i in range(len(config.adata.obs[var_selected_data].values))],
+                mode='lines',
+                name='Max threshold',
+                line=dict(color='green')
+            )
+
+            l += [
+                    dbc.Col(
+                        [
+                            dcc.Graph(id="Holi",
+                                figure={
+                                        "data":[
+                                            go.Violin(
+                                                x=config.adata.obs[condition].values,
+                                                y=config.adata.obs[var_selected_data].values,
+                                                name='Violin',
+                                                # marker=dict(color='blue'),
+                                                opacity=0.7
+                                            ),
+                                            var1_vertical_line_min,
+                                            var1_vertical_line_max
+                                        ],
+                                        "layout":{
+                                                'title': f'{var_selected_data}',
+                                                'xaxis': {'title': condition},
+                                                'yaxis': {'title': 'Count'},
+                                                'barmode': 'overlay',
+                                                'width':1500,
+                                                'height':400,
+                                        }
+                                    }
+                            )
+                        ],
+                        # justify="center",
+                        # style={'width': '90%', 'margin': 'auto'}
+                    )
+                ]
+            
+            l += [
+                dbc.Col(
+                    dash_table.DataTable(
+                            id='table_qc_per_condition_'+condition,
+                            columns=[
+                                {"name": str(i), "id": str(i), "deletable": False, "editable": j} for i,j in zip(["Condition","Min","Max"],[False,True,True])
+                            ],
+                            data=[{"Condition":i,"Min":"i","Max":i} for i in np.unique(config.adata.obs[condition].values)],
+                            editable=True,
+                            row_deletable=False,
+                            style_table={'overflowY': 'auto', 'overflowX': 'auto'},
+                            style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
+                        ),
+                )
+            ]
+
+    return l, data, None
+
+@app.callback(
      dash.Output('doublets', 'children'),
     [
         dash.Input('doublets-button', 'n_clicks'),
     ]
 )
-def update_qc_threshold_per_condition_table(condition):
+def make_qc_doublets(condition):
     if condition % 2 == 0:
         return [dbc.Button(id='doublets-button', n_clicks=0, children="Add Doublet Analysis",
                             size="lg",

@@ -5,6 +5,7 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_daq as daq
+import dash_table
 
 def f_qc_base(adata):
     if "X_raw" not in adata.obsm.keys():
@@ -45,7 +46,7 @@ def f_qc(adata,metrics,data):
 
     for i in m:
         if (i not in ["total_counts","n_genes_by_counts"]) and (i not in l):
-            adata.obs[i] = np.array(adata.obsm["X_raw"][:,adata.var[i].values].sum(axis=1)).reshape(-1)
+            adata.obs[i] = np.array(adata.obsm["X_raw"][:,adata.var[i].values].sum(axis=1)).reshape(-1)/adata.obs["total_counts"]
             adata.uns["qc"][i] = {"Minimum threshold":adata.obs[i].min(), "Maximum threshold":adata.obs[i].max()}
         else:
             for j in data:
@@ -179,3 +180,78 @@ def json_serializable(uns):
             d[i] = str(type(uns[i]))
 
     return d
+
+def make_qc_per_condition(adata):
+
+    print(adata.uns["qc"]["total_counts"].keys())
+    if "per_condition" in adata.uns["qc"]["total_counts"].keys():
+
+        print("holi")
+
+        for var_selected_data in adata.uns["qc"].keys():          
+            del adata.uns["qc"][var_selected_data]["per_condition"]
+
+        return [dbc.Button(id='qc_per_condition-button', n_clicks=0, children="Add per conditon analysis",
+                        size="lg",
+                        style={
+                            "background-color":"gray",
+                            # 'width': '680px', 
+                        }      
+                        )]
+    else:
+
+        print("holi 2",  adata.uns["qc"]["total_counts"])
+        
+        for var_selected_data in adata.uns["qc"].keys():          
+            adata.uns["qc"][var_selected_data]["per_condition"] = {}
+
+        return  [
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            html.H1("Per condition Analysis")
+                        ),
+                        dbc.Col(
+                            dbc.Button(id='qc_per_condition-button', n_clicks=1, children="Remove per condition analysis",
+                                    size="lg",
+                                    style={
+                                        "background-color":"#343A40",
+                                        'width': '280px', 
+                                    }      
+                                    ),
+                            width=2
+                        ),
+                    ],
+                    style={"margin-bottom":"1cm"}
+                ),
+                dbc.Row(
+                        dash_table.DataTable(
+                            id='table_qc_per_condition_metrics',
+                            columns=[
+                                {"name": i, "id": i, "deletable": False, "editable": False} for i in ["Name"]
+                            ],
+                            data=[],
+                            editable=False,
+                            row_deletable=True,
+                            style_table={'overflowY': 'auto', 'overflowX': 'auto'},
+                            style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
+                        ),
+                        # style={"margin-bottom":"1cm"}        
+                    ),
+                dbc.Row(
+                    [
+                        dbc.Col(dcc.Dropdown(
+                            id = "dropdown_add_per_condition_metrics",
+                            value = None,
+                            options = [str(i) for i in adata.obs.columns.values if (adata.obs.dtypes[i] in [object, str, int])]
+                        )),
+                        dbc.Col(dbc.Button("Add condition", id="add_qc_per_condition-button")),
+                    ],
+                    justify="Left",
+                    className="mb-4",
+                ),
+                dbc.Row(
+                    id="per_condition_plot",
+                    children=dcc.Graph(),
+                )
+            ]
