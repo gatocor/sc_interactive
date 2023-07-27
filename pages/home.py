@@ -243,7 +243,7 @@ def update_pattern_table(selected_file, n_clicks, table_patterns, _, columns):
 
         config.qc_n_clicks_old = np.Inf
 
-        config.f_qc(config.adata)
+        config.f_qc_base(config.adata)
 
     add_clicks = 0
 

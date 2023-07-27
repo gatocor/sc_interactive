@@ -31,7 +31,7 @@ def layout():
                     columns=[
                         {"name": i, "id": i, "deletable": False, "editable": False} for i in ["Name"]
                     ],
-                    data=[{"Name":"total_counts"},{"Name":"n_genes_by_counts"}],
+                    data=[{"Name":i} for i in config.adata.uns["qc"]],
                     editable=False,
                     row_deletable=True,
                     style_table={'overflowY': 'auto', 'overflowX': 'auto'},
@@ -43,14 +43,15 @@ def layout():
             [
                 dbc.Col(dcc.Dropdown(
                     id = "dropdown_add_metric",
-                    value = ([[i for i in config.adata.uns["gene_lists"].keys()]]+[None])[0],
-                    options = [i for i in config.adata.uns["gene_lists"].keys()]
+                    value = None,
+                    options = [str(i) for i in config.adata.var.columns.values if (config.adata.var.dtypes[i] in [bool]) and (i not in config.adata.uns["qc"])]
                 )),
-                dbc.Col(dbc.Button("Add metric")),
+                dbc.Col(dbc.Button("Add metric", id="add_metric")),
             ],
             justify="Left",
             className="mb-4",
         ),
+        html.Hr(),
         dbc.Row(
             [
                 dbc.Col(html.H1("Global Quality control"), width="auto"),
@@ -59,12 +60,19 @@ def layout():
             className="mb-4",
         ),
         dbc.Row(
+            [
+                dbc.Col(html.H1("Thresholds"), width="auto"),
+            ],
+            justify="left",
+            className="mb-4",
+        ),
+        dbc.Row(
             dash_table.DataTable(
                     id='qc_thresholds_table',
                     columns=[
                         {"name": i, "id": i, "deletable": False, "editable": True if ("Min" in i) or ("Max" in i) else False} for i in config.qc_df_threshold.columns
                     ],
-                    data=config.qc_df_threshold.to_dict('records'),
+                    data=f_qc_table_threshold(config.adata),
                     editable=False,
                     row_deletable=False,
                     style_table={'overflowY': 'auto', 'overflowX': 'auto'},
@@ -74,134 +82,115 @@ def layout():
         ),
         dbc.Row(
             [
-                dbc.Col([
-                    dbc.Row([
-                        dbc.Col(
-                            [
-                                dbc.Tooltip(
-                                    "Plot style",
-                                    target="y-size-label",
-                                    placement="bottom",
-                                ),
-                                html.Label("Plot style:", className="input-label", id="y-size-label"),
-                            ],
-                            width=2,
-                        ),
-                        dbc.Col(
-                            [
-                                html.Div(
-                                    dcc.Dropdown(
-                                        id='qc_hist_dropdown',
-                                        options=f_options(config.adata,"qc_"),
-                                        value="qc_total_counts",
-                                        placeholder="Select a column",
-                                        clearable=False
-                                    )
-                                ),
-                            ]
-                        ),
-                    ]),
-                ],
-                width=6
-                ),
-                dbc.Col(
-                    [
-                        dbc.Row([
-                            dbc.Col(
-                                [
-                                    dbc.Tooltip(
-                                        "Plot style",
-                                        target="y-size-label",
-                                        placement="bottom",
-                                    ),
-                                    html.Label("Plot style:", className="input-label", id="y-size-label"),
-                                ],
-                                width=2,
-                            ),
-                            dbc.Col(
-                                [
-                                    html.Div(
-                                        dcc.Dropdown(
-                                            id='qc_scatter1_dropdown',
-                                            options=f_options(config.adata,"qc_"),
-                                            value="qc_total_counts",
-                                            placeholder="Select a column",
-                                            clearable=False
-                                        )
-                                    ),
-                                ]
-                            ),
-                            ]
-                        ),
-                        dbc.Row([
-                            dbc.Col(
-                                [
-                                    dbc.Tooltip(
-                                        "Plot style",
-                                        target="y-size-label",
-                                        placement="bottom",
-                                    ),
-                                    html.Label("Plot style:", className="input-label", id="y-size-label"),
-                                ],
-                                width=2,
-                            ),
-                            dbc.Col(
-                                [
-                                    html.Div(
-                                        dcc.Dropdown(
-                                            id='qc_scatter2_dropdown',
-                                            options=f_options(config.adata,"qc_"),
-                                            value="qc_n_genes_by_counts",
-                                            placeholder="Select a column",
-                                            clearable=False
-                                        )
-                                    ),
-                                ]
-                            ),
-                            ]
-                        ),
-                        dbc.Row([
-                            dbc.Col(
-                                [
-                                    dbc.Tooltip(
-                                        "Plot style",
-                                        target="y-size-label",
-                                        placement="bottom",
-                                    ),
-                                    html.Label("Plot style:", className="input-label", id="y-size-label"),
-                                ],
-                                width=2,
-                            ),
-                            dbc.Col(
-                                [
-                                    html.Div(
-                                        dcc.Dropdown(
-                                            id='qc_scatter3_dropdown',
-                                            options=f_options(config.adata,"qc_"),
-                                            value="qc_total_counts",
-                                            placeholder="Select a column",
-                                            clearable=False
-                                        )
-                                    ),
-                                ]
-                            ),
-                            ]
-                        ),
-                    ],
-                    width=6
-                ),
+                dbc.Col(html.H1("Histogram plots"), width="auto"),
             ],
-            justify="center",
-            align="top"
+            justify="left",
+            className="mb-4",
         ),
-        dbc.Row([
-            dbc.Col(
-                        dcc.Graph(id='qc_plot_histogram'),
-            ),
-            dbc.Col(
-                        dcc.Graph(id='qc_plot_scatter'),
-            )
-        ]),
+        dbc.Row(
+            id = "global_qc_plots",
+            children = [],
+            justify="center",
+            className="mb-4"
+        ),
+        dbc.Row(
+            [
+                dbc.Col(html.H1("Summary plot"), width="auto"),
+            ],
+            justify="left",
+            className="mb-4",
+        ),
+        dbc.Row(
+            [
+                dbc.Row([
+                    dbc.Col(
+                        [
+                            dbc.Tooltip(
+                                "X axis",
+                                target="y-size-label",
+                                placement="bottom",
+                            ),
+                            html.Label("Plot style:", className="input-label", id="y-size-label"),
+                        ],
+                        width=2,
+                    ),
+                    dbc.Col(
+                        [
+                            html.Div(
+                                dcc.Dropdown(
+                                    id='qc_scatter1_dropdown',
+                                    options=[i for i in config.adata.uns["qc"]],
+                                    value=config.qc_summary_x,
+                                    placeholder="Select a column",
+                                    clearable=False
+                                )
+                            ),
+                        ]
+                    ),
+                    ]
+                ),
+                dbc.Row([
+                    dbc.Col(
+                        [
+                            dbc.Tooltip(
+                                "Y axis",
+                                target="y-size-label",
+                                placement="bottom",
+                            ),
+                            html.Label("Plot style:", className="input-label", id="y-size-label"),
+                        ],
+                        width=2,
+                    ),
+                    dbc.Col(
+                        [
+                            html.Div(
+                                dcc.Dropdown(
+                                    id='qc_scatter2_dropdown',
+                                    options=[i for i in config.adata.uns["qc"]],
+                                    value=config.qc_summary_y,
+                                    placeholder="Select a column",
+                                    clearable=False
+                                )
+                            ),
+                        ]
+                    ),
+                    ]
+                ),
+                dbc.Row([
+                    dbc.Col(
+                        [
+                            dbc.Tooltip(
+                                "Color",
+                                target="y-size-label",
+                                placement="bottom",
+                            ),
+                            html.Label("Plot style:", className="input-label", id="y-size-label"),
+                        ],
+                        width=2,
+                    ),
+                    dbc.Col(
+                        [
+                            html.Div(
+                                dcc.Dropdown(
+                                    id='qc_scatter3_dropdown',
+                                    options=[i for i in config.adata.uns["qc"]],
+                                    value=config.qc_summary_color,
+                                    placeholder="Select a column",
+                                    clearable=False
+                                )
+                            ),
+                        ]
+                    ),
+                    ]
+                ),
+                dbc.Row(
+                    dbc.Col(
+                            dcc.Graph(id='qc_plot_scatter')
+                    ),
+                    style={'width': '50%', 'margin': 'auto'}
+                )
+            ]
+        ),
         html.Hr(),
         dbc.Row(
             [
@@ -210,41 +199,9 @@ def layout():
             justify="center",
             className="mb-4"
         ),
-        dbc.Row(
-            dcc.Dropdown(
-                id='qc_per_condition_dropdown1',
-                options=[i for i in config.adata.obs.columns.values if i.startswith("condition_")],
-                value=([i for i in config.adata.obs.columns.values if i.startswith("condition_")]+[0])[0],
-                placeholder="Select a column",
-                clearable=False
-            )
-        ),
-        dbc.Row(
-            dcc.Dropdown(
-                id='qc_per_condition_dropdown2',
-                options=[i for i in config.adata.obs.columns.values if i.startswith("qc_")],
-                value=[i for i in config.adata.obs.columns.values if i.startswith("qc_")][0],
-                placeholder="Select a column",
-                clearable=False
-            )
-        ),
-        dbc.Row(
-                    dcc.Graph(id='qc_plot_violin'),
-        ),  
-        dash_table.DataTable(
-                id='qc_thresholds_per_condition_table',
-                columns=[
-                    {"name": i, "id": i, "deletable": False, "editable": True if ("Min" in i) or ("Max" in i) else False} for i in config.qc_df_threshold.columns
-                ],
-                data=config.qc_df_threshold.to_dict('records'),
-                editable=False,
-                row_deletable=False,
-                style_table={'overflowY': 'auto', 'overflowX': 'auto'},
-                style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
-            ),
         html.Hr(),
         dbc.Row(
-            id = "data",
+            id = 'doublets',
             children = [
                 dbc.Button(id='doublets-button', n_clicks=0, children="Add Doublet Removal",
                             size="lg",
@@ -298,59 +255,90 @@ def layout():
 )
 
 @app.callback(
-    dash.Output('qc_plot_histogram', 'figure'),
+    dash.Output('table_qc_metrics','data'),
+    dash.Output('qc_thresholds_table', 'data'),
+    dash.Output("global_qc_plots","children"),
+    dash.Output("dropdown_add_metric","options"),
+    dash.Output("dropdown_add_metric","value"),
+    dash.Output('qc_scatter1_dropdown', 'options'),
+    dash.Output('qc_scatter2_dropdown', 'options'),
+    dash.Output('qc_scatter3_dropdown', 'options'),
     [
-     dash.Input('qc_hist_dropdown', 'value'),
-     dash.Input('qc_thresholds_table', 'data')        
-     ],
-)
-def update_qc_global_histogram(var_selected_data, data):
-    
-    #Plot_type
-    # Create a vertical line at the specified input value
-    hist_values, hist_bins = np.histogram(config.adata.obs[var_selected_data].values, bins=30)
-    tallest_bin_height = np.max(hist_values)
-    var1_vertical_line_min = go.Scatter(
-        x=[config.adata.uns["qc"][var_selected_data]["Minimum threshold"], config.adata.uns["qc"][var_selected_data]["Minimum threshold"]],
-        y=[0, tallest_bin_height],
-        mode='lines',
-        name='Min threshold',
-        line=dict(color='red', dash='dash')
-    )
-    var1_vertical_line_max = go.Scatter(
-        x=[config.adata.uns["qc"][var_selected_data]["Maximum threshold"], config.adata.uns["qc"][var_selected_data]["Maximum threshold"]],
-        y=[0, tallest_bin_height],
-        mode='lines',
-        name='Max threshold',
-        line=dict(color='green', dash='dash')
-    )
-
-    data = [
-        go.Histogram(
-            x=config.adata.obs[var_selected_data].values,
-            nbinsx=30,
-            name='Histogram',
-            marker=dict(color='blue'),
-            opacity=0.7
-        ),
-        var1_vertical_line_min,
-        var1_vertical_line_max
+        dash.Input('add_metric', 'n_clicks'),
+        dash.Input('table_qc_metrics', 'data'),
+        dash.Input('qc_thresholds_table', 'data'),
+    ],
+    [
+        dash.State('dropdown_add_metric', 'value'),
     ]
+)
+def update_qc_global_histogram(n_clicks, qc_metrics, data, value):
+    
+    l = []
 
-    layout = {
-        'title': f'Histogram of {var_selected_data}',
-        'xaxis': {'title': var_selected_data},
-        'yaxis': {'title': 'Count'},
-        'barmode': 'overlay',
-        'width':900,
-        'height':800,
-    }
+    if value != None:
+        qc_metrics.append({"Name":str(value)})
 
+    print(data)
+    f_qc(config.adata, qc_metrics, data)
 
-    return {
-        'data': data,
-        'layout': layout,
-    }
+    for var_selected_data in [i for i in config.adata.uns["qc"]]:
+        #Plot_type
+        # Create a vertical line at the specified input value
+        hist_values, hist_bins = np.histogram(config.adata.obs[var_selected_data].values, bins=30)
+        tallest_bin_height = np.max(hist_values)
+        var1_vertical_line_min = go.Scatter(
+            x=[config.adata.uns["qc"][var_selected_data]["Minimum threshold"], config.adata.uns["qc"][var_selected_data]["Minimum threshold"]],
+            y=[0, tallest_bin_height],
+            mode='lines',
+            name='Min threshold',
+            line=dict(color='red', dash='dash')
+        )
+        var1_vertical_line_max = go.Scatter(
+            x=[config.adata.uns["qc"][var_selected_data]["Maximum threshold"], config.adata.uns["qc"][var_selected_data]["Maximum threshold"]],
+            y=[0, tallest_bin_height],
+            mode='lines',
+            name='Max threshold',
+            line=dict(color='green', dash='dash')
+        )
+
+        l += [
+                dbc.Row(
+                    [dcc.Graph(id="Holi",
+                            figure={
+                                    "data":[
+                                        go.Histogram(
+                                            x=config.adata.obs[var_selected_data].values,
+                                            nbinsx=30,
+                                            name='Histogram',
+                                            marker=dict(color='blue'),
+                                            opacity=0.7
+                                        ),
+                                        var1_vertical_line_min,
+                                        var1_vertical_line_max
+                                    ],
+                                    "layout":{
+                                            'title': f'Histogram of {var_selected_data}',
+                                            'xaxis': {'title': var_selected_data},
+                                            'yaxis': {'title': 'Count'},
+                                            'barmode': 'overlay',
+                                            'width':1500,
+                                            'height':400,
+                                    }
+                                }
+                    )],
+                    justify="center",
+                    style={'width': '90%', 'margin': 'auto'}
+                )
+            ]
+        
+    print(config.adata.uns["qc"])
+    print()
+    options = [str(i) for i in config.adata.var.columns.values if (config.adata.var.dtypes[i] in [bool]) and (i not in config.adata.uns["qc"])]
+        
+    options_dropdown = list(config.adata.uns["qc"].keys())
+
+    return f_qc_table_metrics(config.adata), f_qc_table_threshold(config.adata), l, options, None, options_dropdown, options_dropdown, options_dropdown #{'data': data,'layout': layout}
 
 @app.callback(
     dash.dependencies.Output('qc_plot_scatter', 'figure'),
@@ -363,6 +351,10 @@ def update_qc_global_histogram(var_selected_data, data):
 )
 def update_qc_global_scatter(var_selected_data1, var_selected_data2, var_selected_data3, data):
     
+    config.qc_summary_x = var_selected_data1
+    config.qc_summary_y = var_selected_data2
+    config.qc_summary_color = var_selected_data3
+
     # Create a vertical line at the specified input value
     var1_vertical_line_min = go.Scatter(
         x=[config.adata.uns["qc"][var_selected_data1]["Minimum threshold"], config.adata.uns["qc"][var_selected_data1]["Minimum threshold"]],
@@ -412,7 +404,6 @@ def update_qc_global_scatter(var_selected_data1, var_selected_data2, var_selecte
     ]
 
     layout = {
-        'title': f'Scatter of {var_selected_data1} vs {var_selected_data2}',
         'xaxis': {'title': var_selected_data1},
         'yaxis': {'title': var_selected_data2,
                     # 'scaleanchor': 'x',
@@ -427,69 +418,6 @@ def update_qc_global_scatter(var_selected_data1, var_selected_data2, var_selecte
         'data': data,
         'layout': layout,
     }
-
-# # Step 5: Run the app
-# if __name__ == '__main__':
-#     app.run_server(debug=True)
-
-# Callback to handle adding and deleting rows
-# @app.callback(
-#      dash.Output('qc_pattern_table', 'data'),
-#      dash.Output('qc_thresholds_table', 'data'),
-#      dash.Output('qc_hist_dropdown', 'options'),
-#      dash.Output('qc_scatter1_dropdown', 'options'),
-#      dash.Output('qc_scatter2_dropdown', 'options'),
-#      dash.Output('qc_scatter3_dropdown', 'options'),
-#      dash.Output('qc_per_condition_dropdown2', 'options'),
-#     [
-#      dash.Input('add-row-button', 'n_clicks'),
-#      dash.Input('qc_pattern_table', 'data'),
-#      dash.Input('qc_pattern_table', 'active_cell'),
-#     ],
-#     [
-#      dash.State('qc_pattern_table', 'columns')
-#     ]
-# )
-# def update_qc_pattern_table(n_clicks, table_patterns, _, columns):
-
-#     # print(n_clicks," ",config.qc_n_clicks_old)
-#     if n_clicks > config.qc_n_clicks_old:
-#         config.qc_n_clicks_old += 1
-#         table_patterns.append({col['id']: '' for col in columns})
-
-#     f_qc_update_patterns(config.adata, table_patterns)
-#     table_patterns = f_qc_table_pattern(config.adata) #get the updated table
-#     table_threshold = f_qc_table_threshold(config.adata) #update thresholds table
-#     options = f_options(config.adata,"qc_")
-
-#     return table_patterns, table_threshold, options, options, options, options, options
-
-# @app.callback(
-#      dash.Output('qc_thresholds_table', 'data'),
-#     [
-#         dash.Input('qc_pattern_table', 'data'),
-#         dash.Input('qc_thresholds_table', 'data')        
-#     ]
-# )
-# def update_qc_threshold_table(current_rows, table):
-
-#     data = []
-#     for m in table:
-#         if m["Control measure"] in config.adata.uns["qc"].keys():
-#             try:
-#                 config.adata.uns["qc"][m["Control measure"]]["Minimum threshold"] = float(m["Minimum Threshold"])
-#             except:
-#                 config.adata.uns["qc"][m["Control measure"]]["Minimum threshold"] = config.adata.obs[m["Control measure"]].min()
-
-#             try:
-#                 config.adata.uns["qc"][m["Control measure"]]["Maximum threshold"] = float(m["Maximum Threshold"])
-#             except:
-#                 config.adata.uns["qc"][m["Control measure"]]["Maximum threshold"] = config.adata.obs[m["Control measure"]].max()
-
-#     for i in config.adata.uns["qc"]:
-#         data.append({'Control measure':i, 'Minimum Threshold':config.adata.uns["qc"][i]["Minimum threshold"], 'Maximum Threshold':config.adata.uns["qc"][i]["Maximum threshold"]})
-
-#     return data
 
 @app.callback(
      dash.Output('qc_plot_violin', 'figure'),
@@ -580,7 +508,7 @@ def update_qc_threshold_per_condition_table(condition,qc):
     return cols, data 
 
 @app.callback(
-     dash.Output('data', 'children'),
+     dash.Output('doublets', 'children'),
     [
         dash.Input('doublets-button', 'n_clicks'),
     ]

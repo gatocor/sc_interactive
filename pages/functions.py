@@ -6,20 +6,54 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_daq as daq
 
-def f_qc(adata):
+def f_qc_base(adata):
     if "X_raw" not in adata.obsm.keys():
         adata.obsm["X_raw"] = adata.X.copy()
-    if "qc_total_counts" not in adata.obs.columns.values:
-        # sc.pp.calculate_qc_metrics(adata,percent_top=(3,),inplace=True)#np.round(np.int,np.linspace(1,adata.shape[1],5)))
-        adata.obs["qc_total_counts"] = np.array(adata.obsm["X_raw"].sum(axis=1)).reshape(-1)
-        adata.obs["qc_n_genes_by_counts"] = np.array((adata.obsm["X_raw"] > 0).sum(axis=1)).reshape(-1)
+    if "total_counts" not in adata.obs.columns.values:
+        adata.obs["total_counts"] = np.array(adata.obsm["X_raw"].sum(axis=1)).reshape(-1)
+    if "n_genes_by_counts" not in adata.obs.columns.values:
+        adata.obs["n_genes_by_counts"] = np.array((adata.obsm["X_raw"] > 0).sum(axis=1)).reshape(-1)
     if "qc" not in adata.uns.keys():
         adata.uns["qc"] = {
-            "qc_total_counts":{"Minimum threshold":adata.obs["qc_total_counts"].min(), "Maximum threshold":adata.obs["qc_total_counts"].max()},
-            "qc_n_genes_by_counts":{"Minimum threshold":adata.obs["qc_n_genes_by_counts"].min(), "Maximum threshold":adata.obs["qc_n_genes_by_counts"].max()},
+            "total_counts":{"Minimum threshold":adata.obs["total_counts"].min(), "Maximum threshold":adata.obs["total_counts"].max()},
+            "n_genes_by_counts":{"Minimum threshold":adata.obs["n_genes_by_counts"].min(), "Maximum threshold":adata.obs["n_genes_by_counts"].max()},
         }
+    if "total_counts" not in adata.uns["qc"].keys():
+        adata.uns["qc"]["total_counts"] = {"Minimum threshold":adata.obs["total_counts"].min(), "Maximum threshold":adata.obs["total_counts"].max()}
+    if "n_genes_by_counts" not in adata.uns["qc"].keys():
+        adata.uns["qc"]["n_genes_by_counts"] = {"Minimum threshold":adata.obs["n_genes_by_counts"].min(), "Maximum threshold":adata.obs["n_genes_by_counts"].max()}
     if "gene_lists" not in adata.uns.keys():
         adata.uns["gene_lists"] = {}
+
+def f_qc(adata,metrics,data):
+
+    m = [i["Name"] for i in metrics]
+    l = list(adata.uns["qc"].keys())
+
+    if "total_counts" not in adata.obs.columns.values:
+        adata.obs["total_counts"] = np.array(adata.obsm["X_raw"].sum(axis=1)).reshape(-1)
+    if "n_genes_by_counts" not in adata.obs.columns.values:
+        adata.obs["n_genes_by_counts"] = np.array((adata.obsm["X_raw"] > 0).sum(axis=1)).reshape(-1)
+    if "total_counts" not in m:
+        adata.uns["qc"]["total_counts"] = {"Minimum threshold":adata.obs["total_counts"].min(), "Maximum threshold":adata.obs["total_counts"].max()}
+    if "n_genes_by_counts" not in m:
+        adata.uns["qc"]["n_genes_by_counts"] = {"Minimum threshold":adata.obs["n_genes_by_counts"].min(), "Maximum threshold":adata.obs["n_genes_by_counts"].max()}
+    
+    for i in l:
+        if (i not in ["total_counts","n_genes_by_counts"]) and (i not in m):
+            del adata.uns["qc"][i]
+
+    for i in m:
+        if (i not in ["total_counts","n_genes_by_counts"]) and (i not in l):
+            adata.obs[i] = np.array(adata.obsm["X_raw"][:,adata.var[i].values].sum(axis=1)).reshape(-1)
+            adata.uns["qc"][i] = {"Minimum threshold":adata.obs[i].min(), "Maximum threshold":adata.obs[i].max()}
+        else:
+            for j in data:
+                if j["Control measure"] == i:
+                    adata.uns["qc"][i]["Minimum threshold"] = j["Minimum threshold"]
+                    adata.uns["qc"][i]["Maximum threshold"] = j["Maximum threshold"]
+
+    return
 
 def f_options(adata,motive):
     return [i for i in adata.obs.columns.values if i.startswith(motive)]
@@ -34,7 +68,7 @@ def f_update_patterns(adata, pattern):
             if i["Concept"] != '':
                 if i["Pattern"] != '' and i["Pattern"] != None:
                     pp = [j.startswith(i["Pattern"]) for j in adata.var["Gene"].values]
-                    # adata.obs["qc_"+i["Pattern"]] = np.array(adata.obsm["X_raw"][:,pp].sum(axis=1)).reshape(-1)/adata.obs["qc_total_counts"]
+                    # adata.obs[""+i["Pattern"]] = np.array(adata.obsm["X_raw"][:,pp].sum(axis=1)).reshape(-1)/adata.obs["total_counts"]
                     adata.uns["gene_lists"][i["Concept"]] = {"Pattern":i["Pattern"], "Genes":list(adata.var["Gene"].values[pp])}
                 elif "[" not in i["Genes"]:
                     adata.uns["gene_lists"][i["Concept"]] = {"Pattern":i["Pattern"], "Genes":list([j for j in i["Genes"].split(" ")])}
@@ -54,19 +88,20 @@ def f_qc_table_pattern(adata):
 
     return [{"Concept":i, "Pattern":str(adata.uns["gene_lists"][i]["Pattern"]),"Genes":str(adata.uns["gene_lists"][i]["Genes"])} for i in adata.uns["gene_lists"]]
 
+def f_qc_table_metrics(adata):
+    
+    l = [{"Name":i} for i in adata.uns["qc"]]
+
+    return l
+
 def f_qc_table_threshold(adata):
     
     l = [{"Control measure":i,
-          "Minimum Threshold":str(adata.uns["qc"][i]["Minimum threshold"]),
-          "Maximum Threshold":str(adata.uns["qc"][i]["Maximum threshold"]),
-          } for i in ["qc_total_counts","qc_n_genes_by_counts"]]
+          "Minimum threshold":str(adata.uns["qc"][i]["Minimum threshold"]),
+          "Maximum threshold":str(adata.uns["qc"][i]["Maximum threshold"]),
+          } for i in adata.uns["qc"]]
 
-    l_pattern = [{"Control measure":i,
-          "Minimum Threshold":str(adata.uns["qc"]["patterns"][i]["Minimum threshold"]),
-          "Maximum Threshold":str(adata.uns["qc"]["patterns"][i]["Maximum threshold"]),
-          } for i in adata.uns["qc"]["patterns"]]
-
-    return l+l_pattern
+    return l
 
 def f_qc_summary(adata):
     statistics = {}
