@@ -183,11 +183,7 @@ def json_serializable(uns):
 
 def make_qc_per_condition(adata):
 
-    print(adata.uns["qc"]["total_counts"].keys())
-    if "per_condition" in adata.uns["qc"]["total_counts"].keys():
-
-        for var_selected_data in adata.uns["qc"].keys():          
-            del adata.uns["qc"][var_selected_data]["per_condition"]
+    if "per_condition" not in adata.uns["qc"]["total_counts"].keys():
 
         return [dbc.Button(id='qc_per_condition-button', n_clicks=0, children="Add per conditon analysis",
                         size="lg",
@@ -198,9 +194,6 @@ def make_qc_per_condition(adata):
                         )]
     else:
         
-        for var_selected_data in adata.uns["qc"].keys():          
-            adata.uns["qc"][var_selected_data]["per_condition"] = {}
-
         return  [
                 dbc.Row(
                     [
@@ -226,7 +219,7 @@ def make_qc_per_condition(adata):
                             columns=[
                                 {"name": i, "id": i, "deletable": False, "editable": False} for i in ["Name"]
                             ],
-                            data=[],
+                            data=[{"Name":i} for i in adata.uns["qc"]["total_counts"]["per_condition"].keys()],
                             editable=False,
                             row_deletable=True,
                             style_table={'overflowY': 'auto', 'overflowX': 'auto'},
@@ -249,5 +242,18 @@ def make_qc_per_condition(adata):
                 dbc.Row(
                     id="per_condition_plot",
                     children=dcc.Graph(),
+                ),
+                dbc.Row(
+                    dash_table.DataTable(
+                            id='table_qc_per_condition',
+                            columns=[
+                                {"name": str(i), "id": str(i), "deletable": False, "editable": j} for i,j in zip(["Condition","Variable","Condition type","Min","Max"],[False,False,False,True,True])
+                            ],
+                            data=[],
+                            editable=True,
+                            row_deletable=False,
+                            style_table={'overflowY': 'auto', 'overflowX': 'auto'},
+                            style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
+                        ),                    
                 )
             ]

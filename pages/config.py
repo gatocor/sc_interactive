@@ -8,7 +8,7 @@ folder_path = './'  # Replace with the actual path to the folder containing .h5a
 h5ad_files = np.sort([f for f in os.listdir(folder_path) if f.endswith('.h5ad')])
 old_selected_file = None
 file_path = os.path.join(folder_path, h5ad_files[0])
-adata = None#sc.read(file_path)
+adata = sc.read(file_path) #None
 
 #Options
 qc_summary_x = "total_counts"

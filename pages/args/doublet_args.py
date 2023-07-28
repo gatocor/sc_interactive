@@ -1,5 +1,18 @@
-doublet_args = \
-    [
+def doublet_args(adata):
+    return [
+        {
+            "input":"Dropdown",
+            "name":"batch_key",
+            "description":"str, optional (default: 'Full') Batch key to use. The Doublet metric will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
+            "value":'Full',
+            "options":['Full']+[str(i) for i in adata.obs.columns.values if (adata.obs.dtypes[i] in ["category" ,object, str, int])]
+        },
+        {
+            "input":"BooleanSwitch",
+            "name":"qc_before_computation",
+            "description":"bool, optional (default: True) Remove cells from other quality control measures before computing the metrics.",
+            "value":True,
+        },
         {
             "input":"Input",
             "name":"synthetic_doublet_umi_subsampling",

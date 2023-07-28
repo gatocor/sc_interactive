@@ -530,33 +530,44 @@ def update_qc_threshold_per_condition_table(condition,qc):
 
 @app.callback(
      dash.Output('qc_per_condition', 'children'),
+     dash.Output('qc_per_condition-button', 'n_clicks'),
     [
         dash.Input('qc_per_condition-button', 'n_clicks'),
     ]
 )
-def make_qc_per_condition_(condition):
-        
-    return make_qc_per_condition(config.adata)
+def make_qc_per_condition_(n_clicks):
+
+    if "per_condition" in config.adata.uns["qc"]["total_counts"].keys() and n_clicks > 1:
+
+        for var_selected_data in config.adata.uns["qc"].keys():          
+            del config.adata.uns["qc"][var_selected_data]["per_condition"]
+
+    elif  n_clicks > 1:
+
+        for var_selected_data in config.adata.uns["qc"].keys():          
+            config.adata.uns["qc"][var_selected_data]["per_condition"] = {}
+
+    return make_qc_per_condition(config.adata), n_clicks
 
 @app.callback(
      dash.Output('per_condition_plot', 'children'),
      dash.Output('table_qc_per_condition_metrics', 'data'),
      dash.Output('dropdown_add_per_condition_metrics', 'value'),
+     dash.Output('table_qc_per_condition', 'data'),
     [
         dash.Input('add_qc_per_condition-button', 'n_clicks'),
         dash.Input('table_qc_per_condition_metrics', 'data'),
+        dash.Input('table_qc_per_condition', 'data'),
     ],
     dash.State('dropdown_add_per_condition_metrics', 'value'),
 )
-def update_qc_threshold_per_condition_table(condition, data, value):
+def update_qc_threshold_per_condition_table(condition, data, local_thresholds, value):
 
     conditions = [i["Name"] for i in data]
     if value != None and value not in conditions:
         data.append({"Name":str(value)})
 
     conditions = [i["Name"] for i in data]
-
-    l = []
 
     for var_selected_data in [i for i in config.adata.uns["qc"]]:          
         
@@ -572,13 +583,27 @@ def update_qc_threshold_per_condition_table(condition, data, value):
                             for ci in np.unique(config.adata.obs[condition].values)
                         }
 
+    for i in local_thresholds:
+        if i["Min"] == None:
+            config.adata.uns["qc"][i["Variable"]]["per_condition"][i["Condition"]][i["Condition type"]]["Min"] = config.adata.uns["qc"][i["Variable"]]["Minimum threshold"]
+        else:
+            config.adata.uns["qc"][i["Variable"]]["per_condition"][i["Condition"]][i["Condition type"]]["Min"] = i["Min"]
+
+        if i["Max"] == None:
+            config.adata.uns["qc"][i["Variable"]]["per_condition"][i["Condition"]][i["Condition type"]]["Max"] = config.adata.uns["qc"][i["Variable"]]["Maximum threshold"]
+        else:
+            config.adata.uns["qc"][i["Variable"]]["per_condition"][i["Condition"]][i["Condition type"]]["Max"] = i["Max"]
+
+    lp = []
     for condition in conditions:
-        l += [
+
+        lp += [
                 dbc.Row(
                     html.H1(condition),
                     justify="left"
                 )
         ]
+
         for var_selected_data in [i for i in config.adata.uns["qc"]]:                
             #Plot_type
             # Create a vertical line at the specified input value
@@ -586,19 +611,43 @@ def update_qc_threshold_per_condition_table(condition, data, value):
                 x=config.adata.obs[condition].values,
                 y=[config.adata.uns["qc"][var_selected_data]["Minimum threshold"] for i in range(len(config.adata.obs[var_selected_data].values))],
                 mode='lines',
-                name='Min threshold',
+                name='Global min threshold',
                 line=dict(color='red')
             )
             var1_vertical_line_max = go.Scatter(
                 x=config.adata.obs[condition].values,
                 y=[config.adata.uns["qc"][var_selected_data]["Maximum threshold"] for i in range(len(config.adata.obs[var_selected_data].values))],
                 mode='lines',
-                name='Max threshold',
+                name='Global max threshold',
                 line=dict(color='green')
             )
 
-            l += [
-                    dbc.Col(
+            custom_marker = {
+                'symbol': 'line-ns',  # Symbol code for a horizontal line (short dash)
+                'size': 3,  # Length of the horizontal line
+                'color': 'blue',  # Color of the line
+                'line': {'width': 20}  # Line width
+            }
+
+            var1_vertical_line_per_condition_min = go.Scatter(
+                x=np.unique(config.adata.obs[condition].values),
+                y=[config.adata.uns["qc"][var_selected_data]["per_condition"][condition][i]["Min"] for i in np.unique(config.adata.obs[condition].values)],
+                mode='markers',
+                marker=custom_marker,
+                name='Local min threshold',
+                line=dict(color='darkred')
+            )
+
+            var1_vertical_line_per_condition_max = go.Scatter(
+                x=np.unique(config.adata.obs[condition].values),
+                y=[config.adata.uns["qc"][var_selected_data]["per_condition"][condition][i]["Max"] for i in np.unique(config.adata.obs[condition].values)],
+                mode='markers',
+                name='Local max threshold',
+                line=dict(color='darkgreen')
+            )
+
+            lp += [
+                    dbc.Row(
                         [
                             dcc.Graph(id="Holi",
                                 figure={
@@ -611,7 +660,9 @@ def update_qc_threshold_per_condition_table(condition, data, value):
                                                 opacity=0.7
                                             ),
                                             var1_vertical_line_min,
-                                            var1_vertical_line_max
+                                            var1_vertical_line_max,
+                                            var1_vertical_line_per_condition_min,
+                                            var1_vertical_line_per_condition_max
                                         ],
                                         "layout":{
                                                 'title': f'{var_selected_data}',
@@ -629,23 +680,37 @@ def update_qc_threshold_per_condition_table(condition, data, value):
                     )
                 ]
             
-            l += [
-                dbc.Col(
-                    dash_table.DataTable(
-                            id='table_qc_per_condition_'+condition,
-                            columns=[
-                                {"name": str(i), "id": str(i), "deletable": False, "editable": j} for i,j in zip(["Condition","Min","Max"],[False,True,True])
-                            ],
-                            data=[{"Condition":i,"Min":"i","Max":i} for i in np.unique(config.adata.obs[condition].values)],
-                            editable=True,
-                            row_deletable=False,
-                            style_table={'overflowY': 'auto', 'overflowX': 'auto'},
-                            style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
-                        ),
-                )
-            ]
+    lt = []
+    datas = []
+    for condition in conditions:
 
-    return l, data, None
+        for var_selected_data in [i for i in config.adata.uns["qc"]]:                
+            
+            for i in np.unique(config.adata.obs[condition].values):
+
+                datas.append({"Condition":condition,
+                             "Variable":var_selected_data,
+                             "Condition type":i,
+                             "Min":config.adata.uns["qc"][var_selected_data]["per_condition"][condition][i]["Min"],
+                             "Max":config.adata.uns["qc"][var_selected_data]["per_condition"][condition][i]["Max"]})
+
+    lt = [dbc.Row(
+        dash_table.DataTable(
+                id='table_qc_per_condition',
+                columns=[
+                    {"name": str(i), "id": str(i), "deletable": False, "editable": j} for i,j in zip(["Condition","Variable","Condition type","Min","Max"],[False,False,False,True,True])
+                ],
+                data=datas,
+                editable=True,
+                row_deletable=False,
+                style_table={'overflowY': 'auto', 'overflowX': 'auto'},
+                style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
+            ),
+    )]
+
+    l = dbc.Row(lp)
+
+    return l, data, None, datas
 
 @app.callback(
      dash.Output('doublets', 'children'),
@@ -664,7 +729,7 @@ def make_qc_doublets(condition):
                             )]
     else:
 
-        l = make_arguments("doublet_",doublet_args,title="Scrublet arguments")
+        l = make_arguments("doublets",doublet_args(config.adata),title="Scrublet arguments")
 
         return  [
                     dbc.Row(
@@ -685,12 +750,6 @@ def make_qc_doublets(condition):
                         ],
                         style={"margin-bottom":"1cm"}
                     ),
-                    dbc.Row(
-                            dcc.Dropdown(id='qc_doublet_scrolldown'),
-                            style={"margin-bottom":"1cm"}
-                        ),  
-                ] + \
-                [
                     dbc.Col(l,width=4,
                             style={"background-color":"lightgray"}
                             ),
@@ -698,3 +757,43 @@ def make_qc_doublets(condition):
                         dcc.Graph(id='qc_plot_doublet'),
                     ),  
                 ]
+    
+@app.callback(
+     dash.Output('qc_plot_doublet', 'children'),
+    [
+        dash.Input('button_doublets', 'n_clicks'),
+    ],
+    [
+        dash.State('batch_key', 'value'),
+        dash.State('qc_before_computation', 'value'),
+        dash.State('synthetic_doublet_umi_subsampling', 'value'),
+        dash.State('use_approx_neighbors', 'value'),
+        dash.State('distance_metric', 'value'),
+        dash.State('min_counts', 'value'),
+        dash.State('min_cells', 'value'),
+        dash.State('min_gene_variability_pctl', 'value'),
+        dash.State('log_transform', 'value'),
+        dash.State('mean_center', 'value'),
+        dash.State('normalize_variance', 'value'),
+        dash.State('n_prin_comps', 'value'),
+        dash.State('svd_solver', 'value'),
+    ]
+)
+def compute_qc_doublets(
+    _, 
+    batch_key, 
+    qc_before_computation, 
+    synthetic_doublet_umi_subsampling, 
+    use_approx_neighbors, 
+    distance_metric, 
+    min_counts, min_cells, 
+    min_gene_variability_pctl, 
+    log_transform, 
+    mean_center, 
+    normalize_variance, 
+    n_prin_comps, 
+    svd_solver):
+
+    
+
+    return
