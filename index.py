@@ -70,9 +70,13 @@ def display_page(pathname):
         return home.layout()
 
 @app.callback(Output('nav_brand', 'children'),
-              [Input('h5ad-dropdown', 'value')])
-def display_page(name):
-        return "scRNAseq analysis: "+name
+              [Input('h5ad-load-button','n_clicks')],
+              [State('h5ad-dropdown', 'value')])
+def display_page(_,name):
+    if type(name) != type(None):
+        return "scRNAseq analysis: "+name.split(".h5ad")[0]
+    else:
+        return "scRNAseq analysis"
 
 if __name__ == '__main__':
     app.run_server(debug=True)

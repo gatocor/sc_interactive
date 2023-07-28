@@ -541,7 +541,7 @@ def update_qc_threshold_per_condition_table(condition, data, value):
                 if condition not in config.adata.uns["qc"][var_selected_data]["per_condition"].keys():
                     config.adata.uns["qc"][var_selected_data]["per_condition"][condition] = \
                         {
-                            ci:{
+                            str(ci):{
                                 "Min":config.adata.uns["qc"][var_selected_data]["Minimum threshold"],
                                 "Max":config.adata.uns["qc"][var_selected_data]["Maximum threshold"]                                                              
                             }

@@ -186,8 +186,6 @@ def make_qc_per_condition(adata):
     print(adata.uns["qc"]["total_counts"].keys())
     if "per_condition" in adata.uns["qc"]["total_counts"].keys():
 
-        print("holi")
-
         for var_selected_data in adata.uns["qc"].keys():          
             del adata.uns["qc"][var_selected_data]["per_condition"]
 
@@ -199,8 +197,6 @@ def make_qc_per_condition(adata):
                         }      
                         )]
     else:
-
-        print("holi 2",  adata.uns["qc"]["total_counts"])
         
         for var_selected_data in adata.uns["qc"].keys():          
             adata.uns["qc"][var_selected_data]["per_condition"] = {}
@@ -243,7 +239,7 @@ def make_qc_per_condition(adata):
                         dbc.Col(dcc.Dropdown(
                             id = "dropdown_add_per_condition_metrics",
                             value = None,
-                            options = [str(i) for i in adata.obs.columns.values if (adata.obs.dtypes[i] in [object, str, int])]
+                            options = [str(i) for i in adata.obs.columns.values if (adata.obs.dtypes[i] in ["category" ,object, str, int])]
                         )),
                         dbc.Col(dbc.Button("Add condition", id="add_qc_per_condition-button")),
                     ],

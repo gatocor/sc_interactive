@@ -6,13 +6,9 @@ from .functions import *
 # Initialize the global variable
 folder_path = './'  # Replace with the actual path to the folder containing .h5ad files
 h5ad_files = np.sort([f for f in os.listdir(folder_path) if f.endswith('.h5ad')])
-old_selected_file = h5ad_files[0]
+old_selected_file = None
 file_path = os.path.join(folder_path, h5ad_files[0])
-adata = sc.read(file_path)
-
-#QC
-# Perform necessary computations or filtering on the adata object
-f_qc_base(adata)
+adata = None#sc.read(file_path)
 
 #Options
 qc_summary_x = "total_counts"
@@ -20,7 +16,7 @@ qc_summary_y = "n_genes_by_counts"
 qc_summary_color = "total_counts"
 
 #Statistics
-qc_df_statistics = pd.DataFrame(adata.uns["qc"])
+#qc_df_statistics = pd.DataFrame(adata.uns["qc"])
 
 #Patterns
 qc_dict_patterns = {
