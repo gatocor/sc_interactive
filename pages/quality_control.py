@@ -11,6 +11,7 @@ import pandas as pd
 from . import config
 from .functions import *
 from .args.doublet_args import doublet_args
+import plotly.express as px
 
 from app import app
 
@@ -173,7 +174,7 @@ def layout():
                             html.Div(
                                 dcc.Dropdown(
                                     id='qc_scatter3_dropdown',
-                                    options=[i for i in config.adata.uns["qc"]],
+                                    options=[i for i in config.adata.obs.columns.values],
                                     value=config.qc_summary_color,
                                     placeholder="Select a column",
                                     clearable=False
@@ -334,8 +335,9 @@ def update_qc_global_histogram(n_clicks, qc_metrics, data, value):
     options = [str(i) for i in config.adata.var.columns.values if (config.adata.var.dtypes[i] in [bool]) and (i not in config.adata.uns["qc"])]
         
     options_dropdown = list(config.adata.uns["qc"].keys())
+    options_dropdown_color = [i for i in config.adata.obs.columns.values]
 
-    return f_qc_table_metrics(config.adata), f_qc_table_threshold(config.adata), l, options, None, options_dropdown, options_dropdown, options_dropdown #{'data': data,'layout': layout}
+    return f_qc_table_metrics(config.adata), f_qc_table_threshold(config.adata), l, options, None, options_dropdown, options_dropdown, options_dropdown_color #{'data': data,'layout': layout}
 
 @app.callback(
     dash.dependencies.Output('qc_plot_scatter', 'figure'),
@@ -384,8 +386,27 @@ def update_qc_global_scatter(var_selected_data1, var_selected_data2, var_selecte
         line=dict(color='green', dash='dot')
     )
 
-    data = [
-        go.Scatter(
+    if config.adata.obs.dtypes[var_selected_data3] in ["category", object, int, str]:
+        labels = config.adata.obs[var_selected_data3].values
+        # Use the default Plotly Express color sequence
+        color_sequence = px.colors.qualitative.Plotly
+
+        # Create a dictionary to map categories to colors
+        color_map = {
+            category: color_sequence[i % len(color_sequence)]
+            for i, category in enumerate(np.unique(labels))
+        }
+        sc = go.Scatter(
+            x= config.adata.obs[var_selected_data1].values,
+            y= config.adata.obs[var_selected_data2].values,
+            marker=dict(
+                color=[color_map[i] for i in labels],
+            ),
+            mode='markers',
+            name='Scatter',
+        )
+    else:
+        sc = go.Scatter(
             x= config.adata.obs[var_selected_data1].values,
             y= config.adata.obs[var_selected_data2].values,
             marker=dict(
@@ -393,7 +414,10 @@ def update_qc_global_scatter(var_selected_data1, var_selected_data2, var_selecte
             ),
             mode='markers',
             name='Scatter',
-        ),
+        )
+
+    data = [
+        sc,
         var1_vertical_line_min,
         var1_vertical_line_max,
         var2_vertical_line_min,
