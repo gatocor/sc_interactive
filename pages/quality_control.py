@@ -10,10 +10,12 @@ import numpy as np
 import pandas as pd
 from . import config
 from .functions import *
-from .args.doublet_args import doublet_args
 import plotly.express as px
+import scrublet
 
 from app import app
+
+click_doublet_old = 0
 
 #Lists
 def layout():
@@ -90,7 +92,7 @@ def layout():
         ),
         dbc.Row(
             id = "global_qc_plots",
-            children = [],
+            children = plot_qc_global_hist(config.adata),
             justify="center",
             className="mb-4"
         ),
@@ -203,15 +205,7 @@ def layout():
         html.Hr(),
         dbc.Row(
             id = 'doublets',
-            children = [
-                dbc.Button(id='doublets-button', n_clicks=0, children="Add Doublet Removal",
-                            size="lg",
-                            style={
-                                "background-color":"#343A40",
-                                   'width': '280px', 
-                            }      
-                            ),
-            ],
+            children = make_qc_doublets(config.adata),
             justify="center",
             className="mb-4"
         ),
@@ -224,23 +218,22 @@ def layout():
             className="mb-4"
         ),
         dbc.Row(
-            [
-                dcc.Graph(
+                dash_table.DataTable(
                     id='qc_summary_table',
-                    figure=go.Figure(
-                        data=[go.Table(
-                            header=dict(values=config.qc_summary.columns),
-                            cells=dict(values=[config.qc_summary[col] for col in config.qc_summary.columns])
-                        )],
-                    )
-                )
-            ],
-            justify="center",
-            className="mb-4"
-        ),
+                    columns=[
+                        {"name": i, "id": i, "deletable": False, "editable": False} for i in ["Concept","Removed cells","Removed cells (%)"]
+                    ],
+                    data=qc_summary(config.adata),
+                    editable=False,
+                    row_deletable=True,
+                    style_table={'overflowY': 'auto', 'overflowX': 'auto'},
+                    style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
+                ),
+                style={"margin-bottom":"1cm"}        
+            ),
         dbc.Row(
             [
-                dbc.Button(id='save-button', n_clicks=0, children="Save",
+                dbc.Button(id='save_qc-button', n_clicks=0, children="Save",
                             size="lg",
                             style={
                                 "background-color":"#343A40",
@@ -264,6 +257,7 @@ def layout():
     dash.Output('qc_scatter1_dropdown', 'options'),
     dash.Output('qc_scatter2_dropdown', 'options'),
     dash.Output('qc_scatter3_dropdown', 'options'),
+    dash.Output('qc_summary_table', 'data', allow_duplicate=True),
     [
         dash.Input('add_metric', 'n_clicks'),
         dash.Input('table_qc_metrics', 'data'),
@@ -271,73 +265,22 @@ def layout():
     ],
     [
         dash.State('dropdown_add_metric', 'value'),
-    ]
+    ],
+    prevent_initial_call=True
 )
 def update_qc_global_histogram(n_clicks, qc_metrics, data, value):
     
-    l = []
-
     if value != None:
         qc_metrics.append({"Name":str(value)})
 
     f_qc(config.adata, qc_metrics, data)
-
-    for var_selected_data in [i for i in config.adata.uns["qc"]]:
-        #Plot_type
-        # Create a vertical line at the specified input value
-        hist_values, hist_bins = np.histogram(config.adata.obs[var_selected_data].values, bins=30)
-        tallest_bin_height = np.max(hist_values)
-        var1_vertical_line_min = go.Scatter(
-            x=[config.adata.uns["qc"][var_selected_data]["Minimum threshold"], config.adata.uns["qc"][var_selected_data]["Minimum threshold"]],
-            y=[0, tallest_bin_height],
-            mode='lines',
-            name='Min threshold',
-            line=dict(color='red', dash='dash')
-        )
-        var1_vertical_line_max = go.Scatter(
-            x=[config.adata.uns["qc"][var_selected_data]["Maximum threshold"], config.adata.uns["qc"][var_selected_data]["Maximum threshold"]],
-            y=[0, tallest_bin_height],
-            mode='lines',
-            name='Max threshold',
-            line=dict(color='green', dash='dash')
-        )
-
-        l += [
-                dbc.Row(
-                    [dcc.Graph(id="Holi",
-                            figure={
-                                    "data":[
-                                        go.Histogram(
-                                            x=config.adata.obs[var_selected_data].values,
-                                            nbinsx=30,
-                                            name='Histogram',
-                                            marker=dict(color='blue'),
-                                            opacity=0.7
-                                        ),
-                                        var1_vertical_line_min,
-                                        var1_vertical_line_max
-                                    ],
-                                    "layout":{
-                                            'title': f'Histogram of {var_selected_data}',
-                                            'xaxis': {'title': var_selected_data},
-                                            'yaxis': {'title': 'Count'},
-                                            'barmode': 'overlay',
-                                            'width':1500,
-                                            'height':400,
-                                    }
-                                }
-                    )],
-                    justify="center",
-                    style={'width': '90%', 'margin': 'auto'}
-                )
-            ]
         
     options = [str(i) for i in config.adata.var.columns.values if (config.adata.var.dtypes[i] in [bool]) and (i not in config.adata.uns["qc"])]
         
     options_dropdown = list(config.adata.uns["qc"].keys())
     options_dropdown_color = [i for i in config.adata.obs.columns.values]
 
-    return f_qc_table_metrics(config.adata), f_qc_table_threshold(config.adata), l, options, None, options_dropdown, options_dropdown, options_dropdown_color #{'data': data,'layout': layout}
+    return f_qc_table_metrics(config.adata), f_qc_table_threshold(config.adata), plot_qc_global_hist(config.adata), options, None, options_dropdown, options_dropdown, options_dropdown_color, qc_summary(config.adata) #{'data': data,'layout': layout}
 
 @app.callback(
     dash.dependencies.Output('qc_plot_scatter', 'figure'),
@@ -530,36 +473,38 @@ def update_qc_threshold_per_condition_table(condition,qc):
 
 @app.callback(
      dash.Output('qc_per_condition', 'children'),
-     dash.Output('qc_per_condition-button', 'n_clicks'),
     [
         dash.Input('qc_per_condition-button', 'n_clicks'),
-    ]
+    ],
+    prevent_initial_call=True
 )
 def make_qc_per_condition_(n_clicks):
 
-    if "per_condition" in config.adata.uns["qc"]["total_counts"].keys() and n_clicks > 1:
+    if "per_condition" in config.adata.uns["qc"]["total_counts"].keys():
 
         for var_selected_data in config.adata.uns["qc"].keys():          
             del config.adata.uns["qc"][var_selected_data]["per_condition"]
 
-    elif  n_clicks > 1:
+    else:
 
         for var_selected_data in config.adata.uns["qc"].keys():          
             config.adata.uns["qc"][var_selected_data]["per_condition"] = {}
 
-    return make_qc_per_condition(config.adata), n_clicks
+    return make_qc_per_condition(config.adata)
 
 @app.callback(
      dash.Output('per_condition_plot', 'children'),
      dash.Output('table_qc_per_condition_metrics', 'data'),
      dash.Output('dropdown_add_per_condition_metrics', 'value'),
      dash.Output('table_qc_per_condition', 'data'),
+     dash.Output('qc_summary_table', 'data', allow_duplicate=True),
     [
         dash.Input('add_qc_per_condition-button', 'n_clicks'),
         dash.Input('table_qc_per_condition_metrics', 'data'),
         dash.Input('table_qc_per_condition', 'data'),
     ],
     dash.State('dropdown_add_per_condition_metrics', 'value'),
+    prevent_initial_call=True
 )
 def update_qc_threshold_per_condition_table(condition, data, local_thresholds, value):
 
@@ -577,8 +522,8 @@ def update_qc_threshold_per_condition_table(condition, data, local_thresholds, v
                     config.adata.uns["qc"][var_selected_data]["per_condition"][condition] = \
                         {
                             str(ci):{
-                                "Min":config.adata.uns["qc"][var_selected_data]["Minimum threshold"],
-                                "Max":config.adata.uns["qc"][var_selected_data]["Maximum threshold"]                                                              
+                                "Min":float(config.adata.uns["qc"][var_selected_data]["Minimum threshold"]),
+                                "Max":float(config.adata.uns["qc"][var_selected_data]["Maximum threshold"])                                                              
                             }
                             for ci in np.unique(config.adata.obs[condition].values)
                         }
@@ -587,200 +532,60 @@ def update_qc_threshold_per_condition_table(condition, data, local_thresholds, v
         if i["Min"] == None:
             config.adata.uns["qc"][i["Variable"]]["per_condition"][i["Condition"]][i["Condition type"]]["Min"] = config.adata.uns["qc"][i["Variable"]]["Minimum threshold"]
         else:
-            config.adata.uns["qc"][i["Variable"]]["per_condition"][i["Condition"]][i["Condition type"]]["Min"] = i["Min"]
+            config.adata.uns["qc"][i["Variable"]]["per_condition"][i["Condition"]][i["Condition type"]]["Min"] = float(i["Min"])
 
         if i["Max"] == None:
             config.adata.uns["qc"][i["Variable"]]["per_condition"][i["Condition"]][i["Condition type"]]["Max"] = config.adata.uns["qc"][i["Variable"]]["Maximum threshold"]
         else:
-            config.adata.uns["qc"][i["Variable"]]["per_condition"][i["Condition"]][i["Condition type"]]["Max"] = i["Max"]
-
-    lp = []
-    for condition in conditions:
-
-        lp += [
-                dbc.Row(
-                    html.H1(condition),
-                    justify="left"
-                )
-        ]
-
-        for var_selected_data in [i for i in config.adata.uns["qc"]]:                
-            #Plot_type
-            # Create a vertical line at the specified input value
-            var1_vertical_line_min = go.Scatter(
-                x=config.adata.obs[condition].values,
-                y=[config.adata.uns["qc"][var_selected_data]["Minimum threshold"] for i in range(len(config.adata.obs[var_selected_data].values))],
-                mode='lines',
-                name='Global min threshold',
-                line=dict(color='red')
-            )
-            var1_vertical_line_max = go.Scatter(
-                x=config.adata.obs[condition].values,
-                y=[config.adata.uns["qc"][var_selected_data]["Maximum threshold"] for i in range(len(config.adata.obs[var_selected_data].values))],
-                mode='lines',
-                name='Global max threshold',
-                line=dict(color='green')
-            )
-
-            custom_marker = {
-                'symbol': 'line-ns',  # Symbol code for a horizontal line (short dash)
-                'size': 3,  # Length of the horizontal line
-                'color': 'blue',  # Color of the line
-                'line': {'width': 20}  # Line width
-            }
-
-            var1_vertical_line_per_condition_min = go.Scatter(
-                x=np.unique(config.adata.obs[condition].values),
-                y=[config.adata.uns["qc"][var_selected_data]["per_condition"][condition][i]["Min"] for i in np.unique(config.adata.obs[condition].values)],
-                mode='markers',
-                marker=custom_marker,
-                name='Local min threshold',
-                line=dict(color='darkred')
-            )
-
-            var1_vertical_line_per_condition_max = go.Scatter(
-                x=np.unique(config.adata.obs[condition].values),
-                y=[config.adata.uns["qc"][var_selected_data]["per_condition"][condition][i]["Max"] for i in np.unique(config.adata.obs[condition].values)],
-                mode='markers',
-                name='Local max threshold',
-                line=dict(color='darkgreen')
-            )
-
-            lp += [
-                    dbc.Row(
-                        [
-                            dcc.Graph(id="Holi",
-                                figure={
-                                        "data":[
-                                            go.Violin(
-                                                x=config.adata.obs[condition].values,
-                                                y=config.adata.obs[var_selected_data].values,
-                                                name='Violin',
-                                                # marker=dict(color='blue'),
-                                                opacity=0.7
-                                            ),
-                                            var1_vertical_line_min,
-                                            var1_vertical_line_max,
-                                            var1_vertical_line_per_condition_min,
-                                            var1_vertical_line_per_condition_max
-                                        ],
-                                        "layout":{
-                                                'title': f'{var_selected_data}',
-                                                'xaxis': {'title': condition},
-                                                'yaxis': {'title': 'Count'},
-                                                'barmode': 'overlay',
-                                                'width':1500,
-                                                'height':400,
-                                        }
-                                    }
-                            )
-                        ],
-                        # justify="center",
-                        # style={'width': '90%', 'margin': 'auto'}
-                    )
-                ]
+            config.adata.uns["qc"][i["Variable"]]["per_condition"][i["Condition"]][i["Condition type"]]["Max"] = float(i["Max"])
             
-    lt = []
-    datas = []
-    for condition in conditions:
-
-        for var_selected_data in [i for i in config.adata.uns["qc"]]:                
-            
-            for i in np.unique(config.adata.obs[condition].values):
-
-                datas.append({"Condition":condition,
-                             "Variable":var_selected_data,
-                             "Condition type":i,
-                             "Min":config.adata.uns["qc"][var_selected_data]["per_condition"][condition][i]["Min"],
-                             "Max":config.adata.uns["qc"][var_selected_data]["per_condition"][condition][i]["Max"]})
-
-    lt = [dbc.Row(
-        dash_table.DataTable(
-                id='table_qc_per_condition',
-                columns=[
-                    {"name": str(i), "id": str(i), "deletable": False, "editable": j} for i,j in zip(["Condition","Variable","Condition type","Min","Max"],[False,False,False,True,True])
-                ],
-                data=datas,
-                editable=True,
-                row_deletable=False,
-                style_table={'overflowY': 'auto', 'overflowX': 'auto'},
-                style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
-            ),
-    )]
-
-    l = dbc.Row(lp)
-
-    return l, data, None, datas
+    return qc_per_condition_plots(config.adata), data, None, qc_per_condition_table(config.adata), qc_summary(config.adata)
 
 @app.callback(
      dash.Output('doublets', 'children'),
     [
         dash.Input('doublets-button', 'n_clicks'),
-    ]
+    ],
+    prevent_initial_call=True
 )
-def make_qc_doublets(condition):
-    if condition % 2 == 0:
-        return [dbc.Button(id='doublets-button', n_clicks=0, children="Add Doublet Analysis",
-                            size="lg",
-                            style={
-                                "background-color":"gray",
-                                # 'width': '680px', 
-                            }      
-                            )]
+def make_qc_doublets_(n_clicks):
+
+    if "doublets" in config.adata.uns.keys():
+
+        del config.adata.uns["doublets"]
+    
     else:
 
-        l = make_arguments("doublets",doublet_args(config.adata),title="Scrublet arguments")
+        config.adata.uns["doublets"] = {}
 
-        return  [
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                html.H1("Doublet Analysis")
-                            ),
-                            dbc.Col(
-                                dbc.Button(id='doublets-button', n_clicks=1, children="Remove Doublet Analysis",
-                                        size="lg",
-                                        style={
-                                            "background-color":"#343A40",
-                                            'width': '280px', 
-                                        }      
-                                        ),
-                                width=2
-                            ),
-                        ],
-                        style={"margin-bottom":"1cm"}
-                    ),
-                    dbc.Col(l,width=4,
-                            style={"background-color":"lightgray"}
-                            ),
-                    dbc.Col(
-                        dcc.Graph(id='qc_plot_doublet'),
-                    ),  
-                ]
-    
+    return make_qc_doublets(config.adata)
+
 @app.callback(
-     dash.Output('qc_plot_doublet', 'children'),
+     dash.Output('qc_plot_doublets', 'children', allow_duplicate=True),
+     dash.Output('table_doublets_threshold', 'data', allow_duplicate=True),
+     dash.Output('qc_summary_table', 'data', allow_duplicate=True),
     [
         dash.Input('button_doublets', 'n_clicks'),
     ],
     [
-        dash.State('batch_key', 'value'),
-        dash.State('qc_before_computation', 'value'),
-        dash.State('synthetic_doublet_umi_subsampling', 'value'),
-        dash.State('use_approx_neighbors', 'value'),
-        dash.State('distance_metric', 'value'),
-        dash.State('min_counts', 'value'),
-        dash.State('min_cells', 'value'),
-        dash.State('min_gene_variability_pctl', 'value'),
-        dash.State('log_transform', 'value'),
-        dash.State('mean_center', 'value'),
-        dash.State('normalize_variance', 'value'),
-        dash.State('n_prin_comps', 'value'),
-        dash.State('svd_solver', 'value'),
-    ]
+        dash.State('doublets_batch_key', 'value'),
+        dash.State('doublets_qc_before_computation', 'value'),
+        dash.State('doublets_synthetic_doublet_umi_subsampling', 'value'),
+        dash.State('doublets_use_approx_neighbors', 'value'),
+        dash.State('doublets_distance_metric', 'value'),
+        dash.State('doublets_min_counts', 'value'),
+        dash.State('doublets_min_cells', 'value'),
+        dash.State('doublets_min_gene_variability_pctl', 'value'),
+        dash.State('doublets_log_transform', 'value'),
+        dash.State('doublets_mean_center', 'value'),
+        dash.State('doublets_normalize_variance', 'value'),
+        dash.State('doublets_n_prin_comps', 'value'),
+        dash.State('doublets_svd_solver', 'value'),
+    ],
+    prevent_initial_call=True
 )
 def compute_qc_doublets(
-    _, 
+    n_clicks, 
     batch_key, 
     qc_before_computation, 
     synthetic_doublet_umi_subsampling, 
@@ -794,6 +599,94 @@ def compute_qc_doublets(
     n_prin_comps, 
     svd_solver):
 
-    
+    l = []
+    if n_clicks != None:
 
-    return
+        scrub = scrublet.Scrublet(config.adata.X)
+
+        scrub.scrub_doublets(
+                                synthetic_doublet_umi_subsampling = synthetic_doublet_umi_subsampling, 
+                                use_approx_neighbors = use_approx_neighbors, 
+                                distance_metric = distance_metric, 
+                                min_counts = min_counts,
+                                min_cells = min_cells, 
+                                min_gene_variability_pctl = min_gene_variability_pctl, 
+                                log_transform = log_transform, 
+                                mean_center = mean_center, 
+                                normalize_variance = normalize_variance, 
+                                n_prin_comps = n_prin_comps, 
+                                svd_solver= svd_solver
+                            )
+            
+        X = scrublet.get_umap(scrub.manifold_obs_, 10, min_dist=0.3)
+
+        threshold = {"full":1}
+        if batch_key == "full":
+            threshold = {i:1 for i in np.unique(config.adata.obs[batch_key].values)}
+
+        config.adata.obs["doublet_score"] = scrub.doublet_scores_obs_
+        config.adata.uns["doublets"] = \
+            {
+                "algorithm":"scrublet",
+                "doublet_score_sim": scrub.doublet_scores_sim_,
+                "X_umap": X,
+                "batch_key": batch_key,
+                "threshold": threshold,
+                "params":{
+                    "synthetic_doublet_umi_subsampling": synthetic_doublet_umi_subsampling, 
+                    "use_approx_neighbors": use_approx_neighbors, 
+                    "distance_metric": distance_metric, 
+                    "min_counts": min_counts,
+                    "min_cells": min_cells, 
+                    "min_gene_variability_pctl": min_gene_variability_pctl, 
+                    "log_transform": log_transform, 
+                    "mean_center": mean_center, 
+                    "normalize_variance": normalize_variance, 
+                    "n_prin_comps": n_prin_comps, 
+                    "svd_solver": svd_solver
+                }
+            }
+        
+        l = [{"Condition":i, "Threshold":j} for i,j in config.adata.uns["doublets"]["threshold"].items()]
+
+    return make_qc_doublet_plots(config.adata), l, qc_summary(config.adata)
+
+@app.callback(
+     dash.Output('qc_plot_doublets', 'children', allow_duplicate=True),
+     dash.Output('table_doublets_threshold', 'data', allow_duplicate=True),
+     dash.Output('qc_summary_table', 'data', allow_duplicate=True),
+    [
+        dash.Input('table_doublets_threshold', 'data'),
+    ],
+    prevent_initial_call=True
+)
+def compute_qc_doublets(
+    data
+    ):
+
+    l = []
+    if data != []:
+        config.adata.uns["doublets"]["threshold"] = {i["Condition"]:float(i["Threshold"]) for i in data}
+
+        l = [{"Condition":i, "Threshold":j} for i,j in config.adata.uns["doublets"]["threshold"].items()]
+
+    return make_qc_doublet_plots(config.adata), l, qc_summary(config.adata)
+
+@app.callback(
+     dash.Output('save_qc-button', 'children'),
+    [
+     dash.Input('save_qc-button', 'n_clicks'),
+    ],
+    prevent_initial_call=True
+)
+def save_gene_lists(n_clicks):
+
+    config.adata.write(config.file_path)
+
+    l = qc_limit(config.adata)
+
+    config.adata = config.adata[l].copy()
+
+    config.adata.write(config.file_path.split(".h5ad")[0]+"_qc.h5ad")
+
+    return "Save"
