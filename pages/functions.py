@@ -174,49 +174,57 @@ def f_qc_summary(adata):
 
     return pd.DataFrame(statistics)
 
-def make_arguments(id, arglist, title="Arguments", add_execution_button=True):
+def make_arguments(id, arglist, loaded_args, add_execution_button=True):
 
     l = []
 
-    l.append(html.H1(title))
     for i,arg in enumerate(arglist):
-        l.append(
-            dbc.Tooltip(
-                    arg["description"],
-                    target=id+str(i),
-                    placement="bottom",
-            )
-        )
-        lab = html.Label(arg["name"],id=id+str(i))
-        if arg["input"] == "Input":
-            input = dbc.Input(id=id+"_"+str(arg["name"]),value=arg["value"],type=arg["type"])
-        elif arg["input"] == "Dropdown":
-            input = dcc.Dropdown(
-                        id=id+"_"+str(arg["name"]),
-                        options=arg["options"],
-                        value=arg["value"],
-                        # placeholder="Select a column",
-                        clearable=False
-                    )
-        elif arg["input"] == "BooleanSwitch":
-            input = daq.BooleanSwitch(id=id+"_"+str(arg["name"]), on=arg["value"])
-        else:
-            None
+        if type(arg) != str:
+            if loaded_args != {}:
+                value = loaded_args[arg["name"]]
+            else:
+                value = arg["value"]
 
-        l.append(
-            dbc.Row(
-                [
-                    dbc.Col(
-                        lab,
-                        # width=text_width
-                    ),
-                    dbc.Col(
-                        input,
-                        # width=input_width
-                    )
-                ],
+        if type(arg) == str: 
+            l.append(html.H1(arg))
+        else:
+            l.append(
+                dbc.Tooltip(
+                        arg["description"],
+                        target=id+str(i),
+                        placement="bottom",
+                )
             )
-        )
+            lab = html.Label(arg["name"],id=id+str(i))
+            if arg["input"] == "Input":
+                input = dbc.Input(id=id+"_"+str(arg["name"]),value=value,type=arg["type"])
+            elif arg["input"] == "Dropdown":
+                input = dcc.Dropdown(
+                            id=id+"_"+str(arg["name"]),
+                            options=arg["options"],
+                            value=value,
+                            # placeholder="Select a column",
+                            clearable=arg["clearable"]
+                        )
+            elif arg["input"] == "BooleanSwitch":
+                input = daq.BooleanSwitch(id=id+"_"+str(arg["name"]), on=value)
+            else:
+                None
+
+            l.append(
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            lab,
+                            # width=text_width
+                        ),
+                        dbc.Col(
+                            input,
+                            # width=input_width
+                        )
+                    ],
+                )
+            )
 
     if add_execution_button:
         l.append(
@@ -648,7 +656,7 @@ def make_qc_doublets(adata):
                             )]
     
     else:
-        l = make_arguments("doublets",doublet_args(adata),title="Scrublet arguments")
+        l = make_arguments("doublets",doublet_args(adata),{})
 
         return  [
                     dbc.Row(

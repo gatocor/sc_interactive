@@ -9,7 +9,7 @@ import scanpy as sc
 from app import server
 from app import app
 # import all pages in the app
-from pages import config, home, quality_control
+from pages import config, home, quality_control, dimensionality_reduction
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -28,7 +28,8 @@ navbar = dbc.Navbar(
             dbc.Nav([
                 dbc.DropdownMenu([
                     dbc.DropdownMenuItem("Dataset", href="/home"),                     
-                    dbc.DropdownMenuItem("Quality Control", href="/quality_control")                        
+                    dbc.DropdownMenuItem("Quality Control", href="/quality_control"),                  
+                    dbc.DropdownMenuItem("Dimensionality Reduction", href="/dimensionality_reduction")                        
                 ],
                 in_navbar = True,
                 label = "Menu",
@@ -66,6 +67,8 @@ app.layout = html.Div([
 def display_page(pathname):
     if pathname == '/quality_control':
         return quality_control.layout()
+    elif pathname == '/dimensionality_reduction':
+        return dimensionality_reduction.layout()
     else:
         return home.layout()
 

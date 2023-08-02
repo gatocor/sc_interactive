@@ -10,6 +10,8 @@ selected_file = None
 file_path = os.path.join(folder_path, h5ad_files[0]) #None
 adata = sc.read(os.path.join(folder_path, h5ad_files[0])) #None
 
+max_scatter_points = 10000
+
 #Options
 qc_summary_x = "total_counts"
 qc_summary_y = "n_genes_by_counts"

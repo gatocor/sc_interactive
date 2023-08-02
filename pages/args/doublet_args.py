@@ -1,10 +1,12 @@
 def doublet_args(adata):
     return [
+        "Scrublet",
         {
             "input":"Dropdown",
             "name":"batch_key",
             "description":"str, optional (default: 'Full') Batch key to use. The Doublet metric will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
             "value":'Full',
+            "clearable":False,
             "options":['Full']+[str(i) for i in adata.obs.columns.values if (adata.obs.dtypes[i] in ["category" ,object, str, int])]
         },
         {
@@ -31,6 +33,7 @@ def doublet_args(adata):
             "name":"distance_metric",
             "description":"str, optional (default: 'euclidean') Distance metric used when finding nearest neighbors. For list of valid values, see the documentation for annoy (if 'use_approx_neighbors' is True) or sklearn.neighbors.NearestNeighbors (if 'use_approx_neighbors' is False).",
             "value":"correlation",
+            "clearable":False,
             "options":["euclidean","manhattan","correlation"]
         },
         {
@@ -84,6 +87,7 @@ def doublet_args(adata):
             "name":"svd_solver",
             "description":"str, optional (default: 'arpack') SVD solver to use. See available options for  'svd_solver' from 'sklearn.decomposition.PCA' or 'algorithm' from 'sklearn.decomposition.TruncatedSVD'",
             "value": "arpack",
+            "clearable":False,
             "options": ["arpack"]
         }
     ]

@@ -1,7 +1,7 @@
 import dash
 import dash_html_components as html
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
+import dash as dcc
 import os
 import scanpy as sc
 from . import config
@@ -33,41 +33,42 @@ def layout():
     config.h5ad_files = np.sort([f for f in os.listdir(config.folder_path) if f.endswith('.h5ad')])
 
     return dbc.Container(
-    [
-        dbc.Row(
-            [
-                dbc.Col(html.H1("Load Dataset"), width="auto"),
-            ],
-            justify="center",
-            className="mb-4"
-        ),
-        dbc.Row(
-            [
-                dbc.Col(
-                        dcc.Dropdown(
-                            id='h5ad-dropdown',
-                            options=[{'label': file, 'value': file} for file in config.h5ad_files],
-                            value=config.selected_file,
-                            clearable=False
-                        )
-                ),
-                dbc.Col(
-                        dbc.Button(
-                            id='h5ad-load-button', n_clicks=0, children="Load",
-                            size="lg",
-                            style={
-                                "background-color":"#343A40",
-                                   'width': '280px', 
-                            }                        )
-                )
-            ],
-            justify="center",
-            style={"margin-bottom":"1cm"}
-        ),
-        error_modal,
-        dbc.Row(id="adata_info",children=make_adata_layout(config.adata))
-    ]
-)
+        [
+            dbc.Row(
+                [
+                    dbc.Col(html.H1("Load Dataset"), width="auto"),
+                ],
+                justify="center",
+                className="mb-4"
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(
+                            dcc.Dropdown(
+                                id='h5ad-dropdown',
+                                options=[{'label': file, 'value': file} for file in config.h5ad_files],
+                                value=config.selected_file,
+                                clearable=False
+                            )
+                    ),
+                    dbc.Col(
+                            dbc.Button(
+                                id='h5ad-load-button', n_clicks=0, children="Load",
+                                size="lg",
+                                style={
+                                    "background-color":"#343A40",
+                                    'width': '280px', 
+                                }                        )
+                    )
+                ],
+                justify="center",
+                style={"margin-bottom":"1cm"}
+            ),
+            error_modal,
+            dbc.Row(id="adata_info",children=make_adata_layout(config.adata))
+        ],
+        fluid=True
+    )
 
 @app.callback(
      dash.Output('add-row-button', 'n_clicks'),

@@ -1,7 +1,7 @@
 import os
 import dash
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
+import dash as dcc
 import dash_html_components as html
 import scanpy as sc
 import dash_table
@@ -14,8 +14,6 @@ import plotly.express as px
 import scrublet
 
 from app import app
-
-click_doublet_old = 0
 
 #Lists
 def layout():
