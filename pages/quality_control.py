@@ -679,12 +679,15 @@ def compute_qc_doublets(
 )
 def save_gene_lists(n_clicks):
 
+    if config.CACHEFOLDER in config.file_path:
+        config.file_path = config.file_path.split(config.CACHEFOLDER)[-1]
+
     config.adata.write(config.file_path)
 
     l = qc_limit(config.adata)
 
     config.adata = config.adata[l].copy()
 
-    config.adata.write(config.file_path.split(".h5ad")[0]+"_qc.h5ad")
+    config.adata.write(config.CACHEFOLDER+config.file_path)
 
     return "Save"

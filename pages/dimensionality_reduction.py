@@ -15,14 +15,16 @@ from plotly.subplots import make_subplots
 
 from .args.feature_selection import *
 from .args.pca import *
-from .args.umap_args import umap_args
-from .args.neighbors_args import neighbors_args
+from .args.neighbors import *
+from .args.umap import *
 import dash_cytoscape as cyto
 
 from app import app
 
 name_analysis = ""
 functions = {}
+names = ["Feature Selection","PCA","Neighbors","UMAP"]
+methods = ["feature_selection","pca","neighbors","umap"]
 
 #Lists
 def layout():
@@ -140,14 +142,14 @@ def layout():
 ############################################################################################################################################
 ############################################################################################################################################
 def make_dimensionality_reduction_table_methods_data(adata):
-    if "dimensionality_reduction" in adata.uns.keys():
-        return [{"Name":i,"Type":j["type"]} for i,j in adata.uns["dimensionality_reduction"].items()]
+    if "__interactive__" in adata.uns.keys():
+        return [{"Name":i,"Type":j["type"]} for i,j in adata.uns["__interactive__"].items()]
     else:
         return []
 
 def make_dimensionality_reduction_dropdown_methods(adata):
-    if "dimensionality_reduction" in adata.uns.keys():
-        return [i for i in adata.uns["dimensionality_reduction"].keys()]
+    if "__interactive__" in adata.uns.keys():
+        return [i for i in adata.uns["__interactive__"].keys()]
     else:
         return []
 
@@ -166,10 +168,10 @@ def make_cytoscape(adata):
             "UMAP":0            
     }
 
-    if "dimensionality_reduction" in adata.uns.keys():
+    if "__interactive__" in adata.uns.keys():
         nodes = []
-        for i,j in adata.uns["dimensionality_reduction"].items():
-            if j["__computed__"]:
+        for i,j in adata.uns["__interactive__"].items():
+            if j["computed"]:
                 color = 'green'
             else:
                 color = 'lightgray'
@@ -183,23 +185,23 @@ def make_cytoscape(adata):
             ymap[j["type"]] += 1    
 
         edges=[]
-        for i,j in adata.uns["dimensionality_reduction"].items():
-            if "input" in j.keys():
-                if j["input"] != None:
+        for i,j in adata.uns["__interactive__"].items():
+            if "__input__" in j.keys():
+                if j["__input__"] != None:
                     edges.append(
-                        {'data': {'source': j["input"], 'target': str(i)}}
+                        {'data': {'source': j["__input__"], 'target': str(i)}}
                     )
 
         return nodes+edges
     else:
         return []
 
-for name, method in zip(["Feature Selection","PCA","Neighbors"],["feature_selection","pca","neighbors"]):
+for name, method in zip(names,methods):
 
     callback_code = f"""
 def make_{method}(name_analysis, adata):
 
-    l = make_arguments('{method}', {method}_args(adata), adata.uns["dimensionality_reduction"][name_analysis]["params"])
+    l = make_arguments('{method}', {method}_args(adata), adata.uns["__interactive__"][name_analysis]["params"])
         
     style = dict()
     style["background-color"]="lightgray"
@@ -219,56 +221,6 @@ functions["{name}"] = make_{method}
 """
 
     exec(callback_code)
-
-def make_neighbors_plots1(adata):
-    return []
-
-def make_neighbors_plots2(adata):
-    return []
-
-def make_umap(name_analysis, adata):
-
-    l = make_arguments("umap",umap_args(adata))
-
-    return  [
-                dbc.Col(l,width=4,
-                        style={"background-color":"lightgray"}
-                        ),
-                dbc.Col([
-                    dbc.Row(id="umap_plot",children=make_umap_plots(adata))
-                ]
-                ),
-            ]
-
-functions["UMAP"] = make_umap
-
-def make_umap_plots(adata):
-
-    global name_analysis
-
-    return []
-
-    # if "X_"+name_analysis in adata.obsm.keys():
-
-    #     x = adata.obsm[:,0]
-    #     y = adata.obsm[:,1]
-
-    #     return [
-    #         dbc.Col(
-    #             dcc.Graph(
-    #                 figure = {'data':[
-    #                             go.Scatter(
-    #                                 x=x,
-    #                                 y=y,
-    #                                 mode='markers',
-    #                                 name='Min threshold',
-    #                             )]
-    #                         }
-    #             )
-    #         ),
-    #     ]
-    # else:
-    #     return []
 
 ############################################################################################################################################
 ############################################################################################################################################
@@ -292,7 +244,7 @@ def dimensionality_reduction_analysis(_, name):
     global functions
     name_analysis = name
 
-    analysis = config.adata.uns["dimensionality_reduction"][name_analysis]["type"]
+    analysis = config.adata.uns["__interactive__"][name_analysis]["type"]
 
     l = [
         dbc.Row(
@@ -330,12 +282,12 @@ def dimensionality_reduction_analysis(_, name):
 )
 def dimensionality_reduction_analysis(_, analysis):
 
-    if "dimensionality_reduction" not in config.adata.uns.keys():
-        config.adata.uns["dimensionality_reduction"] = {}
+    if "__interactive__" not in config.adata.uns.keys():
+        config.adata.uns["__interactive__"] = {}
 
     name = analysis
     count = 0
-    while name in config.adata.uns["dimensionality_reduction"].keys():
+    while name in config.adata.uns["__interactive__"].keys():
         count += 1
         name = analysis + " " + str(count)
 
@@ -343,11 +295,11 @@ def dimensionality_reduction_analysis(_, analysis):
     global functions
     name_analysis = name
     
-    config.adata.uns["dimensionality_reduction"][name_analysis] = {"type":analysis,"__computed__":False,"params":{}}
+    config.adata.uns["__interactive__"][name_analysis] = {"type":analysis,"computed":False,"params":{}}
 
     l = [
         dbc.Row(
-                    id='feature_selection_main',
+                    id='dimensionality_reduction_main',
                     children=functions[analysis](name_analysis, config.adata),
                     style={"margin-bottom":"1cm"}        
         ),
@@ -380,7 +332,7 @@ def display_click_data(tap_node_data):
     
     return None
 
-for method in ["feature_selection","pca","neighbors"]:
+for method in methods:
 
     f = method+"_args"
     function_code = f"a = {f}(config.adata)"
@@ -390,6 +342,7 @@ for method in ["feature_selection","pca","neighbors"]:
     m = "["
     args = ""
     kwargs = ""
+    dictargs = ""
     for i in a:
         if type(i) == dict:
             j = i["name"]
@@ -399,10 +352,15 @@ for method in ["feature_selection","pca","neighbors"]:
                 m += f"dash.State('{method}_{j}', 'value'),"
             args += f"{j},"
             kwargs += f"{j}={j},"
+            dictargs += f"'{j}':{j},"
     m = m[:-1]
     args = args[:-1]
     kwargs = kwargs[:-1]
+    dictargs = dictargs[:-1]
     m += "]"
+    add_input = ""
+    if "input" in args:
+        add_input = "config.adata.uns['__interactive__'][name_analysis]['__input__'] = input"
 
     callback_code = f"""
 @app.callback(
@@ -422,8 +380,9 @@ def function_{method}(_, {args}):
 
         f_{method}(config.adata, name_analysis, {kwargs})
 
-        config.adata.uns["dimensionality_reduction"][name_analysis]["__computed__"] = True
-
+        config.adata.uns["__interactive__"][name_analysis]["computed"] = True
+        {add_input}
+        config.adata.uns["__interactive__"][name_analysis]["params"] = {{ {dictargs} }}
 
     return make_{method}_plots1(config.adata, name_analysis), make_{method}_plots2(config.adata, name_analysis), make_cytoscape(config.adata)
 """
@@ -461,18 +420,19 @@ def function_off_{method}(
     
     global name_analysis
 
-    if "params" in config.adata.uns["dimensionality_reduction"][name_analysis].keys():   
+    if name_analysis in config.adata.uns["__interactive__"].keys():   
 
-        if config.adata.uns["dimensionality_reduction"][name_analysis]["params"] != dict():
+        if config.adata.uns["__interactive__"][name_analysis]["params"] != dict():
 
             m = [i["name"] for i in {method}_args(config.adata) if type(i) == dict]
             l = True
             for i,j in zip(m,[{args}]):
-                l2 = config.adata.uns["dimensionality_reduction"][name_analysis]["params"][i] == j
+                l2 = config.adata.uns["__interactive__"][name_analysis]["params"][i] == j
                 l = l and l2
 
             if not l:
-                config.adata.uns["dimensionality_reduction"][name_analysis]["__computed__"] = False
+                config.adata.uns["__interactive__"][name_analysis]["computed"] = False
+                deactivate_downstream(config.adata, name_analysis)
 
     return make_cytoscape(config.adata)
 """
@@ -489,7 +449,10 @@ def function_off_{method}(
 )
 def save_dimensionality_reduction(n_clicks):
 
-    config.adata.write(config.file_path.split(".h5ad")[0]+"_qc.h5ad")
+    if config.CACHEFOLDER in config.file_path:
+        config.adata.write(config.file_path)
+    else:
+        config.adata.write(config.CACHEFOLDER+config.file_path)
 
     return make_dimensionality_reduction_table_methods_data(config.adata), make_dimensionality_reduction_dropdown_methods(config.adata), make_cytoscape(config.adata)
 
@@ -514,13 +477,13 @@ def remove_dimensionality_reduction(data, children, children2):
 
     global name_analysis
 
-    ls = list(config.adata.uns["dimensionality_reduction"].keys())
+    ls = list(config.adata.uns["__interactive__"].keys())
 
     for i in ls:
-        j = config.adata.uns["dimensionality_reduction"][i]
+        j = config.adata.uns["__interactive__"][i]
         if i not in l:
             try:
-                del config.adata.uns["dimensionality_reduction"][i]
+                del config.adata.uns["__interactive__"][i]
             except:
                 None
 
@@ -545,7 +508,7 @@ def remove_dimensionality_reduction(data, children, children2):
                 children2 = ""
 
 
-    if config.adata.uns["dimensionality_reduction"] == {}:
-        del config.adata.uns["dimensionality_reduction"]
+    if config.adata.uns["__interactive__"] == {}:
+        del config.adata.uns["__interactive__"]
 
     return make_dimensionality_reduction_table_methods_data(config.adata), make_dimensionality_reduction_dropdown_methods(config.adata), make_cytoscape(config.adata), children, children2

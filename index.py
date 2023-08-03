@@ -65,12 +65,24 @@ app.layout = html.Div([
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
-    if pathname == '/quality_control':
+    if pathname == '/home':
+
+        return home.layout()
+    
+    elif pathname == '/quality_control':
+        
+        if config.CACHEFOLDER not in config.file_path:
+            config.file_path = config.file_path.split(config.CACHEFOLDER)[-1]
+            config.adata = sc.read(config.file_path)
+
         return quality_control.layout()
     elif pathname == '/dimensionality_reduction':
+
+        if config.CACHEFOLDER not in config.file_path:
+            config.file_path = config.CACHEFOLDER+config.file_path
+            config.adata = sc.read(config.file_path)
+
         return dimensionality_reduction.layout()
-    else:
-        return home.layout()
 
 @app.callback(Output('nav_brand', 'children'),
               [Input('h5ad-load-button','n_clicks')],

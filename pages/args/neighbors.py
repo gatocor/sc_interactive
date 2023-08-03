@@ -1,10 +1,15 @@
 import numpy as np
+import scanpy as sc
+import dash_bootstrap_components as dbc
+import dash_core_components as dcc
+import plotly.graph_objs as go
+import dash
 
 def neighbors_args(adata):
 
     options = []
-    if "dimensionality_reduction" in adata.uns.keys():
-        options = [i for i,j in adata.uns["dimensionality_reduction"].items() if j["type"]=="Feature Selection"] 
+    if "__interactive__" in adata.uns.keys():
+        options = [i for i,j in adata.uns["__interactive__"].items() if j["type"]=="PCA"] 
 
     return [
         "Neihgbors",
@@ -53,3 +58,27 @@ def neighbors_args(adata):
             "options":['cityblock', 'cosine', 'euclidean', 'l1', 'l2', 'manhattan','braycurtis', 'canberra', 'chebyshev', 'correlation', 'dice', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
         },
     ]
+
+def f_neighbors(adata, name_analysis, **kwargs):
+        
+    key = kwargs["input"]
+    if kwargs["input"] != None:
+        key = "X_"+kwargs["input"]
+
+    sc.pp.neighbors(adata,
+              use_rep=key,
+              n_neighbors=kwargs["n_neighbors"],
+              knn=kwargs["knn"],
+              random_state=kwargs["random_state"],
+              method=kwargs["method"],
+              metric=kwargs["metric"],
+              key_added=name_analysis
+    )
+
+def make_neighbors_plots1(adata, name_analysis):
+
+    return []
+
+def make_neighbors_plots2(adata, name_analysis):
+
+    return []

@@ -181,7 +181,11 @@ def make_arguments(id, arglist, loaded_args, add_execution_button=True):
     for i,arg in enumerate(arglist):
         if type(arg) != str:
             if loaded_args != {}:
-                value = loaded_args[arg["name"]]
+                try:
+                    value = loaded_args[arg["name"]]
+                except:
+                    value = None
+                    loaded_args[arg["name"]] = None
             else:
                 value = arg["value"]
 
@@ -248,6 +252,14 @@ def json_serializable(uns):
             d[i] = str(type(uns[i]))
 
     return d
+
+def deactivate_downstream(adata, name):
+
+    for i,j in config.adata.uns["__interactive__"].items():
+        if "input" in j["params"].keys():
+            if name == j["params"]["input"]:
+                config.adata.uns["__interactive__"][i]["computed"] = False
+                deactivate_downstream(adata, i)
 
 def make_adata_layout(adata):
     layout=[]

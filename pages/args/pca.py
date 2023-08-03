@@ -13,8 +13,8 @@ from .. import config
 def pca_args(adata):
 
     options = []
-    if "dimensionality_reduction" in adata.uns.keys():
-        options = [i for i,j in adata.uns["dimensionality_reduction"].items() if j["type"]=="Feature Selection"] 
+    if "__interactive__" in adata.uns.keys():
+        options = [i for i,j in adata.uns["__interactive__"].items() if j["type"]=="Feature Selection"] 
     
     return [
         "Normalization",
@@ -114,21 +114,18 @@ def f_pca(adata, name_analysis, **kwargs):
               )
 
     adata.obsm["X_"+name_analysis] = adata_copy.obsm["X_pca"]
+    adata.varm[name_analysis] = adata_copy.varm["PCs"]
+    adata.uns[name_analysis] = adata_copy.uns["pca"]
 
-    adata.uns["dimensionality_reduction"][name_analysis]["input"] = kwargs["input"]
-    adata.uns["dimensionality_reduction"][name_analysis]["threshold"] = adata.obsm["X_"+name_analysis].shape[1]-1
-    for i,j in adata_copy.uns["pca"].items():
-        adata.uns["dimensionality_reduction"][name_analysis][i] = j
-
-    adata.uns["dimensionality_reduction"][name_analysis]["params"] = kwargs
-    adata.uns["dimensionality_reduction"][name_analysis]["__n_comps_plot__"] = 3
+    adata.uns["__interactive__"][name_analysis]["threshold"] = adata.obsm["X_"+name_analysis].shape[1]-1
+    adata.uns["__interactive__"][name_analysis]["n_comps_plot"] = 3
 
 def make_pca_plots1(adata, name_analysis):
 
     if "X_"+name_analysis in adata.obsm.keys():
 
-        y = adata.uns["dimensionality_reduction"][name_analysis]["variance_ratio"]
-        threshold = adata.uns["dimensionality_reduction"][name_analysis]["threshold"]
+        y = adata.uns[name_analysis]["variance_ratio"]
+        threshold = adata.uns["__interactive__"][name_analysis]["threshold"]
 
         return [
             dbc.Col(
@@ -167,7 +164,7 @@ def make_pca_plots2(adata, name_analysis):
 
     if "X_"+name_analysis in adata.obsm.keys():
 
-        n_comp = config.adata.uns["dimensionality_reduction"][name_analysis]["__n_comps_plot__"]
+        n_comp = int(config.adata.uns["__interactive__"][name_analysis]["n_comps_plot"])
 
         fig = make_subplots(rows=n_comp-1, cols=n_comp-1, shared_yaxes=True, shared_xaxes=True)
 
@@ -218,7 +215,7 @@ def make_pca_plots2(adata, name_analysis):
 )
 def pca_threshold(pca_threshold, name_analysis):
 
-    config.adata.uns["dimensionality_reduction"][name_analysis]["threshold"] = pca_threshold
+    config.adata.uns["__interactive__"][name_analysis]["threshold"] = pca_threshold
 
     return  make_pca_plots1(config.adata, name_analysis)
 
@@ -230,6 +227,6 @@ def pca_threshold(pca_threshold, name_analysis):
 )
 def pca_n_comps(pca_n_comps, name_analysis):
 
-    config.adata.uns["dimensionality_reduction"][name_analysis]["__n_comps_plot__"] = pca_n_comps
+    config.adata.uns["__interactive__"][name_analysis]["n_comps_plot"] = pca_n_comps
 
     return make_pca_plots2(config.adata, name_analysis)

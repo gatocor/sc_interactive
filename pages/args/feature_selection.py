@@ -25,7 +25,7 @@ def feature_selection_args(adata):
             "input":"Input",
             "name":"max_disp",
             "description":"If n_top_genes unequals None, this and all other cutoffs for the means and the normalized dispersions are ignored. Ignored if flavor='seurat_v3'.",
-            "value":np.inf,
+            "value":100000000000000,
             "type":"number"
         },
         {
@@ -94,10 +94,7 @@ def f_feature_selection(adata, name_analysis, **kwargs):
         adata.var[name_analysis+"_variances"] = adata_copy.var["variances"].values
         adata.var[name_analysis+"_variances_norm"] = adata_copy.var["variances_norm"].values
 
-    for i,j in adata_copy.uns["hvg"].items():
-        adata.uns["dimensionality_reduction"][name_analysis][i] = j
-
-    adata.uns["dimensionality_reduction"][name_analysis]["params"] = kwargs
+    adata.uns[name_analysis] = adata_copy.uns["hvg"]
 
 def make_feature_selection_plots1(adata, name_analysis):
 

@@ -5,3 +5,4 @@ data/*
 */*/*.pyc
 pages/__pycache__/*
 __pycache__/*
+__h5adcache__/*
