@@ -5,8 +5,21 @@ import dash_core_components as dcc
 import plotly.graph_objs as go
 
 def feature_selection_args(adata):
+
+    options = []
+    if "__interactive__" in adata.uns.keys():
+        options = ["Raw"]+[i[2:] for i in adata.obsm.keys()] 
+
     return [
         "Feature Selection",
+        {
+            "input":"Dropdown",
+            "name":"input",
+            "description":"Representation to use as input of the method.",
+            "value":"Raw",
+            "clearable":True,
+            "options":options
+        },
         {
             "input":"Input",
             "name":"n_top_genes",
@@ -76,12 +89,18 @@ def feature_selection_args(adata):
 
 def f_feature_selection(adata, name_analysis, **kwargs):
         
-    adata_copy = sc.AnnData(X=adata.X.copy())
+    if kwargs["input"] == "Raw":
+        adata_copy = sc.AnnData(X=adata.X.copy())
+    else:
+        adata_copy = sc.AnnData(X=adata.obsm["X_"+kwargs["input"]].copy())
+
     if kwargs["flavor"] != "seurat_v3":
         sc.pp.log1p(adata_copy)
 
+    kwargs_copy = kwargs.copy()
+    del kwargs_copy["input"]
     sc.pp.highly_variable_genes(adata_copy,
-        **kwargs
+        **kwargs_copy
     )
     
     adata.var[name_analysis+"_highly_variable"] = adata_copy.var["highly_variable"].values
@@ -93,6 +112,8 @@ def f_feature_selection(adata, name_analysis, **kwargs):
     else:
         adata.var[name_analysis+"_variances"] = adata_copy.var["variances"].values
         adata.var[name_analysis+"_variances_norm"] = adata_copy.var["variances_norm"].values
+
+    adata.obsm["X_"+name_analysis] = adata_copy.X[:,adata_copy.var["highly_variable"]]
 
     adata.uns[name_analysis] = adata_copy.uns["hvg"]
 

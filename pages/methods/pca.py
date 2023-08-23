@@ -14,43 +14,9 @@ def pca_args(adata):
 
     options = []
     if "__interactive__" in adata.uns.keys():
-        options = [i for i,j in adata.uns["__interactive__"].items() if j["type"]=="Feature Selection"] 
+        options = ["Raw"]+[i[2:] for i in adata.obsm.keys()] 
     
     return [
-        "Normalization",
-        {
-            "input":"BooleanSwitch",
-            "name":"normalization",
-            "description":"If True, normalize the count matrix before PCA analysis.",
-            "value":True,
-        },
-        {
-            "input":"Input",
-            "name":"target_sum",
-            "description":"If None, after normalization, each observation (cell) has a total count equal to the median of total counts for observations (cells) before normalization.",
-            "value":None,
-            "type":"number"
-        },
-        {
-            "input":"BooleanSwitch",
-            "name":"exclude_highly_expressed",
-            "description":"Exclude (very) highly expressed genes for the computation of the normalization factor (size factor) for each cell. A gene is considered highly expressed, if it has more than max_fraction of the total counts in at least one cell. The not-excluded genes will sum up to target_sum.",
-            "value":False,
-        },
-        {
-            "input":"Input",
-            "name":"max_fraction",
-            "description":"If exclude_highly_expressed=True, consider cells as highly expressed that have more counts than max_fraction of the original total counts in at least one cell.",
-            "value":0.05,
-            "type":"number"
-        },
-        "Log1p",
-        {
-            "input":"BooleanSwitch",
-            "name":"log1p",
-            "description":"If True, log scale the count matrix before PCA analysis.",
-            "value":True,
-        },
         "PCA",
         {
             "input":"Dropdown",
@@ -92,19 +58,10 @@ def pca_args(adata):
 
 def f_pca(adata, name_analysis, **kwargs):
         
-    adata_copy = sc.AnnData(X=adata.X.copy())
-
-    if kwargs["input"] != None:
-        adata_copy.var["highly_variable"] = adata.var[(kwargs["input"]+"_highly_variable")].values
-
-    if kwargs["normalization"]:
-        sc.pp.normalize_total(adata_copy,
-                              target_sum=kwargs["target_sum"],
-                              exclude_highly_expressed=kwargs["exclude_highly_expressed"],
-                              max_fraction=kwargs["max_fraction"]
-                              )
-    if kwargs["log1p"]:
-        sc.pp.log1p(adata_copy)
+    if kwargs["input"] == "Raw":
+        adata_copy = sc.AnnData(X=adata.X)
+    else:
+        adata_copy = sc.AnnData(X=adata.obsm["X_"+kwargs["input"]])
     
     sc.pp.pca(adata_copy,
               n_comps=kwargs["n_comps"],
@@ -114,7 +71,7 @@ def f_pca(adata, name_analysis, **kwargs):
               )
 
     adata.obsm["X_"+name_analysis] = adata_copy.obsm["X_pca"]
-    adata.varm[name_analysis] = adata_copy.varm["PCs"]
+    # adata.varm[name_analysis] = adata_copy.varm["PCs"]
     adata.uns[name_analysis] = adata_copy.uns["pca"]
 
     adata.uns["__interactive__"][name_analysis]["threshold"] = adata.obsm["X_"+name_analysis].shape[1]-1

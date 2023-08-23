@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="100.43122mm"
+   height="102.0001mm"
+   viewBox="0 0 100.43122 102.0001"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   sodipodi:docname="plantilla_node.svg"
+   inkscape:export-filename="QC_selected.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="0.75455247"
+     inkscape:cx="331.32222"
+     inkscape:cy="294.87678"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Capa 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(75.85843,-28.198099)">
+    <path
+       id="rect1"
+       style="opacity:1;fill:#ffffff;stroke:#ff0000;stroke-width:2;stroke-miterlimit:3.4;stroke-dasharray:none"
+       d="M -65.917053,29.198099 V 65.32561 c -0.931278,0.240416 -1.828639,0.571868 -2.680906,0.985864 -0.852266,0.413996 -1.659439,0.910535 -2.410342,1.481126 -0.750903,0.570591 -1.445536,1.215234 -2.072723,1.925436 -0.627187,0.710202 -2.154008,1.488779 -1.668048,2.318792 0.494148,0.843998 1.907514,0.226554 2.751948,0.595232 0.844434,0.368678 1.60368,0.895131 2.240814,1.54188 0.637135,0.646749 1.152158,1.413793 1.50815,2.263654 0.355991,0.849861 0.55295,1.782539 0.553954,2.760554 -7.5e-4,0.981293 -0.198705,1.916836 -0.55655,2.768886 -0.357845,0.852049 -0.87558,1.620604 -1.515891,2.267922 -0.640311,0.647318 -1.403184,1.173397 -2.251287,1.540495 -0.848102,0.367097 -2.264627,-0.258916 -2.762661,0.586601 -0.489509,0.831043 1.044339,1.612657 1.673777,2.324295 0.629439,0.711638 1.326631,1.357299 2.080297,1.928437 0.753666,0.571138 1.563808,1.067752 2.419145,1.481296 0.855338,0.413544 1.755872,0.744017 2.690323,0.982874 V 129.1982 H 14.082715 V 93.182307 c 0.987511,-0.212593 1.94114,-0.526877 2.847789,-0.93333 0.906649,-0.406453 1.766401,-0.905135 2.565907,-1.486341 0.799506,-0.581206 1.539098,-1.24518 2.205428,-1.982215 0.666329,-0.737036 2.239102,-1.528274 1.76635,-2.420953 -0.457721,-0.864296 -1.907514,-0.226554 -2.751948,-0.595233 -0.844434,-0.368678 -1.60368,-0.895131 -2.240814,-1.54188 -0.637135,-0.646749 -1.152159,-1.413793 -1.50815,-2.263654 -0.355992,-0.849861 -0.55295,-1.782538 -0.553955,-2.760553 7e-4,-0.981293 0.19865,-1.916836 0.556502,-2.768886 0.357853,-0.852049 0.87561,-1.620605 1.515923,-2.267922 0.640313,-0.647317 1.403191,-1.173397 2.251297,-1.540494 0.848106,-0.367098 2.301208,0.279419 2.762667,-0.586602 0.476272,-0.893822 -1.103534,-1.687891 -1.772138,-2.426282 C 21.058968,68.869571 20.316876,68.204743 19.514509,67.623057 18.712142,67.041371 17.8495,66.542826 16.939797,66.137002 16.030094,65.731178 15.073329,65.418075 14.082715,65.207271 V 29.198099 Z"
+       sodipodi:nodetypes="ccssssssscsssssssccccsassssscsssssssccc"
+       inkscape:export-filename="QC.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
+  </g>
+</svg>

@@ -103,7 +103,7 @@ def layout():
         ),
         dbc.Row(
             [
-                dbc.Row([
+                dbc.Row([ 
                     dbc.Col(
                         [
                             dbc.Tooltip(

@@ -9,7 +9,7 @@ def neighbors_args(adata):
 
     options = []
     if "__interactive__" in adata.uns.keys():
-        options = [i for i,j in adata.uns["__interactive__"].items() if j["type"]=="PCA"] 
+        options = ["Raw"]+[i[2:] for i in adata.obsm.keys()] 
 
     return [
         "Neihgbors",

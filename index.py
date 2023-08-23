@@ -1,5 +1,5 @@
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import os
@@ -9,7 +9,7 @@ import scanpy as sc
 from app import server
 from app import app
 # import all pages in the app
-from pages import config, home, quality_control, dimensionality_reduction
+from pages import config, home, graph
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -28,8 +28,8 @@ navbar = dbc.Navbar(
             dbc.Nav([
                 dbc.DropdownMenu([
                     dbc.DropdownMenuItem("Dataset", href="/home"),                     
-                    dbc.DropdownMenuItem("Quality Control", href="/quality_control"),                  
-                    dbc.DropdownMenuItem("Dimensionality Reduction", href="/dimensionality_reduction")                        
+                    # dbc.DropdownMenuItem("Quality Control", href="/quality_control"),                  
+                    dbc.DropdownMenuItem("Graphical analysis", href="/graph"),                     
                 ],
                 in_navbar = True,
                 label = "Menu",
@@ -69,20 +69,20 @@ def display_page(pathname):
 
         return home.layout()
     
-    elif pathname == '/quality_control':
+    # elif pathname == '/quality_control':
         
-        if config.CACHEFOLDER not in config.file_path:
-            config.file_path = config.file_path.split(config.CACHEFOLDER)[-1]
-            config.adata = sc.read(config.file_path)
+    #     if config.CACHEFOLDER not in config.file_path:
+    #         config.file_path = config.file_path.split(config.CACHEFOLDER)[-1]
+    #         config.adata = sc.read(config.file_path)
 
-        return quality_control.layout()
-    elif pathname == '/dimensionality_reduction':
+    #     return quality_control.layout()
+    elif pathname == '/graph':
 
-        if config.CACHEFOLDER not in config.file_path:
-            config.file_path = config.CACHEFOLDER+config.file_path
-            config.adata = sc.read(config.file_path)
+        # if config.CACHEFOLDER not in config.file_path:
+        #     config.file_path = config.CACHEFOLDER+config.file_path
+        #     config.adata = sc.read(config.file_path)
 
-        return dimensionality_reduction.layout()
+        return graph.layout()
 
 @app.callback(Output('nav_brand', 'children'),
               [Input('h5ad-load-button','n_clicks')],

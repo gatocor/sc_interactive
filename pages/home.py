@@ -1,7 +1,7 @@
 import dash
-import dash_html_components as html
+from dash import html
+from dash import dcc
 import dash_bootstrap_components as dbc
-import dash as dcc
 import os
 import scanpy as sc
 from . import config
@@ -103,10 +103,10 @@ def update_pattern_table(n_clicks, table_patterns, _, selected_file, columns):
         config.qc_n_clicks_old += 1
         add_clicks = n_clicks
         table_patterns.append({col['id']: '' for col in columns})
-        f_update_patterns(config.adata, table_patterns)
+        # f_update_patterns(config.adata, table_patterns)
     else:
         add_clicks = n_clicks
-        f_update_patterns(config.adata, table_patterns)
+        # f_update_patterns(config.adata, table_patterns)
     
     table_patterns = f_qc_table_pattern(config.adata) #get the updated table
 
@@ -146,7 +146,6 @@ def load_adata_info(n, n_clicks, gene, selected_file):
         config.file_path = os.path.join(config.folder_path, selected_file)
         config.selected_file = selected_file
         config.adata = sc.read(config.file_path)
-        config.f_qc_base(config.adata)
 
         if "GeneNamesKey" in config.adata.uns.keys():
 

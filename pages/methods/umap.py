@@ -128,7 +128,7 @@ def f_umap(adata, name_analysis, **kwargs):
 
 def make_umap_plots1(adata, name_analysis):
 
-    if "X_"+name_analysis in adata.obsm.keys():
+    if "X_"+name_analysis in adata.obsm.keys() and "n_components" in adata.uns["__interactive__"][name_analysis]["params"].keys():
 
         if adata.uns["__interactive__"][name_analysis]["params"]["n_components"] == 2:
             x = adata.obsm["X_"+name_analysis][:,0]

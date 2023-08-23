@@ -13,29 +13,30 @@ file_path = os.path.join(folder_path, h5ad_files[0]) #None
 adata = sc.read(os.path.join(folder_path, h5ad_files[0])) #None
 cache = False
 
-max_scatter_points = 10000
+graph = [
+    {
+        'data': {
+            'id':'Raw', 
+            'name':'Raw',
+            'type':'Raw', 
+            'method':'Raw', 
+            'label':'Raw', 
+            'color':'white',
+            'computed':True,
+            'opacity':1,
+            'summary':'Raw', 
+            'image':'../assets/Raw.png',
+            'parameters':{'input':'Raw'}}, 
+        'position':{'x':-200,'y':0},
+    }
+]
+active_node_parameters = {}
 
-#Options
-qc_summary_x = "total_counts"
-qc_summary_y = "n_genes_by_counts"
-qc_summary_color = "total_counts"
-
-#Statistics
-#qc_df_statistics = pd.DataFrame(adata.uns["qc"])
-
-#Patterns
-qc_dict_patterns = {
-    'Concept': [],
-    'Pattern': [],
-    'Genes': []
-}
-qc_df_patterns = pd.DataFrame(qc_dict_patterns)
-
-qc_dict_threshold = {
-    'Control measure': [], 
-    'Minimum threshold': [], 
-    'Maximum threshold': []
-}
-qc_df_threshold = pd.DataFrame(qc_dict_threshold)
-
-qc_summary = f_qc_summary(adata)
+functions = {}
+functions_method = {}
+functions_method_rm = {}
+functions_method_rename = {}
+functions_plot = {}
+arguments = {}
+tclick = 0
+selected = 'Raw'
