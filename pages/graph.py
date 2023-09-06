@@ -18,6 +18,7 @@ import dash_cytoscape as cyto
 from app import app
 
 from .methods.qc import *
+from .methods.scrublet import *
 # from .methods.filtering import *
 # from .methods.graph import *
 # from .methods.normalize import *
@@ -29,7 +30,8 @@ from .methods.qc import *
 # from .methods.louvain import *
 
 methods = {
-    "QC":{"method":"qc","type":"QC"},
+    "qc":{"method":"qc","type":"QC"},
+    "scrublet":{"method":"scrublet","type":"QC"},
     # "Filtering":{"method":"filtering","type":"Filtering"},
     # "Feature selection":{"method":"graph","type":"Dimensionaity Reduction"},
     # "Normalize":{"method":"normalize","type":"Transformations"},
@@ -200,8 +202,8 @@ def layout():
                     dbc.Col(
                         dcc.Dropdown(
                             id='graph_dropdown_analysis',
-                            value=get_method("name")[0],
-                            options=get_method("name"),
+                            value=get_method("method")[0],
+                            options=get_method("method"),
                             clearable=False,
                         )
                     ),
@@ -279,12 +281,16 @@ def load_node(name):
         l = [
             dbc.Row(
                         id='graph_main',
-                        children=config.functions[node['data']['type']](name),
+                        children=config.functions[node['data']['method']](name),
                         style={"margin-bottom":"1cm"}        
             ),
         ]
 
     return l
+
+def make_interactive():
+    if 'sc_interactive' not in config.adata.uns.keys():
+        config.adata.uns['sc_interactive'] = {}
 
 def make_arguments(id, arglist, loaded_args, add_execution_button=True):
 
@@ -437,22 +443,22 @@ for name, method in zip(get_method('name'),get_method('method')):
     callback_code = make_method_layout(method)
     exec(callback_code)
 
-    add_function_to_dict = f"""config.arguments["{name}"] = args_{method}"""
+    add_function_to_dict = f"""config.arguments["{method}"] = args_{method}"""
     exec(add_function_to_dict)
 
-    add_function_to_dict = f"""config.functions["{name}"] = layout_{method}"""
+    add_function_to_dict = f"""config.functions["{method}"] = layout_{method}"""
     exec(add_function_to_dict)
 
-    add_function_to_dict = f"""config.functions_method["{name}"] = f_{method}"""
+    add_function_to_dict = f"""config.functions_method["{method}"] = f_{method}"""
     exec(add_function_to_dict)
 
-    add_function_to_dict = f"""config.functions_method_rm["{name}"] = rm_{method}"""
+    add_function_to_dict = f"""config.functions_method_rm["{method}"] = rm_{method}"""
     exec(add_function_to_dict)
 
-    add_function_to_dict = f"""config.functions_method_rename["{name}"] = rename_{method}"""
+    add_function_to_dict = f"""config.functions_method_rename["{method}"] = rename_{method}"""
     exec(add_function_to_dict)
 
-    add_function_to_dict = f"""config.functions_plot["{name}"] = plot_{method}"""
+    add_function_to_dict = f"""config.functions_plot["{method}"] = plot_{method}"""
     exec(add_function_to_dict)
 
 ############################################################################################################################################
@@ -486,11 +492,16 @@ def graph_update_table(_):
     return graph2table()
 
 #Add new parameter value to active node info (Measure table)
-for method in get_method('name'):
+methods_implemented = []
+for method in get_method('method'):
 
     for i in config.arguments[method]():
 
-        if i['input'] == "MeasureTable":
+        m_i = (i['name'],i['input'])
+
+        if i['input'] == "MeasureTable" and m_i not in methods_implemented:
+
+            methods_implemented.append(m_i)
 
             add_function = f"""
 @app.callback(
@@ -513,14 +524,7 @@ def add_measuretable_{i['name']}(n_clicks,value,data):
 
     return data #, config.graph
 """
-    exec(add_function, globals(), locals())
-
-#Add new parameter value to active node info (Measure table remove)
-for method in get_method('name'):
-
-    for i in config.arguments[method]():
-
-        if i['input'] == "MeasureTable":
+            exec(add_function, globals(), locals())
 
             add_function = f"""
 @app.callback(
@@ -530,7 +534,7 @@ for method in get_method('name'):
     dash.State("analysis_{i['name']}","children"),
     prevent_initial_call=True
 )
-def add_measuretable_{i['name']}(n_clicks,value,data):
+def add_measuretable_{i['name']}_rem(n_clicks,value,data):
 
     if n_clicks != None and value != None and value in data:
     
@@ -542,15 +546,19 @@ def add_measuretable_{i['name']}(n_clicks,value,data):
 
     return data #, config.graph
 """
-    exec(add_function, globals(), locals())
+            exec(add_function, globals(), locals())
 
 #Add new parameter value to active node info (rest)
 aux = []
-for method in get_method('name'):
+for method in get_method('method'):
 
     for i in config.arguments[method]():
-            
-        if i['name'] not in aux and i['input'] != 'MeasureTable':
+
+        m_i = (i['name'],i['input'])
+
+        if i['input'] != "MeasureTable" and m_i not in methods_implemented:
+
+            methods_implemented.append(m_i)
 
             aux.append(i['name'])
 
@@ -702,23 +710,25 @@ def execute(n_clicks, warning_input, warning_computed, plot):
 
         else:
             #Remove previous edge
+            make_interactive()
             node = get_node(config.selected)
             edge_rm(node['data']['parameters']['input'], config.selected)
 
             #Update node info
             update_node(config.selected)
             make_node_summary(config.selected)
-            activate_node(config.selected)
-            deactivate_downstream(config.selected)
 
             node = get_node(config.selected)
             params = get_node_parameters(config.selected, str2list=True)
 
             edge_add(params['input'], config.selected)
 
-            config.functions_method[node['data']['type']](config.selected,params)
+            config.functions_method[node['data']['method']](config.selected,params)
 
-            plot = config.functions_plot[node['data']['type']](config.selected)
+            activate_node(config.selected)
+            deactivate_downstream(config.selected)
+
+            plot = config.functions_plot[node['data']['method']](config.selected)
         
     return config.graph, warning_input, warning_computed, plot
 
@@ -831,7 +841,7 @@ def rename_confirmation(n_clicks, name, l):
         if name not in n:
 
             node = get_node(config.selected)
-            config.functions_method_rename[node['data']['type']](config.selected, name)
+            config.functions_method_rename[node['data']['method']](config.selected, name)
             node_rename(config.selected, name) #Rename graph
             config.selected = name #Rename configuration
 

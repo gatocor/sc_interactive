@@ -1,13 +1,40 @@
-def doublet_args(adata):
+import numpy as np
+import scanpy as sc
+import dash_bootstrap_components as dbc
+# from dash import dcc
+from dash import dcc
+from dash import html
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+import dash
+import scrublet
+
+from ..functions import *
+
+from app import app
+
+from .. import config
+
+def args_scrublet():
+
+    options = node_names(exclude_downstream_from_node=config.selected) 
+    
     return [
-        "Scrublet",
+        {
+            "input":"Dropdown",
+            "name":"input",
+            "description":"Observable to use",
+            "value":None,
+            "clearable":False,
+            "options":options
+        },
         {
             "input":"Dropdown",
             "name":"batch_key",
             "description":"str, optional (default: 'Full') Batch key to use. The Doublet metric will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
             "value":'Full',
             "clearable":False,
-            "options":['Full']+[str(i) for i in adata.obs.columns.values if (adata.obs.dtypes[i] in ["category" ,object, str, int])]
+            "options":options
         },
         {
             "input":"BooleanSwitch",
@@ -91,3 +118,88 @@ def doublet_args(adata):
             "options": ["arpack"]
         }
     ]
+
+def f_scrublet(name_analysis, kwargs):
+
+    scrub = scrublet.Scrublet(config.adata.X)
+
+    scrub.scrub_doublets(
+        synthetic_doublet_umi_subsampling = kwargs["synthetic_doublet_umi_subsampling"], 
+        use_approx_neighbors = kwargs["use_approx_neighbors"], 
+        distance_metric = kwargs["distance_metric"], 
+        min_counts = kwargs["min_counts"],
+        min_cells = kwargs["min_cells"], 
+        min_gene_variability_pctl = kwargs["min_gene_variability_pctl"], 
+        log_transform = kwargs["log_transform"], 
+        mean_center = kwargs["mean_center"], 
+        normalize_variance = kwargs["normalize_variance"], 
+        n_prin_comps = kwargs["n_prin_comps"], 
+        svd_solver= kwargs["svd_solver"]
+    )
+            
+    X = scrublet.get_umap(scrub.manifold_obs_, 10, min_dist=0.3)
+
+    config.adata.obs[name_analysis+"_scrublet_score"] = scrub.doublet_scores_obs_
+    config.adata.obsm[name_analysis+"_UMAP"] = X
+    config.adata.uns["sc_interactive"][name_analysis] = {
+        "doublets_simulated_scrublet_score" : scrub.doublet_scores_sim_
+    }
+
+def rm_scrublet(name_analysis):
+
+    config.adata.obs.drop(name_analysis+"_scrublet_score", axis=1, inplace=True)
+    del config.adata.obsm[name_analysis+"_UMAP"]
+    del config.adata.uns["sc_interactive"][name_analysis]
+
+def rename_scrublet(name_analysis, name_new_analysis):
+
+    ls = [name_analysis+"_scrublet_score"]
+    cols = {}    
+    for i in config.adata.obs.columns.values:
+        if i not in ls:
+            cols[i] = i
+        else:
+            name = i.split(name_analysis)[-1]
+            name = (name_new_analysis+"_"+name)
+            cols[i] = name
+
+    config.adata.obs.rename(columns=cols, inplace=True)
+
+def plot_scrublet(name_analysis):
+
+    l = []
+    # dic = get_node_parameters(name_analysis,str2list=True)['measure'] 
+
+    # for metric in dic:
+
+    #     var_selected_data = name_analysis+"_"+metric
+            
+    #     l += [
+    #             dbc.Row(
+    #                 [dcc.Graph(id="Histogram",
+    #                         figure={
+    #                                 "data":[
+    #                                     go.Histogram(
+    #                                         x=config.adata.obs[var_selected_data].values,
+    #                                         nbinsx=100,
+    #                                         name='Histogram',
+    #                                         marker=dict(color='blue'),
+    #                                         opacity=0.7
+    #                                     ),
+    #                                 ],
+    #                                 "layout":{
+    #                                         'title': f'Histogram of {var_selected_data}',
+    #                                         'xaxis': {'title': var_selected_data},
+    #                                         'yaxis': {'title': 'Count'},
+    #                                         'barmode': 'overlay',
+    #                                         'width':1500,
+    #                                         'height':400,
+    #                                 }
+    #                             }
+    #                 )],
+    #                 justify="center",
+    #                 style={'width': '90%', 'margin': 'auto'}
+    #             )
+    #         ]
+        
+    return l

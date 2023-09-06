@@ -7,7 +7,6 @@ from dash import html
 import dash_daq as daq
 from dash import dash_table
 import dash_renderjson
-from .methods.doublet_args import doublet_args
 import plotly.graph_objs as go
 
 from . import config
@@ -17,7 +16,7 @@ def make_node_summary(name, inplace=True):
     node = get_node(name)
 
     summary = f"{node['data']['id']}\nMethod:{node['data']['method']}\n\n"
-    for prop in config.arguments[node['data']['type']]():   
+    for prop in config.arguments[node['data']['method']]():   
         if type(prop) != str:
             if "summary" in prop.keys():
                 m = node['data']['parameters'][prop['name']]
@@ -51,7 +50,7 @@ def node_rm(name):
     #Remove info from node
     node = get_node(name)
     if node['data']['computed']:
-        config.functions_method_rm[node['data']['type']](name)
+        config.functions_method_rm[node['data']['method']](name)
 
     l = []
     for i,node in enumerate(config.graph):
@@ -121,7 +120,7 @@ def get_node_parameters(name, str2list=False):
     for i in get_nodes():
         if i['data']['id'] == name:
             params = i['data']['parameters'].copy()
-            for j in config.arguments[i['data']['type']]():
+            for j in config.arguments[i['data']['method']]():
                 if j['input'] == "MeasureTable" and str2list:
                     params[j['name']] = params[j['name']][1:-1].split(",")
                     if params[j['name']][0] == '':
@@ -177,7 +176,7 @@ def deactivate_downstream(name):
                 deactivate_node(node['data']['id'])
                 node = get_node(node['data']['id'])
                 if node['data']['computed']:
-                    config.functions_method_rm[node['data']['type']](node['data']['id'])
+                    config.functions_method_rm[node['data']['method']](node['data']['id'])
                 deactivate_downstream(node['data']['id'])
 
 def image_unselected(name):
