@@ -42,11 +42,7 @@ def f_filtering(adata, name_analysis, **kwargs):
         
     return
 
-def make_filtering_plots1(adata, name_analysis):
-
-    return []
-
-def make_filtering_plots2(adata, name_analysis):
+def make_filtering_plots(adata, name_analysis):
 
     l = []
     dic = adata.uns["__interactive__"][name_analysis]["params"]["thresholds"] 

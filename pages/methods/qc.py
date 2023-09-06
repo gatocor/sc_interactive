@@ -73,59 +73,38 @@ def rename_qc(name_analysis, name_new_analysis):
 def plot_qc(name_analysis):
 
     l = []
-    # if "measure" in config.adata.uns["__interactive__"][name_analysis]["params"].keys():
-    #     dic = config.adata.uns["__interactive__"][name_analysis]["params"]["measure"] 
-    #     dic = dic[1:-1].split(",")
-    #     dic = [i for i in dic if i != '']
-    #     for var_selected_data in dic:
+    dic = get_node_parameters(name_analysis,str2list=True)['measure'] 
 
-    #         # var_selected_data = metric["Measure"]
+    for metric in dic:
 
-    #         # hist_values, hist_bins = np.histogram(config.adata.obs[var_selected_data].values, bins=30)
-    #         # tallest_bin_height = np.max(hist_values)
-    #         # var1_vertical_line_min = go.Scatter(
-    #         #     x=[metric["Min"], metric["Min"]],
-    #         #     y=[0, tallest_bin_height],
-    #         #     mode='lines',
-    #         #     name='Min threshold',
-    #         #     line=dict(color='red', dash='dash')
-    #         # )
-    #         # var1_vertical_line_max = go.Scatter(
-    #         #     x=[metric["Max"], metric["Max"]],
-    #         #     y=[0, tallest_bin_height],
-    #         #     mode='lines',
-    #         #     name='Max threshold',
-    #         #     line=dict(color='green', dash='dash')
-    #         # )
-
-    #         l += [
-    #                 dbc.Row(
-    #                     [dcc.Graph(id="Histogram",
-    #                             figure={
-    #                                     "data":[
-    #                                         go.Histogram(
-    #                                             x=config.adata.obs[var_selected_data].values,
-    #                                             nbinsx=30,
-    #                                             name='Histogram',
-    #                                             marker=dict(color='blue'),
-    #                                             opacity=0.7
-    #                                         ),
-    #                                         # var1_vertical_line_min,
-    #                                         # var1_vertical_line_max
-    #                                     ],
-    #                                     "layout":{
-    #                                             'title': f'Histogram of {var_selected_data}',
-    #                                             'xaxis': {'title': var_selected_data},
-    #                                             'yaxis': {'title': 'Count'},
-    #                                             'barmode': 'overlay',
-    #                                             'width':1500,
-    #                                             'height':400,
-    #                                     }
-    #                                 }
-    #                     )],
-    #                     justify="center",
-    #                     style={'width': '90%', 'margin': 'auto'}
-    #                 )
-    #             ]
+        var_selected_data = name_analysis+"_"+metric
+            
+        l += [
+                dbc.Row(
+                    [dcc.Graph(id="Histogram",
+                            figure={
+                                    "data":[
+                                        go.Histogram(
+                                            x=config.adata.obs[var_selected_data].values,
+                                            nbinsx=100,
+                                            name='Histogram',
+                                            marker=dict(color='blue'),
+                                            opacity=0.7
+                                        ),
+                                    ],
+                                    "layout":{
+                                            'title': f'Histogram of {var_selected_data}',
+                                            'xaxis': {'title': var_selected_data},
+                                            'yaxis': {'title': 'Count'},
+                                            'barmode': 'overlay',
+                                            'width':1500,
+                                            'height':400,
+                                    }
+                                }
+                    )],
+                    justify="center",
+                    style={'width': '90%', 'margin': 'auto'}
+                )
+            ]
         
     return l

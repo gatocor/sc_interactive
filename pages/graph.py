@@ -359,7 +359,7 @@ def make_arguments(id, arglist, loaded_args, add_execution_button=True):
                         options = arg["options"]
                     )),
                     dbc.Col(dbc.Button("Add", id="analysis_"+str(arg["name"])+"_button")),
-                    dbc.Col(dbc.Button("Remove", id="analysis_"+str(arg["name"])+"_button_rem")),
+                    # dbc.Col(dbc.Button("Remove", id="analysis_"+str(arg["name"])+"_button_rem")),
                 ])
             ]
         elif arg["input"] == "ThresholdTable":
@@ -388,6 +388,7 @@ def make_arguments(id, arglist, loaded_args, add_execution_button=True):
             ]
         else:
             print("ERROR: NO METHOD")
+
         l.append(
             dbc.Row(
                 [
@@ -427,7 +428,7 @@ def layout_{method}(name_analysis):
                         # width='50%',
                         style=style
                         ),
-                dbc.Row(id='{method}_plots',children=plot_{method}(name_analysis))
+                dbc.Row(id='analysis_plot',children=plot_{method}(name_analysis))
             ]
 """
 
@@ -678,14 +679,16 @@ def graph_new_node(_, method, cytoscape):
     dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
     dash.Output('execute-input-modal', 'is_open', allow_duplicate=True),
     dash.Output('execute-computed-modal', 'is_open', allow_duplicate=True),
+    dash.Output('analysis_plot', 'children', allow_duplicate=True),
     [
         dash.Input('analysis_execute_button', 'n_clicks')
     ],
     dash.State('execute-input-modal', 'is_open'),
     dash.State('execute-computed-modal', 'is_open'),
+    dash.State('analysis_plot', 'children'),
     prevent_initial_call=True
 )
-def execute(n_clicks, warning_input, warning_computed):
+def execute(n_clicks, warning_input, warning_computed, plot):
     
     if n_clicks != None:
 
@@ -714,8 +717,10 @@ def execute(n_clicks, warning_input, warning_computed):
             edge_add(params['input'], config.selected)
 
             config.functions_method[node['data']['type']](config.selected,params)
+
+            plot = config.functions_plot[node['data']['type']](config.selected)
         
-    return config.graph, warning_input, warning_computed
+    return config.graph, warning_input, warning_computed, plot
 
 #Delete analysis button
 @app.callback(
@@ -829,7 +834,6 @@ def rename_confirmation(n_clicks, name, l):
             config.functions_method_rename[node['data']['type']](config.selected, name)
             node_rename(config.selected, name) #Rename graph
             config.selected = name #Rename configuration
-            print(node_names())
 
             modal = False        
         else:
