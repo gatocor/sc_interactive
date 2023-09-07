@@ -8,6 +8,7 @@ import dash_daq as daq
 from dash import dash_table
 import dash_renderjson
 import plotly.graph_objs as go
+import plotly.express as px
 
 from . import config
 
@@ -355,8 +356,74 @@ def image_selected(name):
 
 #     return pd.DataFrame(statistics)
 
+def hist_vline(data,bins):
+
+    hist_values, hist_bins = np.histogram(data, bins=bins)
+    tallest_bin_height = np.max(hist_values)
+
+    return tallest_bin_height
+
+def qualitative_colors(labels):
+
+    if type(labels[0]) not in [str,object,int]:
+
+        return labels
+
+    elif type(labels[0]) in [int] and len(labels)>100:
+
+        return labels
+
+    elif type(labels[0]) in [str,object,int]:
+
+        color_sequence = px.colors.qualitative.Plotly
+
+        # Create a dictionary to map categories to colors
+        color_map = {
+            category: color_sequence[i % len(color_sequence)]
+            for i, category in enumerate(np.unique(labels))
+        }
+
+        return [color_map[i] for i in labels]
+    
 def get_batch_keys():
     return [i for i in config.adata.obs.columns.values if config.adata.obs.dtypes[i] in [str,object,int]]
+
+def make_thresholds_table(threshold_measures,batches,cols_add):
+    
+    l = []
+    for i in threshold_measures:
+        for j in cols_add:
+            l.append(f"{i} {j}")
+
+    return make_table(l,batches)
+
+def make_table(col_names,row_names):
+    cols = [{"name":"Batch", "id":"Batch", "deletable": False, "editable": False}]+[{"name":i, "id":i, "deletable": False, "editable": True} for i in col_names]
+    data = []
+    for j in row_names:
+        d = {"Batch":j}
+        for i in col_names:
+            d[i]=0
+        data.append(d)
+
+    return cols,data
+
+def set_table_value(data, row_name, col_name, val):
+    for i,row in enumerate(data):
+        if row['Batch'] == row_name:
+            data[i][col_name] = val
+
+def set_table_column(data, col_name, val):
+    for i,row in enumerate(data):
+        data[i][col_name] = val
+
+def get_table_value(data, row_name, col_name):
+    for i,row in enumerate(data):
+        if row['Batch'] == row_name:
+            return data[i][col_name]
+
+def get_table_column(data, col_name):
+    return [i[col_name] for i in data]
 
 def json_serializable(uns):
 
@@ -380,6 +447,8 @@ def json_serializable(uns):
             elif i != "summary":
                 n = str(type(object)).split("class '")[-1].split("'")[0]
                 d = f"{d}'{i}':'{object}',"
+        elif object == None:
+            d = f"{d}'{i}':None,"
         else:
             n = str(type(object)).split("class '")[-1].split("'")[0]
             d = f"{d}'{i}':'{object}',"

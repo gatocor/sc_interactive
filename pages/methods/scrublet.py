@@ -18,7 +18,8 @@ from .. import config
 def args_scrublet():
 
     options = node_names(exclude_downstream_from_node=config.selected) 
-    
+    options_batch = get_batch_keys()
+
     return [
         {
             "input":"Dropdown",
@@ -31,10 +32,10 @@ def args_scrublet():
         {
             "input":"Dropdown",
             "name":"batch_key",
-            "description":"str, optional (default: 'Full') Batch key to use. The Doublet metric will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
-            "value":'Full',
-            "clearable":False,
-            "options":options
+            "description":"str, optional (default: None) Batch key to use. The Doublet metric will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
+            "value":None,
+            "clearable":True,
+            "options":options_batch
         },
         {
             "input":"BooleanSwitch",
@@ -59,9 +60,9 @@ def args_scrublet():
             "input":"Dropdown",
             "name":"distance_metric",
             "description":"str, optional (default: 'euclidean') Distance metric used when finding nearest neighbors. For list of valid values, see the documentation for annoy (if 'use_approx_neighbors' is True) or sklearn.neighbors.NearestNeighbors (if 'use_approx_neighbors' is False).",
-            "value":"correlation",
+            "value":"euclidean",
             "clearable":False,
-            "options":["euclidean","manhattan","correlation"]
+            "options":["euclidean","manhattan","angular","hamming","dot"]
         },
         {
             "input":"Input",
@@ -119,6 +120,19 @@ def args_scrublet():
         }
     ]
 
+@app.callback(
+    dash.Output("analysis_distance_metric","options", allow_duplicate = True),
+    dash.Output("analysis_distance_metric","value", allow_duplicate = True),
+    dash.Input("analysis_use_approx_neighbors","on"),
+    prevent_initial_call=True
+)
+def metric_options(approximate):
+
+    if approximate:
+        return ["euclidean","manhattan","angular","hamming","dot"], "euclidean"
+    else:
+        return ["euclidean","cityblock","cosine","haversine","l1","l2","manhattan"], "euclidean"
+
 def f_scrublet(name_analysis, kwargs):
 
     scrub = scrublet.Scrublet(config.adata.X)
@@ -168,38 +182,99 @@ def rename_scrublet(name_analysis, name_new_analysis):
 def plot_scrublet(name_analysis):
 
     l = []
-    # dic = get_node_parameters(name_analysis,str2list=True)['measure'] 
+    if get_node(name_analysis)['data']['computed']:
+        X = config.adata.obsm[name_analysis+"_UMAP"]
+        c = config.adata.obs[name_analysis+"_scrublet_score"].values
+        order = np.argsort(c)
 
-    # for metric in dic:
-
-    #     var_selected_data = name_analysis+"_"+metric
+        l = [
+                html.H1("UMAP"),
+                dcc.Dropdown(id="scrublet_plot_dropdown",options=["umap","hist_simulated"],value="umap"),
+                dbc.Row([
+                    dbc.Col(),
+                    dbc.Col([
+                        dcc.Graph(
+                            id="scrublet_scatter",
+                            figure={
+                                    "data":[
+                                        go.Scatter(
+                                            x=X[order,0],
+                                            y=X[order,1],
+                                            marker={'color':c[order]},
+                                            mode='markers',
+                                        )
+                                    ],
+                                    "layout":{
+                                            'yaxis':{
+                                                'scaleanchor':"x",
+                                                'scaleratio':1,
+                                            },
+                                    }
+                                },
+                            style={'width': '90vh', 'height': '90vh'}
+                        ),
+                    ],
+                    ),
+                    dbc.Col()
+                ],
+                justify='center'
+                )
+            ]
             
-    #     l += [
-    #             dbc.Row(
-    #                 [dcc.Graph(id="Histogram",
-    #                         figure={
-    #                                 "data":[
-    #                                     go.Histogram(
-    #                                         x=config.adata.obs[var_selected_data].values,
-    #                                         nbinsx=100,
-    #                                         name='Histogram',
-    #                                         marker=dict(color='blue'),
-    #                                         opacity=0.7
-    #                                     ),
-    #                                 ],
-    #                                 "layout":{
-    #                                         'title': f'Histogram of {var_selected_data}',
-    #                                         'xaxis': {'title': var_selected_data},
-    #                                         'yaxis': {'title': 'Count'},
-    #                                         'barmode': 'overlay',
-    #                                         'width':1500,
-    #                                         'height':400,
-    #                                 }
-    #                             }
-    #                 )],
-    #                 justify="center",
-    #                 style={'width': '90%', 'margin': 'auto'}
-    #             )
-    #         ]
-        
-    return l
+        return l
+
+def plot_scrublet_hist(name_analysis):
+
+    l = []
+    if get_node(name_analysis)['data']['computed']:
+        c_sim = config.adata.uns['sc_interactive'][name_analysis]['doublets_simulated_scrublet_score']
+        c_base = config.adata.obs[name_analysis+"_scrublet_score"].values
+
+        l = [
+                html.H1("Histogram Simulated"),
+                dcc.Dropdown(id="scrublet_plot_dropdown",options=["umap","hist_simulated"],value="hist_simulated"),
+                dbc.Row([
+                    dbc.Col(),
+                    dbc.Col([
+                        dcc.Graph(
+                            id="scrublet_scatter",
+                            figure={
+                                    "data":[
+                                        # go.Histogram(
+                                        #     x=c_base,
+                                        # ),
+                                        go.Histogram(
+                                            x=c_sim,
+                                        )
+                                    ],
+                                    "layout":{
+                                        'xlabel':'scrublet_score'
+                                    #         'yaxis':{
+                                    #             'scaleanchor':"x",
+                                    #             'scaleratio':1,
+                                    #         },
+                                    }
+                                },
+                            style={'width': '90vh', 'height': '50vh'}
+                        ),
+                    ],
+                    ),
+                    dbc.Col()
+                ],
+                justify='center'
+                )
+            ]
+            
+        return l
+    
+@app.callback(
+    dash.Output("analysis_plot","children",allow_duplicate=True),
+    dash.Input("scrublet_plot_dropdown","value"),
+    prevent_initial_call=True
+)
+def scrublet_switch_plot(plot):
+    
+    if plot == 'umap':
+        return plot_scrublet(config.selected)
+    else:
+        return plot_scrublet_hist(config.selected)
