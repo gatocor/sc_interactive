@@ -11,6 +11,12 @@ import plotly.graph_objs as go
 
 from . import config
 
+def make_nodes_summaries(inplace=True):
+
+    for node in node_names():
+        if "Raw" != node:
+            make_node_summary(node, inplace=True)
+
 def make_node_summary(name, inplace=True):
 
     node = get_node(name)
@@ -349,17 +355,36 @@ def image_selected(name):
 
 #     return pd.DataFrame(statistics)
 
+def get_batch_keys():
+    return [i for i in config.adata.obs.columns.values if config.adata.obs.dtypes[i] in [str,object,int]]
+
 def json_serializable(uns):
 
-    d = {}
+    d = "{"
 
-    for i in uns:
-        if type(uns[i]) == dict:
-            d[i] = json_serializable(uns[i])
-        elif type(uns[i]) in [int, float, str, list, np.int_, np.float_]:
-            d[i] = uns[i]
+    for i,object in uns.items():
+        if type(object) == dict:
+            d = f"{d}'{i}':{json_serializable(object)},"
+        elif type(object) in [int, float, list, np.int_, np.float_, bool]:
+            n = str(type(object)).split("class '")[-1].split("'")[0]
+            d = f"{d}'{i}':{object},"
+        elif type(object) in [str, list]:
+            if i == "summary":
+                o = object.split('\n')[0]
+                d = f"{d}'{i}':'{o}',"
+            elif i == "image":
+                o = object
+                if '_selected.png' in o:
+                    o = object.split('_selected.png')[0]+'.png'
+                d = f"{d}'{i}':'{o}',"
+            elif i != "summary":
+                n = str(type(object)).split("class '")[-1].split("'")[0]
+                d = f"{d}'{i}':'{object}',"
         else:
-            d[i] = str(type(uns[i]))
+            n = str(type(object)).split("class '")[-1].split("'")[0]
+            d = f"{d}'{i}':'{object}',"
+
+    d = d[:-1]+"}"
 
     return d
 

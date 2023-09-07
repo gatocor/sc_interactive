@@ -4,6 +4,7 @@ from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import os
 import scanpy as sc
+from pages.functions import make_nodes_summaries
 
 # must add this line in order for the app to be deployed successfully on Heroku
 from app import server
@@ -77,6 +78,11 @@ def display_page(pathname):
 
     #     return quality_control.layout()
     elif pathname == '/graph':
+
+        if "sc_interactive" in config.adata.uns.keys():
+            if "__graph__" in config.adata.uns["sc_interactive"]:
+                exec(config.adata.uns["sc_interactive"]["__graph__"], globals(), locals())
+                make_nodes_summaries()
 
         # if config.CACHEFOLDER not in config.file_path:
         #     config.file_path = config.CACHEFOLDER+config.file_path

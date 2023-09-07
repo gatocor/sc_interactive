@@ -47,7 +47,8 @@ graph_colormap={
     'QC':'yellow'
 }
 
-cytoscape_graph = cyto.Cytoscape(
+def cytoscape_graph():
+    return cyto.Cytoscape(
     id='graph_cytoscape',
     layout={'name': 'preset'},
     style={'width': '100%', 'height': '500px'},
@@ -114,7 +115,18 @@ def layout():
         [
             dbc.Row(
                 children=[
-                    dbc.Col(html.H1(id="title",children="Graphical Analysis"), width="auto")
+                    dbc.Col(html.H1(id="title",children="Graphical Analysis"), width="auto"),
+                    dbc.Col(),
+                    dbc.Col(),
+                    dbc.Col(
+                        dbc.Button(id='graph_save_button', children="Save",
+                                    size="lg",
+                                    style={
+                                        "background-color":"#343A40",
+                                        'width': '280px', 
+                                    }      
+                                    )
+                    )
                 ],
                 justify="center",
                 className="mb-4"
@@ -216,24 +228,11 @@ def layout():
                 ]
             ),
             dbc.Row(
-                cytoscape_graph,
-                style={'width': '100%', 'margin': 'auto'},
+                cytoscape_graph(),
+                style={'width': '100wh', 'heigt':'90vh', 'margin': 'auto'},
             ),
             # ]),
-            html.Div(id='graph_analysis'),
-            dbc.Row(
-                [
-                    dbc.Button(id='graph_save_button', children="Save",
-                                size="lg",
-                                style={
-                                    "background-color":"#343A40",
-                                    'width': '280px', 
-                                }      
-                                )
-                ],
-                justify="center",
-                className="mb-4"
-            ),
+            html.Div(id='graph_analysis',children=[]),
         ],
         fluid=True
     )
@@ -942,3 +941,19 @@ def display_click_data(tap_node_data, l):
     return config.graph, l
 
 #Save analysis
+@app.callback(
+    dash.Output("dumb","children",allow_duplicate=True),
+    dash.Input("graph_save_button","n_clicks"),
+    prevent_initial_call=True
+)
+def save(n_clicks):
+    if n_clicks != None:
+        n = "config.graph = ["
+        for i in [json_serializable(i) for i in config.graph]:
+            n += i+","
+        n += "]"
+        config.adata.uns["sc_interactive"]["__graph__"] = n
+
+        config.adata.write(config.file_path)
+
+    return ""
