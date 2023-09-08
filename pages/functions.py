@@ -207,15 +207,23 @@ def hist_vline(data,bins):
 
 def qualitative_colors(labels):
 
-    if type(labels[0]) not in [str,object,int]:
+    if type(labels[0]) not in [str,object,int,bool,np.bool_,np.int_,"category"]:
 
         return labels
 
-    elif type(labels[0]) in [int] and len(labels)>100:
+    elif type(labels[0]) in [int,np.int_] and len(labels)>100:
 
         return labels
+    
+    elif type(labels[0]) in [int,np.int_]:
 
-    elif type(labels[0]) in [str,object,int]:
+        color_map = {
+            True: "lightblue", False: "red"
+        }
+
+        return [color_map[i] for i in labels]
+
+    elif type(labels[0]) in [str,object,int,bool,np.bool_,np.int_,"category"]:
 
         color_sequence = px.colors.qualitative.Plotly
 
@@ -228,7 +236,7 @@ def qualitative_colors(labels):
         return [color_map[i] for i in labels]
     
 def get_batch_keys():
-    return [i for i in config.adata.obs.columns.values if config.adata.obs.dtypes[i] in [str,object,int]]
+    return [i for i in config.adata.obs.columns.values if config.adata.obs.dtypes[i] in [str,object,int,"category"]]
 
 def make_thresholds_table(threshold_measures,batches,cols_add):
     
