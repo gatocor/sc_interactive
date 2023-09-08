@@ -9,8 +9,15 @@ from dash import dash_table
 import dash_renderjson
 import plotly.graph_objs as go
 import plotly.express as px
+from dash.exceptions import PreventUpdate
 
 from . import config
+
+def prevent_race(name):
+
+    node = get_node(config.selected)
+    if not node['data']['computed'] or node['data']['method'] != name:
+        raise PreventUpdate()
 
 def make_nodes_summaries(inplace=True):
 

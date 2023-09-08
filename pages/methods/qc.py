@@ -119,209 +119,148 @@ def rename_qc(name_analysis, name_new_analysis):
 
 def plot_qc(name_analysis):
 
-    if get_node(name_analysis)['data']['computed']:
+    prevent_race('qc')
 
-        dic = get_node_parameters(name_analysis,str2list=True)['measure'] 
-        batch_key = get_node_parameters(name_analysis,str2list=True)['batch_key']
+    node = get_node(name_analysis)
 
-        node = get_node(name_analysis)
-        columns = node['data']['threshold']['columns']
-        data = node['data']['threshold']['data']
+    dic = get_node_parameters(name_analysis,str2list=True)['measure'] 
+    batch_key = get_node_parameters(name_analysis,str2list=True)['batch_key']
 
-        l = [
-                html.H1("Thresholds"),
-                dbc.Row(
-                    dash_table.DataTable(
-                        id="qc_threshold_table",
-                        columns=columns,
-                        data=data
-                    )
-                ),
-            ]
+    node = get_node(name_analysis)
+    columns = node['data']['threshold']['columns']
+    data = node['data']['threshold']['data']
 
-        for metric in dic:
+    l = [
+            html.H1("Thresholds"),
+            dbc.Row(
+                dash_table.DataTable(
+                    id="qc_threshold_table",
+                    columns=columns,
+                    data=data
+                )
+            ),
+        ]
 
-            var_selected_data = name_analysis+"_"+metric
-                
-            if batch_key == None:
-
-                cols = get_table_column(data,"Batch")
-                lims_min = float(get_table_column(data,metric+" min")[0])
-                lims_max = float(get_table_column(data,metric+" max")[0])
-                res = int(get_table_column(data,metric+" resolution")[0])
-
-                plot_max = hist_vline(config.adata.obs[var_selected_data].values, res)
-
-                l += [
-                        dbc.Row([
-                            dbc.Col(),
-                            dbc.Col(
-                                [
-                                    dcc.Graph(id="Histogram",
-                                        figure={
-                                                "data":[
-                                                    go.Histogram(
-                                                        x=config.adata.obs[var_selected_data].values,
-                                                        nbinsx=res,
-                                                        name='Histogram',
-                                                        marker=dict(color='blue'),
-                                                        opacity=0.7
-                                                    ),
-                                                    go.Scatter(
-                                                        x=[lims_min, lims_min],
-                                                        y=[0,plot_max],
-                                                        name='Min threshold',
-                                                        marker=dict(color='orange'),
-                                                        opacity=0.7
-                                                    ),
-                                                    go.Scatter(
-                                                        x=[lims_max, lims_max],
-                                                        y=[0,plot_max],
-                                                        name='Max threshold',
-                                                        marker=dict(color='red'),
-                                                        opacity=0.7
-                                                    ),
-                                                ],
-                                                "layout":{
-                                                        'title': f'Histogram of {var_selected_data}',
-                                                        'xaxis': {'title': var_selected_data},
-                                                        'yaxis': {'title': 'Count'},
-                                                        'barmode': 'overlay',
-                                                }
-                                            },
-                                        style={'width': '90vw', 'height': '50vh'}
-                                    )
-                                ],
-                            ),
-                            dbc.Col(),
-                            ],
-                            justify='center'
-                        )
-                ]
-            else:
-
-                cols = get_table_column(data,"Batch")
-                lims_min = get_table_column(data,metric+" min")
-                lims_max = get_table_column(data,metric+" max")
-                res = get_table_column(data,metric+" resolution")[0]
-
-                custom_marker = {
-                    'symbol': 'line-ns',  # Symbol code for a horizontal line (short dash)
-                    'size': 3,  # Length of the horizontal line
-                    'color': 'red',  # Color of the line
-                    'line': {'width': 20}  # Line width
-                }
-
-                x = config.adata.obs[batch_key].values
-                l += [
-                        dbc.Row([
-                            dbc.Col(),
-                            dbc.Col(
-                                [dcc.Graph(id="Histogram",
-                                        figure={
-                                                "data":[
-                                                    go.Violin(
-                                                        x=x,
-                                                        y=config.adata.obs[var_selected_data].values,
-                                                        bandwidth=res,
-                                                        name='var_selected_data',
-                                                        # marker=dict(color='blue'),
-                                                        # opacity=0.7
-                                                    ),
-                                                    go.Scatter(
-                                                        x=cols,
-                                                        y=lims_min,
-                                                        mode='markers',
-                                                        marker=custom_marker,
-                                                        name='Local min threshold',
-                                                        # nbinsx=100,
-                                                        # name='Histogram',
-                                                        # opacity=0.7
-                                                    ),
-                                                    go.Scatter(
-                                                        x=cols,
-                                                        y=lims_max,
-                                                        mode='markers',
-                                                        marker=custom_marker,
-                                                        name='Local max threshold',
-                                                        # nbinsx=100,
-                                                        # name='Histogram',
-                                                        # marker=dict(color='blue'),
-                                                        # opacity=0.7
-                                                    ),
-                                                ],
-                                                "layout":{
-                                                        'title': f'Violinplot of {var_selected_data}',
-                                                        'xaxis': {'title': batch_key},
-                                                        'yaxis': {'title': var_selected_data},
-                                                        'barmode': 'overlay',
-                                                }
-                                            },
-                                        style={'width': '90vw', 'height': '50vh'}
-                                )],
-                            ),
-                            dbc.Col(),
-                            ],
-                            justify='center'
-                        )
-                ]
+    for metric in dic:
+        var_selected_data = name_analysis+"_"+metric
             
         if batch_key == None:
 
-            lims_min_x = get_table_column(data,node['data']['x_label']+" min")[0]
-            lims_max_x = get_table_column(data,node['data']['x_label']+" max")[0]
-            lims_min_y = get_table_column(data,node['data']['y_label']+" min")[0]
-            lims_max_y = get_table_column(data,node['data']['y_label']+" max")[0]
+            cols = get_table_column(data,"Batch")
+
+            lims_min = float(get_table_column(data,metric+" min")[0])
+            lims_max = float(get_table_column(data,metric+" max")[0])
+            res = int(get_table_column(data,metric+" resolution")[0])
+
+            plot_max = hist_vline(config.adata.obs[var_selected_data].values, res)
 
             l += [
-                    html.H1("Summary"),
-                    dcc.Dropdown(
-                        id="qc_summary_plot_x",
-                        value=node['data']['x_label'], 
-                        options=dic
-                    ),
-                    dcc.Dropdown(
-                        id="qc_summary_plot_y",
-                        value=node['data']['y_label'], 
-                        options=dic
-                    ),
-                    dcc.Dropdown(
-                        id="qc_summary_plot_c",
-                        value=node['data']['c_label'], 
-                        options=dic
-                    ),
                     dbc.Row([
                         dbc.Col(),
                         dbc.Col(
-                            [dcc.Graph(
-                                    id="summary_qc_scatter",
+                            [
+                                dcc.Graph(id="Histogram",
                                     figure={
                                             "data":[
-                                                go.Scatter(
-                                                    x=config.adata.obs[name_analysis+"_"+node['data']['x_label']].values,
-                                                    y=config.adata.obs[name_analysis+"_"+node['data']['y_label']].values,
-                                                    mode='markers',
-                                                    name='Local max threshold',
-                                                    # nbinsx=100,
-                                                    # name='Histogram',
-                                                    marker=dict(color=qualitative_colors(config.adata.obs[name_analysis+"_"+node['data']['c_label']].values)),
-                                                    # opacity=0.7
+                                                go.Histogram(
+                                                    x=config.adata.obs[var_selected_data].values,
+                                                    nbinsx=res,
+                                                    name='Histogram',
+                                                    marker=dict(color='blue'),
+                                                    opacity=0.7
                                                 ),
                                                 go.Scatter(
-                                                    x=[lims_min_x, lims_min_x, lims_max_x, lims_max_x, lims_min_x], 
-                                                    y=[lims_min_y,lims_max_y,lims_max_y,lims_min_y,lims_min_y],
-                                                    name='Limits',
-                                                    marker={'color':'black'}
+                                                    x=[lims_min, lims_min],
+                                                    y=[0,plot_max],
+                                                    name='Min threshold',
+                                                    marker=dict(color='orange'),
+                                                    opacity=0.7
+                                                ),
+                                                go.Scatter(
+                                                    x=[lims_max, lims_max],
+                                                    y=[0,plot_max],
+                                                    name='Max threshold',
+                                                    marker=dict(color='red'),
+                                                    opacity=0.7
                                                 ),
                                             ],
                                             "layout":{
-                                                    'title': f'Summary plot',
-                                                    'xaxis': {'title': name_analysis+"_"+node['data']['x_label']},
-                                                    'yaxis': {'title': name_analysis+"_"+node['data']['y_label']},
+                                                    'title': f'Histogram of {var_selected_data}',
+                                                    'xaxis': {'title': var_selected_data},
+                                                    'yaxis': {'title': 'Count'},
                                                     'barmode': 'overlay',
                                             }
                                         },
-                                    style={'width': '90vh', 'height': '90vh'}
+                                    style={'width': '90vw', 'height': '50vh'}
+                                )
+                            ],
+                        ),
+                        dbc.Col(),
+                        ],
+                        justify='center'
+                    )
+            ]
+        else:
+
+            cols = get_table_column(data,"Batch")
+            lims_min = get_table_column(data,metric+" min")
+            lims_max = get_table_column(data,metric+" max")
+            res = get_table_column(data,metric+" resolution")[0]
+
+            custom_marker = {
+                'symbol': 'line-ns',  # Symbol code for a horizontal line (short dash)
+                'size': 3,  # Length of the horizontal line
+                'color': 'red',  # Color of the line
+                'line': {'width': 20}  # Line width
+            }
+
+            x = config.adata.obs[batch_key].values
+
+            l += [
+                    dbc.Row([
+                        dbc.Col(),
+                        dbc.Col(
+                            [dcc.Graph(id="Histogram",
+                                    figure={
+                                            "data":[
+                                                go.Violin(
+                                                    x=x,
+                                                    y=config.adata.obs[var_selected_data].values,
+                                                    bandwidth=res,
+                                                    name='var_selected_data',
+                                                    # marker=dict(color='blue'),
+                                                    # opacity=0.7
+                                                ),
+                                                go.Scatter(
+                                                    x=cols,
+                                                    y=lims_min,
+                                                    mode='markers',
+                                                    marker=custom_marker,
+                                                    name='Local min threshold',
+                                                    # nbinsx=100,
+                                                    # name='Histogram',
+                                                    # opacity=0.7
+                                                ),
+                                                go.Scatter(
+                                                    x=cols,
+                                                    y=lims_max,
+                                                    mode='markers',
+                                                    marker=custom_marker,
+                                                    name='Local max threshold',
+                                                    # nbinsx=100,
+                                                    # name='Histogram',
+                                                    # marker=dict(color='blue'),
+                                                    # opacity=0.7
+                                                ),
+                                            ],
+                                            "layout":{
+                                                    'title': f'Violinplot of {var_selected_data}',
+                                                    'xaxis': {'title': batch_key},
+                                                    'yaxis': {'title': var_selected_data},
+                                                    'barmode': 'overlay',
+                                            }
+                                        },
+                                    style={'width': '90vw', 'height': '50vh'}
                             )],
                         ),
                         dbc.Col(),
@@ -329,8 +268,72 @@ def plot_qc(name_analysis):
                         justify='center'
                     )
             ]
+            
+    if batch_key == None:
 
-        return l
+        lims_min_x = get_table_column(data,node['data']['x_label']+" min")[0]
+        lims_max_x = get_table_column(data,node['data']['x_label']+" max")[0]
+        lims_min_y = get_table_column(data,node['data']['y_label']+" min")[0]
+        lims_max_y = get_table_column(data,node['data']['y_label']+" max")[0]
+
+        l += [
+                html.H1("Summary"),
+                dcc.Dropdown(
+                    id="qc_summary_plot_x",
+                    value=node['data']['x_label'], 
+                    options=dic
+                ),
+                dcc.Dropdown(
+                    id="qc_summary_plot_y",
+                    value=node['data']['y_label'], 
+                    options=dic
+                ),
+                dcc.Dropdown(
+                    id="qc_summary_plot_c",
+                    value=node['data']['c_label'], 
+                    options=dic
+                ),
+                dbc.Row([
+                    dbc.Col(),
+                    dbc.Col(
+                        [dcc.Graph(
+                                id="summary_qc_scatter",
+                                figure={
+                                        "data":[
+                                            go.Scatter(
+                                                x=config.adata.obs[name_analysis+"_"+node['data']['x_label']].values,
+                                                y=config.adata.obs[name_analysis+"_"+node['data']['y_label']].values,
+                                                mode='markers',
+                                                name='Local max threshold',
+                                                # nbinsx=100,
+                                                # name='Histogram',
+                                                marker=dict(color=qualitative_colors(config.adata.obs[name_analysis+"_"+node['data']['c_label']].values)),
+                                                # opacity=0.7
+                                            ),
+                                            go.Scatter(
+                                                x=[lims_min_x, lims_min_x, lims_max_x, lims_max_x, lims_min_x], 
+                                                y=[lims_min_y,lims_max_y,lims_max_y,lims_min_y,lims_min_y],
+                                                name='Limits',
+                                                marker={'color':'black'}
+                                            ),
+                                        ],
+                                        "layout":{
+                                                'title': f'Summary plot',
+                                                'xaxis': {'title': name_analysis+"_"+node['data']['x_label']},
+                                                'yaxis': {'title': name_analysis+"_"+node['data']['y_label']},
+                                                'barmode': 'overlay',
+                                        }
+                                    },
+                                style={'width': '90vh', 'height': '90vh'}
+                        )],
+                    ),
+                    dbc.Col(),
+                    ],
+                    justify='center'
+                )
+        ]
+
+    return l
 
 @app.callback(
     dash.Output("analysis_plot","children",allow_duplicate=True),
@@ -338,6 +341,10 @@ def plot_qc(name_analysis):
     prevent_initial_call=True
 )
 def update_table(data):
+
+    prevent_race('qc')
+
+    node = get_node(config.selected)
 
     dic = get_node_parameters(config.selected,str2list=True)['measure'] 
     batch = get_node_parameters(config.selected,str2list=True)['batch_key'] 
@@ -366,6 +373,10 @@ def update_table(data):
     prevent_initial_call=True
 )
 def update_qc_summary(a,b,c):
+
+    prevent_race('qc')
+
+    node = get_node(config.selected)
 
     pos = get_node_pos(config.selected)
     node = get_node(config.selected)

@@ -269,7 +269,6 @@ def load_node(name):
     node = get_node(name)
     config.active_node_parameters = node['data']['parameters'].copy()
     change_node_selected(name)
-    config.selected = name
 
     if name == "Raw":
 
@@ -284,6 +283,8 @@ def load_node(name):
                         style={"margin-bottom":"1cm"}        
             ),
         ]
+
+    config.selected = name
 
     return l
 
