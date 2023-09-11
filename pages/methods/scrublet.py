@@ -36,7 +36,8 @@ def args_scrublet():
             "description":"str, optional (default: None) Batch key to use. The Doublet metric will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
             "value":None,
             "clearable":True,
-            "options":options_batch
+            "options":options_batch,
+            "summary":True
         },
         {
             "input":"BooleanSwitch",
@@ -63,7 +64,8 @@ def args_scrublet():
             "description":"str, optional (default: 'euclidean') Distance metric used when finding nearest neighbors. For list of valid values, see the documentation for annoy (if 'use_approx_neighbors' is True) or sklearn.neighbors.NearestNeighbors (if 'use_approx_neighbors' is False).",
             "value":"euclidean",
             "clearable":False,
-            "options":["euclidean","manhattan","angular","hamming","dot"]
+            "options":["euclidean","manhattan","angular","hamming","dot"],
+            "summary":True
         },
         {
             "input":"Input",
@@ -91,6 +93,7 @@ def args_scrublet():
             "name":"log_transform",
             "description":"bool, optional (default: False) If True, log-transform the counts matrix (log10(1+TPM)).  'sklearn.decomposition.TruncatedSVD' will be used for dimensionality reduction, unless 'mean_center' is True.",
             "value":False,
+            "summary":True
         },
         {
             "input":"BooleanSwitch",
@@ -109,7 +112,8 @@ def args_scrublet():
             "name":"n_prin_comps",
             "description":"int, optional (default: 30) Number of principal components used to embed the transcriptomes prior to k-nearest-neighbor graph construction.",
             "value":30,
-            "type":"number"
+            "type":"number",
+            "summary":True
         },
         {
             "input":"Dropdown",
@@ -158,6 +162,8 @@ def scrublet_(X, kwargs):
 
 def f_scrublet(name_analysis, kwargs):
 
+    pos = get_node_pos(config.selected)
+
     if kwargs['batch_key'] == None:
 
         X, doublet_scores_obs_, doublet_scores_sim_ = scrublet_(config.adata.X, kwargs)
@@ -167,6 +173,8 @@ def f_scrublet(name_analysis, kwargs):
         config.adata.uns["sc_interactive"][name_analysis] = {
             "doublets_simulated_scrublet_score" : doublet_scores_sim_
         }
+
+        config.graph[pos]['data']['batch'] = None
 
     else:
 
@@ -186,6 +194,8 @@ def f_scrublet(name_analysis, kwargs):
             config.adata.obsm[name_analysis+"_UMAP"][sub,:] = X
             config.adata.uns["sc_interactive"][name_analysis]["doublets_simulated_scrublet_score"][b] = doublet_scores_sim_
 
+        config.graph[pos]['data']['batch'] = config.adata.obs[kwargs['batch_key']].values
+
     #Make empty table
     add = ["max","nBins"]
     if kwargs["batch_key"] == None:
@@ -200,8 +210,11 @@ def f_scrublet(name_analysis, kwargs):
         set_table_value(data, i, "scrublet max", 1)
         set_table_value(data, i, "scrublet nBins", 20)
 
-    pos = get_node_pos(config.selected)
+    config.graph[pos]['data']['doublets_simulated_scrublet_score'] = config.adata.uns["sc_interactive"][name_analysis]["doublets_simulated_scrublet_score"].copy()
+    config.graph[pos]['data']['doublets_score'] = config.adata.obs[name_analysis+"_scrublet_score"].values
+    config.graph[pos]['data']['UMAP'] = config.adata.obsm[name_analysis+"_UMAP"].copy()
     config.graph[pos]['data']['threshold'] = {'columns':columns,'data':data}
+    config.graph[pos]['data']['filter'] = np.ones_like(config.adata.X.shape[0])>0
     config.graph[pos]['data']['show_scores'] = True
 
 def rm_scrublet(name_analysis):
@@ -231,6 +244,7 @@ def plot_scrublet(name_analysis):
         return []
 
     node = get_node(name_analysis)
+    pos = get_node_pos(name_analysis)
 
     columns = node['data']['threshold']['columns']
     data = node['data']['threshold']['data']
@@ -257,14 +271,14 @@ def plot_scrublet(name_analysis):
     if node['data']['parameters']['batch_key'] == None:
         lims_max = float(get_table_column(data,"scrublet max")[0])
         res = int(get_table_column(data,"scrublet nBins")[0])
-        X = config.adata.obsm[name_analysis+"_UMAP"]
-        c = config.adata.obs[name_analysis+"_scrublet_score"].values.copy()
+        X = np.array(config.graph[pos]['data']['UMAP'])
+        c = np.array(config.graph[pos]['data']['doublets_score'])
         if node['data']['show_scores']:
             c = c
         else:
             c = c > lims_max
         order = np.argsort(c)
-        c_sim = config.adata.uns['sc_interactive'][name_analysis]['doublets_simulated_scrublet_score']
+        c_sim = config.graph[pos]['data']['doublets_simulated_scrublet_score']
         plot_max = hist_vline(c_sim, res)
         l += [
                 dbc.Row([
@@ -326,17 +340,18 @@ def plot_scrublet(name_analysis):
             ]
         
     else:
-        for b,c_sim in config.adata.uns['sc_interactive'][name_analysis]['doublets_simulated_scrublet_score'].items():
-            sub = config.adata.obs[node['data']['parameters']['batch_key']].values == b
+        for b,c_sim in config.graph[pos]['data']['doublets_simulated_scrublet_score'].items():
+            sub = np.array(config.graph[pos]['data']['batch']) == b
             lims_max = float(get_table_value(data,b,"scrublet max"))
             res = int(get_table_value(data,b,"scrublet nBins"))
-            X = config.adata.obsm[name_analysis+"_UMAP"][sub,:]
-            c = config.adata.obs[name_analysis+"_scrublet_score"].values[sub].copy()
+            X = np.array(config.graph[pos]['data']["UMAP"])[sub,:]
+            c = np.array(config.graph[pos]['data']["doublets_score"])[sub]
             if node['data']['show_scores']:
                 c = c
             else:
                 c = c > lims_max
             order = np.argsort(c)
+
             plot_max = hist_vline(c_sim, res)
             l += [
                     dbc.Row([
@@ -410,6 +425,26 @@ def update_table(data):
 
     pos = get_node_pos(config.selected)
     config.graph[pos]['data']['threshold']['data'] = data
+    batch = get_node_parameters(config.selected)['batch_key']
+
+    if batch == None:
+
+        col = np.array([float(i) for i in get_table_column(data,"scrublet max")])
+        s = np.array(config.graph[pos]['data']['doublets_score']) > float(get_table_value(data,batch,"scrublet max"))
+        s <= 1
+
+        config.graph[pos]['data']['filter'] = s
+
+    elif batch != None:
+
+        col = np.array([float(i) for i in get_table_column(data,"scrublet max")])
+        s = np.ones_like(config.graph[pos]['data']['doublets_score'])
+        for b in np.unique(config.graph[pos]['data']['batch']):    
+            sub = np.array(config.graph[pos]['data']['batch']) == b
+            s[sub] = np.array(config.graph[pos]['data']['doublets_score'])[sub] <= float(get_table_value(data,b,"scrublet max"))
+            s <= 1
+
+        config.graph[pos]['data']['filter'] = s
 
     return plot_scrublet(config.selected)
 

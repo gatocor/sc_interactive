@@ -79,6 +79,11 @@ def f_qc(name_analysis, kwargs):
 
     pos = get_node_pos(config.selected)
     config.graph[pos]['data']['threshold'] = {'columns':columns,'data':data}
+    config.graph[pos]['data']['filter'] = {i:np.ones_like(config.adata.X.shape[0])>0 for i in get_node_parameters(name_analysis,str2list=True)['measure']}
+
+    config.graph[pos]['data']['measures'] = {}
+    for l in kwargs["measure"]:
+        config.graph[pos]['data']['measures'][l] = config.adata.obs[name_analysis+"_"+l].values
 
     if len(kwargs["measure"]) == 0:
         config.graph[pos]['data']['x_label'] = None
@@ -153,7 +158,7 @@ def plot_qc(name_analysis):
             lims_max = float(get_table_column(data,metric+" max")[0])
             res = int(get_table_column(data,metric+" resolution")[0])
 
-            plot_max = hist_vline(config.adata.obs[var_selected_data].values, res)
+            plot_max = hist_vline(node['data']['measures'][metric], res)
 
             l += [
                     dbc.Row([
@@ -164,7 +169,7 @@ def plot_qc(name_analysis):
                                     figure={
                                             "data":[
                                                 go.Histogram(
-                                                    x=config.adata.obs[var_selected_data].values,
+                                                    x=node['data']['measures'][metric],
                                                     nbinsx=res,
                                                     name='Histogram',
                                                     marker=dict(color='blue'),
@@ -226,7 +231,7 @@ def plot_qc(name_analysis):
                                             "data":[
                                                 go.Violin(
                                                     x=x,
-                                                    y=config.adata.obs[var_selected_data].values,
+                                                    y=node['data']['measures'][metric],
                                                     bandwidth=res,
                                                     name='var_selected_data',
                                                     # marker=dict(color='blue'),
@@ -302,13 +307,13 @@ def plot_qc(name_analysis):
                                 figure={
                                         "data":[
                                             go.Scatter(
-                                                x=config.adata.obs[name_analysis+"_"+node['data']['x_label']].values,
-                                                y=config.adata.obs[name_analysis+"_"+node['data']['y_label']].values,
+                                                x=node['data']['measures'][node['data']['x_label']],
+                                                y=node['data']['measures'][node['data']['y_label']],
                                                 mode='markers',
                                                 name='Local max threshold',
                                                 # nbinsx=100,
                                                 # name='Histogram',
-                                                marker=dict(color=qualitative_colors(config.adata.obs[name_analysis+"_"+node['data']['c_label']].values)),
+                                                marker=dict(color=qualitative_colors(node['data']['measures'][node['data']['c_label']])),
                                                 # opacity=0.7
                                             ),
                                             go.Scatter(
@@ -346,14 +351,31 @@ def update_table(data):
     prevent_race('qc')
 
     node = get_node(config.selected)
+    pos = get_node_pos(config.selected)
 
     dic = get_node_parameters(config.selected,str2list=True)['measure'] 
     batch = get_node_parameters(config.selected,str2list=True)['batch_key'] 
     for i in dic:
         if batch == None:
             col = np.array([int(i) for i in get_table_column(data,i+" resolution")])
+
+            s = np.array(node['data']['measures'][i]) >= float(get_table_value(data,batch,i+" min"))
+            s *= np.array(node['data']['measures'][i]) <= float(get_table_value(data,batch,i+" max"))
+            s = s < 1
+            config.graph[pos]['data']['filter'][i] = s
+
         elif batch != None:
             col = np.array([float(i) for i in get_table_column(data,i+" resolution")])
+
+            s = np.ones_like(np.array(node['data']['measures'][i]))
+            for b in config.adata.obs[batch].unique():    
+                sub = config.adata.obs[batch].values == b
+
+                s[sub] = np.array(node['data']['measures'][i])[sub] >= float(get_table_value(data,b,i+" min"))
+                s[sub] *= np.array(node['data']['measures'][i])[sub] <= float(get_table_value(data,b,i+" max"))
+                s = s < 1
+
+            config.graph[pos]['data']['filter'][i] = s
 
         v1 = mode(col).mode
         if sum(col!=v1)>0:
@@ -394,13 +416,13 @@ def update_qc_summary(a,b,c):
     f = {
             "data":[
                 go.Scatter(
-                    x=config.adata.obs[config.selected+"_"+node['data']['x_label']].values,
-                    y=config.adata.obs[config.selected+"_"+node['data']['y_label']].values,
+                    x=node['data']['measures'][node['data']['x_label']],
+                    y=node['data']['measures'][node['data']['y_label']],
                     mode='markers',
                     name='Local max threshold',
                     # nbinsx=100,
                     # name='Histogram',
-                    marker=dict(color=qualitative_colors(config.adata.obs[config.selected+"_"+node['data']['c_label']].values)),
+                    marker=dict(color=qualitative_colors(node['data']['measures'][node['data']['c_label']])),
                     # opacity=0.7
                 ),
                 go.Scatter(

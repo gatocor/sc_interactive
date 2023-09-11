@@ -22,6 +22,8 @@ class NpEncoder(json.JSONEncoder):
             return float(obj)
         if isinstance(obj, np.ndarray):
             return obj.tolist()
+        if isinstance(obj, pd.Categorical):
+            return obj.tolist()
         return super(NpEncoder, self).default(obj)
 
 def make_graph_path(name):
@@ -30,12 +32,16 @@ def make_graph_path(name):
 def make_file_path(name):
     return "./__graph__/"+name.split("/")[-1].split(".")[0]+"_qc"+".h5ad"
 
-def prevent_race(name):
+def prevent_race(name,computed=True,method=True):
 
     node = get_node(config.selected)
-    if not node['data']['computed'] or node['data']['method'] != name:
+    if not node['data']['computed'] and computed:
         raise PreventUpdate()
-    
+
+    if node['data']['method'] != name and method:
+        raise PreventUpdate()
+
+
 def make_nodes_summaries(inplace=True):
 
     for node in node_names():
@@ -50,10 +56,8 @@ def make_node_summary(name, inplace=True):
     for prop in config.arguments[node['data']['method']]():   
         if type(prop) != str:
             if "summary" in prop.keys():
-                m = node['data']['parameters'][prop['name']]
-                if m == None:
-                    m = '[]'
-                summary += f"{prop['name']}:\n "+str(m[1:-1].replace(',','\n '))
+                m = str(node['data']['parameters'][prop['name']])
+                summary += f"{prop['name']}:\n "+str(m.replace(',','\n '))+"\n"
 
     if inplace:
         pos = get_node_pos(name)
@@ -76,7 +80,7 @@ def get_nodes():
 def get_ancestors(name):
     l = []
     node = get_node(name)
-    while node['data']['parameters']['input'] not in [None,"Raw"]:
+    while node['data']['parameters']['input'] not in [None]:
         node = get_node(node['data']['parameters']['input'])
         l.insert(0,node)
 

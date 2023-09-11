@@ -27,8 +27,12 @@ def args_filtering():
         },
     ]
 
-def f_filtering(adata, name_analysis, **kwargs):
+def f_filtering(name_analysis, kwargs):
         
+    pos = get_node_pos(name_analysis)
+    keep = config.graph[pos]['data']['retained']
+    config.adata = config.adata[keep,:]
+
     return
 
 def rm_filtering(name_analysis):
@@ -41,7 +45,68 @@ def rename_filtering(name_analysis):
 
 def plot_filtering(name_analysis):
 
-    return []
+    name = config.active_node_parameters['input']
+
+    if name == None:
+        return []
+
+    ancestors = get_ancestors(name)
+    ancestors.append(get_node(name))
+
+    pos = get_node_pos(name_analysis)
+
+    for ancestor in ancestors:
+        if 'filter' in ancestor['data']:
+            if type(ancestor['data']['filter']) == dict:
+                for i,j in ancestor['data']['filter'].items():
+                    total_removed = np.zeros_like(j)
+                    break
+            else:
+                j = ancestor['data']['filter']
+                total_removed = np.zeros_like(j)
+                break
+
+            config.graph[pos]['data']['retained'] = np.array(total_removed)==False
+
+    removed = []
+    for ancestor in ancestors:
+        if 'filter' in ancestor['data']:
+            if type(ancestor['data']['filter']) == dict:
+                for i,j in ancestor['data']['filter'].items():
+                    removed.append({"name":name_analysis+" "+i,"removed":sum(j)*100/len(j),"retained":sum(np.array(j)==False)*100/len(j)})
+                    total_removed += j
+            else:
+                j = ancestor['data']['filter']
+                removed.append({"name":ancestor['data']['id'],"removed":sum(j)*100/len(j),"retained":sum(np.array(j)==False)*100/len(j)})
+                total_removed += j
+
+    if len(removed) != 0:
+        total_removed = total_removed > 0
+        removed.append({"name":"TOTAL","removed":sum(total_removed)*100/len(j),"retained":sum(np.array(total_removed)==False)*100/len(j)})
+
+        config.graph[pos]['data']['retained'] = np.array(total_removed)==False
+
+    return [
+        dash_table.DataTable(
+            columns=[
+                {"name":"name","id":"name"},
+                {"name":"removed (%)","id":"removed"},
+                {"name":"retained (%)","id":"retained"}
+            ],
+            data=removed
+        )
+    ]
+
+@app.callback(
+    dash.Output("analysis_plot","children",allow_duplicate=True),
+    dash.Input("analysis_input","value"),
+    prevent_initial_call=True
+)
+def update(_):
+
+    prevent_race('filtering',computed=False)
+
+    return plot_filtering(config.selected)
 
 # @app.callback(
 #     dash.Output("filtering_measure","data"),
