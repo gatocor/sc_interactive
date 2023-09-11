@@ -226,7 +226,9 @@ def rename_scrublet(name_analysis, name_new_analysis):
 
 def plot_scrublet(name_analysis):
 
-    prevent_race('scrublet')
+    node = get_node(name_analysis)
+    if not node['data']['computed']:
+        return []
 
     node = get_node(name_analysis)
 

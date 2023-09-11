@@ -5,6 +5,9 @@ import dash_bootstrap_components as dbc
 import os
 import scanpy as sc
 from pages.functions import make_nodes_summaries
+import json
+
+from pages.functions import *
 
 # must add this line in order for the app to be deployed successfully on Heroku
 from app import server
@@ -79,10 +82,21 @@ def display_page(pathname):
     #     return quality_control.layout()
     elif pathname == '/graph':
 
-        if "sc_interactive" in config.adata.uns.keys():
-            if "__graph__" in config.adata.uns["sc_interactive"]:
-                exec(config.adata.uns["sc_interactive"]["__graph__"], globals(), locals())
-                make_nodes_summaries()
+        graph_name = make_graph_path(config.file_path)
+        if "__graph__" in os.listdir("."): #If graph exists, load it
+            if graph_name.split("/")[-1] in os.listdir("./__graph__"):
+        
+                with open(graph_name, 'r') as openfile:
+                
+                    # Reading from json file
+                    json_object = json.load(openfile)
+
+                config.graph = json_object
+
+        # if "sc_interactive" in config.adata.uns.keys():
+        #     if "__graph__" in config.adata.uns["sc_interactive"]:
+        #         #exec(config.adata.uns["sc_interactive"]["__graph__"], globals(), locals())
+        #         make_nodes_summaries()
 
         # if config.CACHEFOLDER not in config.file_path:
         #     config.file_path = config.CACHEFOLDER+config.file_path

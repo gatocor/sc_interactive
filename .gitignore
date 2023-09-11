@@ -6,3 +6,4 @@ data/*
 pages/__pycache__/*
 __pycache__/*
 __h5adcache__/*
+__graph__/*

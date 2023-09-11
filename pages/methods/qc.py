@@ -36,7 +36,8 @@ def args_qc():
             "description":"str, optional (default: None) Batch key to use. The Doublet metric will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
             "value":None,
             "clearable":True,
-            "options":options_batch
+            "options":options_batch,
+            "summary":True
         },
         {
             "input":"MeasureTable",
@@ -119,9 +120,9 @@ def rename_qc(name_analysis, name_new_analysis):
 
 def plot_qc(name_analysis):
 
-    prevent_race('qc')
-
     node = get_node(name_analysis)
+    if not node['data']['computed']:
+        return []
 
     dic = get_node_parameters(name_analysis,str2list=True)['measure'] 
     batch_key = get_node_parameters(name_analysis,str2list=True)['batch_key']

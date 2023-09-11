@@ -10,15 +10,32 @@ import dash_renderjson
 import plotly.graph_objs as go
 import plotly.express as px
 from dash.exceptions import PreventUpdate
+import json
 
 from . import config
+
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
+
+def make_graph_path(name):
+    return "./__graph__/"+name.split("/")[-1].split(".")[0]+".json"
+
+def make_file_path(name):
+    return "./__graph__/"+name.split("/")[-1].split(".")[0]+"_qc"+".h5ad"
 
 def prevent_race(name):
 
     node = get_node(config.selected)
     if not node['data']['computed'] or node['data']['method'] != name:
         raise PreventUpdate()
-
+    
 def make_nodes_summaries(inplace=True):
 
     for node in node_names():
@@ -55,6 +72,15 @@ def get_node_pos(name):
 
 def get_nodes():
     return [i for i in config.graph if 'id' in i['data'].keys()]
+
+def get_ancestors(name):
+    l = []
+    node = get_node(name)
+    while node['data']['parameters']['input'] not in [None,"Raw"]:
+        node = get_node(node['data']['parameters']['input'])
+        l.insert(0,node)
+
+    return l
 
 def get_edges():
     return [i for i in config.graph if 'target' in i['data'].keys()]

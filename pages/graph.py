@@ -19,7 +19,7 @@ from app import app
 
 from .methods.qc import *
 from .methods.scrublet import *
-# from .methods.filtering import *
+from .methods.filtering import *
 # from .methods.graph import *
 # from .methods.normalize import *
 # from .methods.log1p import *
@@ -30,8 +30,9 @@ from .methods.scrublet import *
 # from .methods.louvain import *
 
 methods = {
-    "qc":{"method":"qc","type":"QC"},
-    "scrublet":{"method":"scrublet","type":"QC"},
+    "qc":{"method":"qc","type":"QC","recompute":False},
+    "scrublet":{"method":"scrublet","type":"QC","recompute":False},
+    "filtering":{"method":"filtering","type":"QC","recompute":True},
     # "Filtering":{"method":"filtering","type":"Filtering"},
     # "Feature selection":{"method":"graph","type":"Dimensionaity Reduction"},
     # "Normalize":{"method":"normalize","type":"Transformations"},
@@ -425,6 +426,7 @@ def layout_{method}(name_analysis):
 
     node_pars = get_node(name_analysis)['data']['parameters']
     l = make_arguments('{method}', args_{method}(), node_pars)
+    p = plot_{method}(name_analysis)
         
     style = dict()
     style["background-color"]="lightgray"
@@ -434,7 +436,7 @@ def layout_{method}(name_analysis):
                         # width='50%',
                         style=style
                         ),
-                dbc.Row(id='analysis_plot',children=plot_{method}(name_analysis))
+                dbc.Row(id='analysis_plot',children=p)
             ]
 """
 
@@ -639,8 +641,10 @@ def graph_new_node(_, method, cytoscape):
     }
     #make active node that is the one that will be presented
     # nodes_update_pos(config.graph,cytoscape)
+
     config.active_node_parameters = args2params(args).copy()
     config.graph.append(node)
+
     l = load_node(name)
     make_node_summary(config.selected)
 
@@ -949,12 +953,24 @@ def display_click_data(tap_node_data, l):
 )
 def save(n_clicks):
     if n_clicks != None:
-        n = "config.graph = ["
-        for i in [json_serializable(i) for i in config.graph]:
-            n += i+","
-        n += "]"
-        config.adata.uns["sc_interactive"]["__graph__"] = n
+        # n = "config.graph = ["
+        # for i in [json_serializable(i) for i in config.graph]:
+        #     n += i+","
+        # n += "]"
+        # config.adata.uns["sc_interactive"]["__graph__"] = n
 
-        config.adata.write(config.file_path)
+        if "__graph__" not in os.listdir("."):
+
+            os.mkdir("__graph__")
+
+        image_unselected(config.selected)
+        file = make_graph_path(config.file_path)
+        with open(file,"w") as outfile:
+            json_object = json.dumps(config.graph, indent=4, cls=NpEncoder)
+            outfile.write(json_object)
+        image_selected(config.selected)
+
+        file = make_file_path(config.file_path)
+        config.adata.write(file)
 
     return ""
