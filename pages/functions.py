@@ -41,7 +41,6 @@ def prevent_race(name,computed=True,method=True):
     if node['data']['method'] != name and method:
         raise PreventUpdate()
 
-
 def make_nodes_summaries(inplace=True):
 
     for node in node_names():

@@ -1,24 +1,38 @@
 import numpy as np
 import scanpy as sc
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
+from dash import dcc, dash_table
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+import dash
 
-def feature_selection_args(adata):
+from ..functions import *
 
-    options = []
-    if "__interactive__" in adata.uns.keys():
-        options = ["Raw"]+[i[2:] for i in adata.obsm.keys()] 
+from app import app
+
+from .. import config
+
+def args_feature_selection():
+
+    options = node_names(exclude_downstream_from_node=config.selected) 
+    options_batch = get_batch_keys()
 
     return [
-        "Feature Selection",
         {
             "input":"Dropdown",
             "name":"input",
             "description":"Representation to use as input of the method.",
-            "value":"Raw",
+            "value":None,
             "clearable":True,
             "options":options
+        },
+        {
+            "input":"Dropdown",
+            "name":"batch_key",
+            "description":"If specified, highly-variable genes are selected within each batch separately and merged. This simple process avoids the selection of batch-specific genes and acts as a lightweight batch correction method. For all flavors, genes are first sorted by how many batches they are a HVG. For dispersion-based flavors ties are broken by normalized dispersion. If flavor = 'seurat_v3', ties are broken by the median (across batches) rank based on within-batch normalized variance.",
+            "value":None,
+            "clearable":True,
+            "options":options_batch
         },
         {
             "input":"Input",
@@ -38,7 +52,7 @@ def feature_selection_args(adata):
             "input":"Input",
             "name":"max_disp",
             "description":"If n_top_genes unequals None, this and all other cutoffs for the means and the normalized dispersions are ignored. Ignored if flavor='seurat_v3'.",
-            "value":100000000000000,
+            "value":None,
             "type":"number"
         },
         {
@@ -77,22 +91,11 @@ def feature_selection_args(adata):
             "clearable":False,
             "options":['seurat', 'cell_ranger', 'seurat_v3'] 
         },
-        {
-            "input":"Dropdown",
-            "name":"batch_key",
-            "description":"If specified, highly-variable genes are selected within each batch separately and merged. This simple process avoids the selection of batch-specific genes and acts as a lightweight batch correction method. For all flavors, genes are first sorted by how many batches they are a HVG. For dispersion-based flavors ties are broken by normalized dispersion. If flavor = 'seurat_v3', ties are broken by the median (across batches) rank based on within-batch normalized variance.",
-            "value":None,
-            "clearable":True,
-            "options":[str(i) for i in adata.obs.columns.values if (adata.obs.dtypes[i] in ["category" ,object, str, int])]
-        },
     ]
 
-def f_feature_selection(adata, name_analysis, **kwargs):
+def f_feature_selection(name_analysis, kwargs):
         
-    if kwargs["input"] == "Raw":
-        adata_copy = sc.AnnData(X=adata.X.copy())
-    else:
-        adata_copy = sc.AnnData(X=adata.obsm["X_"+kwargs["input"]].copy())
+    adata_copy = sc.AnnData(X=config.adata.X.copy())
 
     if kwargs["flavor"] != "seurat_v3":
         sc.pp.log1p(adata_copy)
@@ -103,32 +106,63 @@ def f_feature_selection(adata, name_analysis, **kwargs):
         **kwargs_copy
     )
     
-    adata.var[name_analysis+"_highly_variable"] = adata_copy.var["highly_variable"].values
-    adata.var[name_analysis+"_means"] = adata_copy.var["means"].values
+    config.adata.var[name_analysis+"_highly_variable"] = adata_copy.var["highly_variable"].values
+    config.adata.var[name_analysis+"_means"] = adata_copy.var["means"].values
 
     if "dispersions" in adata_copy.var.columns:
-        adata.var[name_analysis+"_dispersions"] = adata_copy.var["dispersions"].values
-        adata.var[name_analysis+"_dispersions_norm"] = adata_copy.var["dispersions_norm"].values
+        config.adata.var[name_analysis+"_dispersions"] = adata_copy.var["dispersions"].values
+        config.adata.var[name_analysis+"_dispersions_norm"] = adata_copy.var["dispersions_norm"].values
     else:
-        adata.var[name_analysis+"_variances"] = adata_copy.var["variances"].values
-        adata.var[name_analysis+"_variances_norm"] = adata_copy.var["variances_norm"].values
+        config.adata.var[name_analysis+"_variances"] = adata_copy.var["variances"].values
+        config.adata.var[name_analysis+"_variances_norm"] = adata_copy.var["variances_norm"].values
 
-    adata.obsm["X_"+name_analysis] = adata_copy.X[:,adata_copy.var["highly_variable"]]
+def rm_feature_selection(name_analysis):
 
-    adata.uns[name_analysis] = adata_copy.uns["hvg"]
+    config.adata.var.drop(name_analysis+"_highly_variable", axis=1)
+    config.adata.var.drop(name_analysis+"_means", axis=1)
 
-def make_feature_selection_plots1(adata, name_analysis):
+    if name_analysis+"_dispersions" in config.adata.var.columns:
+        config.adata.var.drop(name_analysis+"_dispersions", axis=1)
+        config.adata.var.drop(name_analysis+"_dispersions_norm", axis=1)
+    else:
+        config.adata.var.drop(name_analysis+"_variances",axis=1)
+        config.adata.var.drop(name_analysis+"_variances_norm",axis=1)
 
-    if name_analysis+"_means" in adata.var.columns.values:
+    return
 
-        m = adata.var[name_analysis+"_means"].values
-        c =adata.var[name_analysis+"_highly_variable"].values
-        if name_analysis+"_dispersions" in adata.var.columns:
-            v = adata.var[name_analysis+"_dispersions"].values
-            vn = adata.var[name_analysis+"_dispersions_norm"].values
+def rename_feature_selection(name_analysis, name_new_analysis):
+
+    config.adata.var[name_new_analysis+"_highly_variable"] = config.adata.var[name_analysis+"_highly_variable"]
+    config.adata.var[name_new_analysis+"_means"] = config.adata.var[name_analysis+"_means"]
+    config.adata.var.drop(name_analysis+"_highly_variable", axis=1)
+    config.adata.var.drop(name_analysis+"_means", axis=1)
+
+    if "dispersions" in config.adata.var.columns:
+        config.adata.var[name_new_analysis+"_dispersions"] = config.adata.var[name_analysis+"_dispersions"]
+        config.adata.var[name_new_analysis+"_dispersions_norm"] = config.adata.var[name_analysis+"_dispersions_norm"]
+        config.adata.var.drop(name_analysis+"_dispersions", axis=1)
+        config.adata.var.drop(name_analysis+"_dispersions_norm", axis=1)
+    else:
+        config.adata.var[name_new_analysis+"_variances"] = config.adata.var[name_analysis+"_variances"]
+        config.adata.var[name_new_analysis+"_variances_norm"] = config.adata.var[name_analysis+"_variances_norm"]
+        config.adata.var.drop(name_analysis+"_variances",axis=1)
+        config.adata.var.drop(name_analysis+"_variances_norm",axis=1)
+
+    return
+
+def plot_feature_selection(name_analysis):
+
+    node = get_node(config.selected)
+    if node['data']['computed']:
+
+        m = config.adata.var[name_analysis+"_means"].values
+        c =config.adata.var[name_analysis+"_highly_variable"].values
+        if name_analysis+"_dispersions" in config.adata.var.columns:
+            v = config.adata.var[name_analysis+"_dispersions"].values
+            vn = config.adata.var[name_analysis+"_dispersions_norm"].values
         else:
-            v = adata.var[name_analysis+"_variances"].values
-            vn = adata.var[name_analysis+"_variances_norm"].values
+            v = config.adata.var[name_analysis+"_variances"].values
+            vn = config.adata.var[name_analysis+"_variances_norm"].values
 
         color_map = {
             True:"orange",
@@ -147,8 +181,14 @@ def make_feature_selection_plots1(adata, name_analysis):
                                     marker=dict(
                                         color=[color_map[i] for i in c],
                                     ),
-                                )]
-                            }
+                                )],
+                            #  'layout':{
+                            #          'title': "Unnormalized analysis",
+                            #          'xaxis': "Mean",
+                            #          'yaxis': "Dispersion",
+                            #          'barmode': 'overlay'
+                            #  }
+                            },
                 )
             ),
             dbc.Col(
@@ -162,13 +202,17 @@ def make_feature_selection_plots1(adata, name_analysis):
                                     marker=dict(
                                         color=[color_map[i] for i in c],
                                     ),
-                                )]
-                            }
+                                )],
+                            #   'layout':{
+                            #           'title': "Normalized analysis",
+                            #           'xaxis': "Mean",
+                            #           'yaxis': "Normalized Dispersion",
+                            #   }
+                            },
                 )
             ),
         ]
+    
     else:
-        return []
 
-def make_feature_selection_plots2(adata, name_analysis):
-    return []
+        return []

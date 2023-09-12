@@ -22,6 +22,7 @@ from .methods.scrublet import *
 from .methods.filtering import *
 from .methods.log1p import *
 from .methods.normalize import *
+from .methods.feature_selection import *
 # from .methods.graph import *
 # from .methods.pca import *
 # from .methods.neighbors import *
@@ -35,7 +36,7 @@ methods = {
     "filtering":{"method":"filtering","type":"QC","recompute":True},
     "log1p":{"method":"log1p","type":"Transformations","recompute":True},
     "normalize":{"method":"normalize","type":"Transformations","recompute":True},
-    # "Feature selection":{"method":"graph","type":"Dimensionaity Reduction"},
+    "feature_selection":{"method":"feature_selection","type":"DR","recompute":False},
     # "PCA":{"method":"pca","type":"Dimensionaity Reduction"},
     # "Neighbors":{"method":"neighbors","type":"Neighbors"},
     # "UMAP":{"method":"umap","type":"Visualization"},
@@ -46,6 +47,7 @@ methods = {
 graph_colormap={
     'QC':'yellow',
     'Transformations':'yellow',
+    'DR':'yellow',
 }
 
 def cytoscape_graph():
@@ -305,7 +307,7 @@ def make_arguments(id, arglist, loaded_args, add_execution_button=True):
                     dbc.Row(
                         dbc.Button("Rename",id="analysis_rename_button", class_name="btn btn-primary btn-sm"),
                     ),
-                    width={"offset":8},
+                    width={"offset":7},
                     align="center"
                 ),
                 dbc.Col(
