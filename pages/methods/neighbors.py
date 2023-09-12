@@ -1,18 +1,26 @@
 import numpy as np
 import scanpy as sc
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
+# from dash import dcc
+from dash import dcc
+from dash import html
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 import dash
+import scrublet
+from scipy.stats import mode
 
-def neighbors_args(adata):
+from ..functions import *
 
-    options = []
-    if "__interactive__" in adata.uns.keys():
-        options = ["Raw"]+[i[2:] for i in adata.obsm.keys()] 
+from app import app
+
+from .. import config
+
+def args_neighbors():
+
+    options = node_names(exclude_downstream_from_node=config.selected) 
 
     return [
-        "Neihgbors",
         {
             "input":"Dropdown",
             "name":"input",
@@ -20,6 +28,13 @@ def neighbors_args(adata):
             "value":None,
             "clearable":True,
             "options":options
+        },
+        {
+            "input":"Input",
+            "name":"n_components",
+            "description":"Use that many graphs from the input representation.",
+            "value":15,
+            "type":"number"
         },
         {
             "input":"Input",
@@ -59,15 +74,17 @@ def neighbors_args(adata):
         },
     ]
 
-def f_neighbors(adata, name_analysis, **kwargs):
+def f_neighbors(name_analysis, kwargs):
         
-    key = kwargs["input"]
-    if kwargs["input"] != None:
-        key = "X_"+kwargs["input"]
+    if kwargs["input"] in config.adata.obsm.keys():
+        key = kwargs["input"]
+    else:
+        key = "X"
 
-    sc.pp.neighbors(adata,
+    sc.pp.neighbors(config.adata,
               use_rep=key,
               n_neighbors=kwargs["n_neighbors"],
+              n_pcs=kwargs["n_components"],
               knn=kwargs["knn"],
               random_state=kwargs["random_state"],
               method=kwargs["method"],
@@ -75,10 +92,15 @@ def f_neighbors(adata, name_analysis, **kwargs):
               key_added=name_analysis
     )
 
-def make_neighbors_plots1(adata, name_analysis):
+def rm_neighbors(name_analysis):
 
-    return []
+    del config.adata.uns[name_analysis]
 
-def make_neighbors_plots2(adata, name_analysis):
+def rename_neighbors(name_analysis, name_new_analysis):
+
+    config.adata.uns[name_new_analysis] = config.adata.uns[name_analysis]
+    del config.adata.uns[name_analysis]
+
+def plot_neighbors(name_analysis):
 
     return []

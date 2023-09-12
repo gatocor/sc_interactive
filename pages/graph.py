@@ -24,8 +24,8 @@ from .methods.log1p import *
 from .methods.normalize import *
 from .methods.feature_selection import *
 from .methods.pca import *
+from .methods.neighbors import *
 # from .methods.graph import *
-# from .methods.neighbors import *
 # from .methods.umap import *
 # from .methods.leiden import *
 # from .methods.louvain import *
@@ -38,8 +38,8 @@ methods = {
     "normalize":{"method":"normalize","type":"Transformations","recompute":True},
     "feature_selection":{"method":"feature_selection","type":"DR","recompute":False},
     "pca":{"method":"pca","type":"DR","recompute":False},
+    "neighbors":{"method":"neighbors","type":"Graph","recompute":False},
     # "PCA":{"method":"pca","type":"Dimensionaity Reduction"},
-    # "Neighbors":{"method":"neighbors","type":"Neighbors"},
     # "UMAP":{"method":"umap","type":"Visualization"},
     # "Leiden":{"method":"leiden","type":"Clustering"},
     # "Louvain":{"method":"louvain","type":"Clustering"},
@@ -49,6 +49,7 @@ graph_colormap={
     'QC':'yellow',
     'Transformations':'yellow',
     'DR':'yellow',
+    'Graph':'yellow',
 }
 
 def cytoscape_graph():
