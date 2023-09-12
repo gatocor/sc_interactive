@@ -20,9 +20,9 @@ from app import app
 from .methods.qc import *
 from .methods.scrublet import *
 from .methods.filtering import *
+from .methods.log1p import *
 # from .methods.graph import *
 # from .methods.normalize import *
-# from .methods.log1p import *
 # from .methods.pca import *
 # from .methods.neighbors import *
 # from .methods.umap import *
@@ -33,10 +33,9 @@ methods = {
     "qc":{"method":"qc","type":"QC","recompute":False},
     "scrublet":{"method":"scrublet","type":"QC","recompute":False},
     "filtering":{"method":"filtering","type":"QC","recompute":True},
-    # "Filtering":{"method":"filtering","type":"Filtering"},
+    "log1p":{"method":"log1p","type":"Transformations","recompute":True},
     # "Feature selection":{"method":"graph","type":"Dimensionaity Reduction"},
     # "Normalize":{"method":"normalize","type":"Transformations"},
-    # "Log1p":{"method":"log1p","type":"Transformations"},
     # "PCA":{"method":"pca","type":"Dimensionaity Reduction"},
     # "Neighbors":{"method":"neighbors","type":"Neighbors"},
     # "UMAP":{"method":"umap","type":"Visualization"},
@@ -45,7 +44,8 @@ methods = {
 }
 
 graph_colormap={
-    'QC':'yellow'
+    'QC':'yellow',
+    'Transformations':'yellow',
 }
 
 def cytoscape_graph():

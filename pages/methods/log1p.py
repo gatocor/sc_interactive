@@ -1,45 +1,46 @@
 import numpy as np
 import scanpy as sc
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
+from dash import dcc, dash_table
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import dash
+
+from ..functions import *
 
 from app import app
 
 from .. import config
 
-def log1p_args(adata):
+def args_log1p():
 
-    options = []
-    if "__interactive__" in adata.uns.keys():
-        options = ["Raw"]+[i[2:] for i in adata.obsm.keys()] 
+    options = node_names(exclude_downstream_from_node=config.selected) 
     
     return [
-        "Log1p",
-            {
+        {
             "input":"Dropdown",
             "name":"input",
-            "description":"Genes to use to for the dimensionality reduction.",
-            "value":"Raw",
+            "description":"Observable to use",
+            "value":None,
             "clearable":False,
             "options":options
         },
-
     ]
 
-def f_log1p(adata, name_analysis, **kwargs):
+def f_log1p(name_analysis, kwargs):
         
-    if kwargs["input"] == "Raw":
-        adata.obsm["X_"+name_analysis] = np.log1p(adata.X)
-    else:
-        adata.obsm["X_"+name_analysis] = np.log1p(adata.obsm["X_"+kwargs["input"]])
+    sc.pp.log1p(config.adata)
 
-def make_log1p_plots1(adata, name_analysis):
+    return
 
-    return []
+def rm_log1p(name_analysis):
+        
+    return
 
-def make_log1p_plots2(adata, name_analysis):
+def rename_log1p(name_analysis):
+        
+    return
+
+def plot_log1p(name_analysis):
 
     return []
