@@ -23,8 +23,8 @@ from .methods.filtering import *
 from .methods.log1p import *
 from .methods.normalize import *
 from .methods.feature_selection import *
+from .methods.pca import *
 # from .methods.graph import *
-# from .methods.pca import *
 # from .methods.neighbors import *
 # from .methods.umap import *
 # from .methods.leiden import *
@@ -37,6 +37,7 @@ methods = {
     "log1p":{"method":"log1p","type":"Transformations","recompute":True},
     "normalize":{"method":"normalize","type":"Transformations","recompute":True},
     "feature_selection":{"method":"feature_selection","type":"DR","recompute":False},
+    "pca":{"method":"pca","type":"DR","recompute":False},
     # "PCA":{"method":"pca","type":"Dimensionaity Reduction"},
     # "Neighbors":{"method":"neighbors","type":"Neighbors"},
     # "UMAP":{"method":"umap","type":"Visualization"},
@@ -596,6 +597,7 @@ def change_parameter_{i['name']}(data):
 def graph_update_pos(element):
 
     node_update_pos(config.graph, element['data']['id'], element['position'])
+    config.max_x = np.max([i['position']['x'] for i in get_nodes()])
 
     return ""
 
@@ -639,7 +641,7 @@ def graph_new_node(_, method, cytoscape):
             'summary':'', 
             'parameters':args2params(args)
         }, 
-        'position':{'x':0,'y':0},
+        'position':{'x':config.max_x + 30,'y':0},
     }
     #make active node that is the one that will be presented
     # nodes_update_pos(config.graph,cytoscape)

@@ -221,7 +221,7 @@ def rm_scrublet(name_analysis):
 
     config.adata.obs.drop(name_analysis+"_scrublet_score", axis=1, inplace=True)
     del config.adata.obsm[name_analysis+"_UMAP"]
-    del config.adata.uns["sc_interactive"][name_analysis]
+    del config.adata.uns[name_analysis]
 
 def rename_scrublet(name_analysis, name_new_analysis):
 

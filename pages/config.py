@@ -43,6 +43,7 @@ graph = [
     }
 ]
 active_node_parameters = {}
+max_x = 0.
 
 functions = {}
 functions_method = {}
