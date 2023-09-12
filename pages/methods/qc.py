@@ -51,6 +51,8 @@ def args_qc():
 
 def f_qc(name_analysis, kwargs):
         
+    pos = get_node_pos(name_analysis)
+
     for l in kwargs["measure"]:
         if "total_counts" == l:
             config.adata.obs[name_analysis+"_total_counts"] = np.array(config.adata.X.sum(axis=1)).reshape(-1)
@@ -64,9 +66,14 @@ def f_qc(name_analysis, kwargs):
     add = ["min","max","resolution"]
     if kwargs["batch_key"] == None:
         rows = [None]
+
+        config.graph[pos]['data']['batch'] = None
+
     else:
         rows = np.sort(config.adata.obs[kwargs["batch_key"]].unique())
-    
+
+        config.graph[pos]['data']['batch'] = config.adata.obs[kwargs["batch_key"]].values
+
     columns, data = make_thresholds_table(kwargs["measure"], rows, add)
  
     #Fill table 
@@ -126,6 +133,7 @@ def rename_qc(name_analysis, name_new_analysis):
 def plot_qc(name_analysis):
 
     node = get_node(name_analysis)
+    pos = get_node_pos(name_analysis)
     if not node['data']['computed']:
         return []
 
@@ -220,7 +228,7 @@ def plot_qc(name_analysis):
                 'line': {'width': 20}  # Line width
             }
 
-            x = config.adata.obs[batch_key].values
+            x = config.graph[pos]['data']['batch']
 
             l += [
                     dbc.Row([

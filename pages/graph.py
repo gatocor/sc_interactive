@@ -21,8 +21,8 @@ from .methods.qc import *
 from .methods.scrublet import *
 from .methods.filtering import *
 from .methods.log1p import *
+from .methods.normalize import *
 # from .methods.graph import *
-# from .methods.normalize import *
 # from .methods.pca import *
 # from .methods.neighbors import *
 # from .methods.umap import *
@@ -34,8 +34,8 @@ methods = {
     "scrublet":{"method":"scrublet","type":"QC","recompute":False},
     "filtering":{"method":"filtering","type":"QC","recompute":True},
     "log1p":{"method":"log1p","type":"Transformations","recompute":True},
+    "normalize":{"method":"normalize","type":"Transformations","recompute":True},
     # "Feature selection":{"method":"graph","type":"Dimensionaity Reduction"},
-    # "Normalize":{"method":"normalize","type":"Transformations"},
     # "PCA":{"method":"pca","type":"Dimensionaity Reduction"},
     # "Neighbors":{"method":"neighbors","type":"Neighbors"},
     # "UMAP":{"method":"umap","type":"Visualization"},

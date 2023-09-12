@@ -1,36 +1,29 @@
 import numpy as np
 import scanpy as sc
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
+from dash import dcc, dash_table
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import dash
+
+from ..functions import *
 
 from app import app
 
 from .. import config
 
-def normalize_args(adata):
+def args_normalize():
 
-    options = []
-    if "__interactive__" in adata.uns.keys():
-        options = ["Raw"]+[i[2:] for i in adata.obsm.keys()] 
+    options = node_names(exclude_downstream_from_node=config.selected) 
     
     return [
-        "Normalization",
         {
             "input":"Dropdown",
             "name":"input",
             "description":"Genes to use to for the dimensionality reduction.",
-            "value":"Raw",
+            "value":None,
             "clearable":False,
             "options":options
-        },
-        {
-            "input":"BooleanSwitch",
-            "name":"normalization",
-            "description":"If True, normalize the count matrix before PCA analysis.",
-            "value":True,
         },
         {
             "input":"Input",
@@ -54,26 +47,58 @@ def normalize_args(adata):
         },
     ]
 
-def f_normalize(adata, name_analysis, **kwargs):
+def f_normalize(name_analysis, kwargs):
         
-    if kwargs["input"] == "Raw":
-        adata_copy = sc.AnnData(X=adata.X.copy())
+    pos = get_node_pos(name_analysis)
+
+    config.graph[pos]['data']['total_counts_before'] = np.array(config.adata.X.sum(axis=1)).reshape(-1)
+
+    sc.pp.normalize_total(config.adata,
+        target_sum=kwargs["target_sum"],
+        exclude_highly_expressed=kwargs["exclude_highly_expressed"],
+        max_fraction=kwargs["max_fraction"]
+    )
+
+    config.graph[pos]['data']['total_counts_after'] = np.array(config.adata.X.sum(axis=1)).reshape(-1)
+
+def rm_normalize(name_analysis):
+        
+    return
+
+def rename_normalize(name_analysis):
+        
+    return
+
+def plot_normalize(name_analysis):
+
+    node = get_node(config.selected)
+    if node['data']['computed']:
+
+        pos = get_node_pos(name_analysis)
+
+        return [
+                dcc.Graph(id="Histogram",
+                    figure={
+                            "data":[
+                                go.Histogram(
+                                    x=config.graph[pos]['data']['total_counts_before'],
+                                    nbinsx=100,
+                                    name='Histogram',
+                                    marker=dict(color='blue'),
+                                    opacity=0.7
+                                ),
+                                go.Histogram(
+                                    x=config.graph[pos]['data']['total_counts_after'],
+                                    nbinsx=100,
+                                    name='Histogram',
+                                    marker=dict(color='blue'),
+                                    opacity=0.7
+                                ),
+                            ]
+                    }
+                )
+        ]
+    
     else:
-        adata_copy = sc.AnnData(X=adata.obsm["X_"+kwargs["input"]].copy())
 
-    if kwargs["normalization"]:
-        sc.pp.normalize_total(adata_copy,
-                              target_sum=kwargs["target_sum"],
-                              exclude_highly_expressed=kwargs["exclude_highly_expressed"],
-                              max_fraction=kwargs["max_fraction"]
-                              )
-
-    adata.obsm["X_"+name_analysis] = adata_copy.X
-
-def make_normalize_plots1(adata, name_analysis):
-
-    return []
-
-def make_normalize_plots2(adata, name_analysis):
-
-    return []
+        return []
