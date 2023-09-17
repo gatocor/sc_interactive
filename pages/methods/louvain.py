@@ -1,31 +1,43 @@
 import numpy as np
 import scanpy as sc
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
+# from dash import dcc
+from dash import dcc
+from dash import html
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import dash
-import inspect
+import scrublet
+from scipy.stats import mode
+
+from ..functions import *
 
 from app import app
 
 from .. import config
 
-def louvain_args(adata):
+def args_louvain():
 
-    options = []
-    if "__interactive__" in adata.uns.keys():
-        options = [i for i,j in adata.uns["__interactive__"].items() if j["type"]=="Neighbors"] 
+    options = node_names(exclude_downstream_from_node=config.selected) 
+    options_batch = get_batch_keys()
     
     return [
-        "louvain",
             {
             "input":"Dropdown",
             "name":"input",
             "description":"Neighbor representation to use for clustering.",
-            "value":"Raw",
+            "value":None,
             "clearable":False,
             "options":options
+        },
+        {
+            "input":"Dropdown",
+            "name":"batch_key",
+            "description":"str, optional (default: None) Batch key to use. The highly varying will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
+            "value":None,
+            "clearable":True,
+            "options":options_batch,
+            "summary":True
         },
         {
             "input":"Input",
@@ -34,21 +46,21 @@ def louvain_args(adata):
             "value":1,
             "type":"number"
         },
-        # restrict_to=None, 
+        {
+            "input":"Dropdown",
+            "name":"flavor",
+            "description":"Choose between to packages for computing the clustering.",
+            "value":"vtraag",
+            "clearable":False,
+            "options":["vtraag","igraph","rapids"],
+            "summary":True
+        },
         {
             "input":"Input",
             "name":"random_state",
             "description":"Change the initialization of the optimization.",
             "value":0,
             "type":"number"
-        },
-        {
-            "input":"Dropdown",
-            "name":"flavor",
-            "description":"Choose between to packages for computing the clustering. 'vtraag' is much more powerful, and the default.",
-            "value":'vtraag',
-            "clearable":False,
-            "options":['vtraag', 'igraph', 'rapids']
         },
         {
             "input":"BooleanSwitch",
@@ -65,22 +77,41 @@ def louvain_args(adata):
         # partition_type=None
     ]
 
-def f_louvain(adata, name_analysis, **kwargs):
+def f_louvain(name_analysis, kwargs, sub_name, sub):
+
+    node = get_node(kwargs["input"])
+    x = config.adata.uns[kwargs["input"]+"_"+str(sub_name)]["connectivities"]
+    adata_copy = sc.AnnData(X = np.zeros([x.shape[0],2]))
+    adata_copy.uns["neighbors"] = {"connectivities_key":"connectivities","params":{"method":node["data"]["parameters"]["method"]}}
+    adata_copy.obsp["connectivities"] = x
 
     sc.tl.louvain(
-        adata,
+        adata_copy,
         neighbors_key=kwargs["input"],
         resolution=kwargs["resolution"],
         random_state=kwargs["random_state"], 
-        flavor=kwargs["flavor"], 
         directed=kwargs["directed"], 
         use_weights=kwargs["use_weights"], 
+        flavor=kwargs["flavor"], 
     )
 
-def make_louvain_plots1(adata, name_analysis):
+    pos = get_node_pos(name_analysis)
+    if "obs" not in config.graph[pos]["data"]:
+        config.graph[pos]["data"]["obs"] = {"louvain":np.zeros([config.adata.shape[0]])}
+    elif type(config.graph[pos]["data"]["obs"]["louvain"]) == list:
+        config.graph[pos]["data"]["obs"] = {"louvain":np.zeros([config.adata.shape[0]])}
+
+    config.graph[pos]["data"]["obs"]["louvain"][sub] = adata_copy.obs["louvain"].values
+
+def rm_louvain(name_analysis):
+
+    return
+
+def rename_louvain(name_analysis, name_new_analysis):
+
+    return
+
+def plot_louvain(name_analysis):
 
     return []
 
-def make_louvain_plots2(adata, name_analysis):
-
-    return []

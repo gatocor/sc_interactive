@@ -19,6 +19,7 @@ from .. import config
 def args_neighbors():
 
     options = node_names(exclude_downstream_from_node=config.selected) 
+    options_batch = get_batch_keys()
 
     return [
         {
@@ -28,6 +29,15 @@ def args_neighbors():
             "value":None,
             "clearable":True,
             "options":options
+        },
+        {
+            "input":"Dropdown",
+            "name":"batch_key",
+            "description":"str, optional (default: None) Batch key to use. The highly varying will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
+            "value":None,
+            "clearable":True,
+            "options":options_batch,
+            "summary":True
         },
         {
             "input":"Input",
@@ -74,32 +84,42 @@ def args_neighbors():
         },
     ]
 
-def f_neighbors(name_analysis, kwargs):
+def f_neighbors(name_analysis, kwargs, sub_name, sub):
         
-    if kwargs["input"] in config.adata.obsm.keys():
-        key = kwargs["input"]
+    node_input = get_node(kwargs["input"])
+    if "obsm" in node_input["data"].keys():
+        n = list(node_input["data"]["obsm"])
+        adata_copy = sc.AnnData(X=np.array(node_input["data"]["obsm"][n[0]])[sub,:kwargs["n_components"]])
     else:
-        key = "X"
+        adata_copy = sc.AnnData(X=config.adata.X)
 
-    sc.pp.neighbors(config.adata,
-              use_rep=key,
+    sc.pp.neighbors(adata_copy,
               n_neighbors=kwargs["n_neighbors"],
-              n_pcs=kwargs["n_components"],
               knn=kwargs["knn"],
               random_state=kwargs["random_state"],
               method=kwargs["method"],
               metric=kwargs["metric"],
-              key_added=name_analysis
     )
+
+    if name_analysis not in config.adata.uns.keys():
+        config.adata.uns[name_analysis] = {}
+
+    config.adata.uns[name_analysis+"_"+str(sub_name)] = {
+            "connectivities":adata_copy.obsp["connectivities"],
+            "distances":adata_copy.obsp["distances"]
+        }
 
 def rm_neighbors(name_analysis):
 
     del config.adata.uns[name_analysis]
+    return
 
 def rename_neighbors(name_analysis, name_new_analysis):
 
     config.adata.uns[name_new_analysis] = config.adata.uns[name_analysis]
     del config.adata.uns[name_analysis]
+
+    return
 
 def plot_neighbors(name_analysis):
 

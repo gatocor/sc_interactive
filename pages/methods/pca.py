@@ -157,7 +157,7 @@ def plot_pca(name_analysis):
             ]),
             dcc.Dropdown(id="pca_color",
                     value = color,
-                    options = list_observables(name_analysis)
+                    options = list_observables()
                 ),
     ]
 
@@ -175,7 +175,7 @@ def plot_pca(name_analysis):
 
         threshold = int(get_table_value(data,b,"pca maxPCA"))
         n_comp = int(get_table_value(data,b,"pca nPlots"))
-        c = get_observable(name_analysis, color)
+        c = get_observable(color)
 
         fig = make_subplots(rows=n_comp-1, cols=n_comp-1, shared_yaxes=True, shared_xaxes=True)
 

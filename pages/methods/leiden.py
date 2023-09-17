@@ -1,31 +1,43 @@
 import numpy as np
 import scanpy as sc
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
+# from dash import dcc
+from dash import dcc
+from dash import html
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import dash
-import inspect
+import scrublet
+from scipy.stats import mode
+
+from ..functions import *
 
 from app import app
 
 from .. import config
 
-def leiden_args(adata):
+def args_leiden():
 
-    options = []
-    if "__interactive__" in adata.uns.keys():
-        options = [i for i,j in adata.uns["__interactive__"].items() if j["type"]=="Neighbors"] 
+    options = node_names(exclude_downstream_from_node=config.selected) 
+    options_batch = get_batch_keys()
     
     return [
-        "Leiden",
             {
             "input":"Dropdown",
             "name":"input",
             "description":"Neighbor representation to use for clustering.",
-            "value":"Raw",
+            "value":None,
             "clearable":False,
             "options":options
+        },
+        {
+            "input":"Dropdown",
+            "name":"batch_key",
+            "description":"str, optional (default: None) Batch key to use. The highly varying will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
+            "value":None,
+            "clearable":True,
+            "options":options_batch,
+            "summary":True
         },
         {
             "input":"Input",
@@ -63,10 +75,16 @@ def leiden_args(adata):
         # partition_type=None
     ]
 
-def f_leiden(adata, name_analysis, **kwargs):
+def f_leiden(name_analysis, kwargs, sub_name, sub):
+
+    node = get_node(kwargs["input"])
+    x = config.adata.uns[kwargs["input"]+"_"+str(sub_name)]["connectivities"]
+    adata_copy = sc.AnnData(X = np.zeros([x.shape[0],2]))
+    adata_copy.uns["neighbors"] = {"connectivities_key":"connectivities","params":{"method":node["data"]["parameters"]["method"]}}
+    adata_copy.obsp["connectivities"] = x
 
     sc.tl.leiden(
-        adata,
+        adata_copy,
         neighbors_key=kwargs["input"],
         resolution=kwargs["resolution"],
         random_state=kwargs["random_state"], 
@@ -75,10 +93,23 @@ def f_leiden(adata, name_analysis, **kwargs):
         n_iterations=kwargs["n_iterations"], 
     )
 
-def make_leiden_plots1(adata, name_analysis):
+    pos = get_node_pos(name_analysis)
+    if "obs" not in config.graph[pos]["data"]:
+        config.graph[pos]["data"]["obs"] = {"leiden":np.zeros([config.adata.shape[0]])}
+    elif type(config.graph[pos]["data"]["obs"]["leiden"]) == list:
+        config.graph[pos]["data"]["obs"] = {"leiden":np.zeros([config.adata.shape[0]])}
+
+    config.graph[pos]["data"]["obs"]["leiden"][sub] = adata_copy.obs["leiden"].values
+
+def rm_leiden(name_analysis):
+
+    return
+
+def rename_leiden(name_analysis, name_new_analysis):
+
+    return
+
+def plot_leiden(name_analysis):
 
     return []
 
-def make_leiden_plots2(adata, name_analysis):
-
-    return []

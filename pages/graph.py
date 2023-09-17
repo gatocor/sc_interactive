@@ -25,10 +25,9 @@ from .methods.normalize import *
 from .methods.feature_selection import *
 from .methods.pca import *
 from .methods.neighbors import *
-# from .methods.graph import *
-# from .methods.umap import *
-# from .methods.leiden import *
-# from .methods.louvain import *
+from .methods.umap import *
+from .methods.leiden import *
+from .methods.louvain import *
 
 methods = {
     "qc":{"method":"qc","type":"QC","recompute":False},
@@ -39,10 +38,9 @@ methods = {
     "feature_selection":{"method":"feature_selection","type":"DR","recompute":False},
     "pca":{"method":"pca","type":"DR","recompute":False},
     "neighbors":{"method":"neighbors","type":"Graph","recompute":False},
-    # "PCA":{"method":"pca","type":"Dimensionaity Reduction"},
-    # "UMAP":{"method":"umap","type":"Visualization"},
-    # "Leiden":{"method":"leiden","type":"Clustering"},
-    # "Louvain":{"method":"louvain","type":"Clustering"},
+    "umap":{"method":"umap","type":"Visualization","recompute":False},
+    "leiden":{"method":"leiden","type":"Clustering","recompute":False},
+    "louvain":{"method":"louvain","type":"Clustering","recompute":False},
 }
 
 graph_colormap={
@@ -50,6 +48,8 @@ graph_colormap={
     'Transformations':'yellow',
     'DR':'yellow',
     'Graph':'yellow',
+    'Visualization':'yellow',
+    'Clustering':'yellow',
 }
 
 def cytoscape_graph():
@@ -234,7 +234,7 @@ def layout():
             ),
             dbc.Row(
                 cytoscape_graph(),
-                style={'width': '100wh', 'heigt':'90vh', 'margin': 'auto'},
+                style={'width': '100wh', 'height':'120wh', 'margin': 'auto'}, #vh/wh
             ),
             # ]),
             html.Div(id='graph_analysis',children=[]),

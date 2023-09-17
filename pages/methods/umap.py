@@ -1,28 +1,43 @@
 import numpy as np
 import scanpy as sc
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
+# from dash import dcc
+from dash import dcc
+from dash import html
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 import dash
+import scrublet
+from scipy.stats import mode
 
-def umap_args(adata):
+from ..functions import *
 
-    options = []
-    value = None
-    if "__interactive__" in adata.uns.keys():
-        options = [i for i,j in adata.uns["__interactive__"].items() if j["type"]=="Neighbors"] 
-    if options != []:      
-        value = options[0]
+from app import app
+
+from .. import config
+
+def args_umap():
+
+    options = node_names(exclude_downstream_from_node=config.selected) 
+    options_batch = get_batch_keys()
 
     return [
-        "UMAP",
         {
             "input":"Dropdown",
             "name":"input",
             "description":"Use the indicated neighbors.",
-            "value":value,
+            "value":None,
             "clearable":False,
             "options":options
+        },
+        {
+            "input":"Dropdown",
+            "name":"batch_key",
+            "description":"str, optional (default: None) Batch key to use. The highly varying will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
+            "value":None,
+            "clearable":True,
+            "options":options_batch,
+            "summary":True
         },
         {
             "input":"Input",
@@ -40,7 +55,7 @@ def umap_args(adata):
         },
         {
             "input":"Dropdown",
-            "name":"n_components",
+            "name":"n_dimensions",
             "description":"The number of dimensions of the embedding.",
             "value":2,
             "clearable":False,
@@ -82,7 +97,6 @@ def umap_args(adata):
             "clearable":False,
             "options":['spectral','random']
         },
-
         {
             "input":"Input",
             "name":"random_state",
@@ -106,13 +120,19 @@ def umap_args(adata):
         },
     ]
 
-def f_umap(adata, name_analysis, **kwargs):
+def f_umap(name_analysis, kwargs, sub_name, sub):
 
-    sc.tl.umap(adata,
+    node = get_node(kwargs["input"])
+    x = config.adata.uns[kwargs["input"]+"_"+str(sub_name)]["connectivities"]
+    adata_copy = sc.AnnData(X = np.zeros([x.shape[0],2]))
+    adata_copy.uns["neighbors"] = {"connectivities_key":"connectivities","params":{"method":node["data"]["parameters"]["method"]}}
+    adata_copy.obsp["connectivities"] = x
+
+    sc.tl.umap(adata_copy,
                 neighbors_key=kwargs["input"],
                 min_dist=kwargs["min_dist"],
                 spread=kwargs["spread"],
-                n_components=kwargs["n_components"],
+                n_components=kwargs["n_dimensions"],
                 maxiter=kwargs["maxiter"],
                 alpha=kwargs["alpha"],
                 gamma=kwargs["gamma"],
@@ -123,18 +143,55 @@ def f_umap(adata, name_analysis, **kwargs):
                 b=kwargs["b"],
                 )
 
-    adata.obsm["X_"+name_analysis] = adata.obsm["X_umap"]
-    del adata.obsm["X_umap"]
+    pos = get_node_pos(name_analysis)
+    if "obsm" not in config.graph[pos]["data"]:
+        config.graph[pos]["data"]["obsm"] = np.zeros([config.adata.shape[0],kwargs["n_dimensions"]])
+    elif config.graph[pos]["data"]["obsm"].shape[1] != kwargs["n_dimensions"]:
+        config.graph[pos]["data"]["obsm"] = np.zeros([config.adata.shape[0],kwargs["n_dimensions"]])
 
-def make_umap_plots1(adata, name_analysis):
+    config.graph[pos]["data"]["obsm"][sub,:] = adata_copy.obsm["X_umap"]
+    config.graph[pos]["data"]["plot"] = {"color":None}
 
-    if "X_"+name_analysis in adata.obsm.keys() and "n_components" in adata.uns["__interactive__"][name_analysis]["params"].keys():
+def rm_umap(name_analysis):
 
-        if adata.uns["__interactive__"][name_analysis]["params"]["n_components"] == 2:
-            x = adata.obsm["X_"+name_analysis][:,0]
-            y = adata.obsm["X_"+name_analysis][:,1]
+    return
 
-            return [
+def rename_umap(name_analysis, name_new_analysis):
+
+    return
+
+def plot_umap(name_analysis):
+
+    node = get_node(name_analysis)
+    if not node["data"]["computed"]:
+        return []    
+
+    X = np.array(node["data"]["obsm"])
+    c = get_observable(node["data"]["plot"]["color"])
+    if type(c) == type(None):
+        c = np.ones(X.shape[0],dtype=bool)
+
+    bs = np.array(get_observable(node["data"]["parameters"]["batch_key"]))
+    if bs == None:
+        bs = np.ones(X.shape[0],dtype=bool)
+
+    l = [
+        dcc.Dropdown(id="umap_color",
+                value = node["data"]["plot"]["color"],
+                options = list_observables()
+            ),
+    ]
+    if node["data"]["parameters"]["n_dimensions"] == 2:
+
+        for b in np.unique(bs):
+
+            sub = bs == b
+
+            x = X[sub,0]
+            y = X[sub,1]
+
+            l += [
+                dbc.Col(),
                 dbc.Col(
                     dcc.Graph(
                         figure = {'data':[
@@ -142,6 +199,7 @@ def make_umap_plots1(adata, name_analysis):
                                         x=x,
                                         y=y,
                                         mode='markers',
+                                        marker={"color":qualitative_colors(c)}
                                     )],
                                     'layout':{
                                             'yaxis': {
@@ -154,13 +212,20 @@ def make_umap_plots1(adata, name_analysis):
                         }
                     )
                 ),
+                dbc.Col()
             ]
-        else:
-            x = adata.obsm["X_"+name_analysis][:,0]
-            y = adata.obsm["X_"+name_analysis][:,1]
-            z = adata.obsm["X_"+name_analysis][:,2]
+    else:
 
-            return [
+        for b in np.unique(bs):
+
+            sub = bs == b
+
+            x = X[sub,0]
+            y = X[sub,1]
+            z = X[sub,2]
+
+            l += [
+                dbc.Col(),
                 dbc.Col(
                     dcc.Graph(
                         figure = {'data':[
@@ -169,7 +234,7 @@ def make_umap_plots1(adata, name_analysis):
                                         y=y,
                                         z=z,
                                         mode='markers',
-                                        name='Min threshold',
+                                        marker={"color":qualitative_colors(c)},
                                     )],
                                     'layout':{
                                             'yaxis': {
@@ -186,10 +251,21 @@ def make_umap_plots1(adata, name_analysis):
                         }
                     )
                 ),
+                dbc.Col()
             ]
-    else:
-        return []
+    
+    return l
 
-def make_umap_plots2(adata, name_analysis):
+@app.callback(
+    dash.Output("analysis_plot", "children", allow_duplicate=True),
+    dash.Input("umap_color", "value"),
+    prevent_initial_call=True
+)
+def umap_threshold(pca_color):
 
-    return []
+    prevent_race("umap")
+
+    pos = get_node_pos(config.selected)
+    config.graph[pos]["data"]["plot"]["color"] = pca_color
+
+    return  plot_umap(config.selected)
