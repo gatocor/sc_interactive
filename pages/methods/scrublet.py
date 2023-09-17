@@ -146,7 +146,7 @@ def scrublet_(X, kwargs):
         synthetic_doublet_umi_subsampling = kwargs["synthetic_doublet_umi_subsampling"], 
         use_approx_neighbors = kwargs["use_approx_neighbors"], 
         distance_metric = kwargs["distance_metric"], 
-        min_counts = kwargs["min_counts"],
+        min_counts = kwargs['min_counts'],
         min_cells = kwargs["min_cells"], 
         min_gene_variability_pctl = kwargs["min_gene_variability_pctl"], 
         log_transform = kwargs["log_transform"], 
@@ -160,41 +160,22 @@ def scrublet_(X, kwargs):
 
     return X, scrub.doublet_scores_obs_, scrub.doublet_scores_sim_
 
-def f_scrublet(name_analysis, kwargs):
+def f_scrublet(name_analysis, kwargs, sub_name, sub):
 
     pos = get_node_pos(config.selected)
 
-    if kwargs['batch_key'] == None:
+    if "obs" not in config.graph[pos]["data"].keys():
 
-        X, doublet_scores_obs_, doublet_scores_sim_ = scrublet_(config.adata.X, kwargs)
-
-        config.adata.obs[name_analysis+"_scrublet_score"] = doublet_scores_obs_
-        config.adata.obsm[name_analysis+"_UMAP"] = X
-        config.adata.uns["sc_interactive"][name_analysis] = {
-            "doublets_simulated_scrublet_score" : doublet_scores_sim_
+        config.graph[pos]["data"]["obs"] = {"doublet_score":-np.ones(config.adata.X.shape[0])}
+        config.graph[pos]["data"]["obsm"] = {"UMAP":np.zeros([config.adata.shape[0],2])}
+        config.graph[pos]["data"]["uns"] = {
+            "simulated_doublet_score" : {}
         }
 
-        config.graph[pos]['data']['batch'] = None
-
-    else:
-
-        config.adata.obs[name_analysis+"_scrublet_score"] = -1
-        config.adata.obsm[name_analysis+"_UMAP"] = np.zeros([config.adata.shape[0],2])
-        config.adata.uns["sc_interactive"][name_analysis] = {
-            "doublets_simulated_scrublet_score" : {}
-        }
-
-        for b in config.adata.obs[kwargs['batch_key']].unique():
-
-            sub = config.adata.obs[kwargs['batch_key']].values == b
-
-            X, doublet_scores_obs_, doublet_scores_sim_ = scrublet_(config.adata.X[sub,:], kwargs)
-
-            config.adata.obs.loc[sub,name_analysis+"_scrublet_score"] = doublet_scores_obs_
-            config.adata.obsm[name_analysis+"_UMAP"][sub,:] = X
-            config.adata.uns["sc_interactive"][name_analysis]["doublets_simulated_scrublet_score"][b] = doublet_scores_sim_
-
-        config.graph[pos]['data']['batch'] = config.adata.obs[kwargs['batch_key']].values
+    X, doublet_scores_obs_, doublet_scores_sim_ = scrublet_(config.adata.X[sub,:], kwargs)
+    config.graph[pos]["data"]["obs"]["doublet_score"][sub] = doublet_scores_obs_
+    config.graph[pos]["data"]["obsm"]["UMAP"][sub,:] = X
+    config.graph[pos]["data"]["uns"]["simulated_doublet_score"][sub_name] = doublet_scores_sim_
 
     #Make empty table
     add = ["max","nBins"]
@@ -203,51 +184,36 @@ def f_scrublet(name_analysis, kwargs):
     else:
         rows = np.sort(config.adata.obs[kwargs["batch_key"]].unique())
     
-    columns, data = make_thresholds_table(['scrublet'], rows, add)
+    columns, data = make_thresholds_table(["scrublet"], rows, add)
 
     #Fill table 
     for i in rows:
         set_table_value(data, i, "scrublet max", 1)
         set_table_value(data, i, "scrublet nBins", 20)
 
-    config.graph[pos]['data']['doublets_simulated_scrublet_score'] = config.adata.uns["sc_interactive"][name_analysis]["doublets_simulated_scrublet_score"].copy()
-    config.graph[pos]['data']['doublets_score'] = config.adata.obs[name_analysis+"_scrublet_score"].values
-    config.graph[pos]['data']['UMAP'] = config.adata.obsm[name_analysis+"_UMAP"].copy()
-    config.graph[pos]['data']['threshold'] = {'columns':columns,'data':data}
-    config.graph[pos]['data']['filter'] = np.ones_like(config.adata.X.shape[0])>0
-    config.graph[pos]['data']['show_scores'] = True
+    config.graph[pos]["data"]["threshold"] = {"columns":columns,"data":data}
+    config.graph[pos]["data"]["filter"] = np.ones_like(config.adata.X.shape[0])>0
+
+    config.graph[pos]["data"]["plot"] = {"show_scores": True}
 
 def rm_scrublet(name_analysis):
 
-    config.adata.obs.drop(name_analysis+"_scrublet_score", axis=1, inplace=True)
-    del config.adata.obsm[name_analysis+"_UMAP"]
-    del config.adata.uns[name_analysis]
+    return
 
 def rename_scrublet(name_analysis, name_new_analysis):
 
-    ls = [name_analysis+"_scrublet_score"]
-    cols = {}    
-    for i in config.adata.obs.columns.values:
-        if i not in ls:
-            cols[i] = i
-        else:
-            name = i.split(name_analysis)[-1]
-            name = (name_new_analysis+"_"+name)
-            cols[i] = name
-
-    config.adata.obs.rename(columns=cols, inplace=True)
+    return
 
 def plot_scrublet(name_analysis):
 
     node = get_node(name_analysis)
-    if not node['data']['computed']:
+    if not node["data"]["computed"]:
         return []
 
-    node = get_node(name_analysis)
     pos = get_node_pos(name_analysis)
 
-    columns = node['data']['threshold']['columns']
-    data = node['data']['threshold']['data']
+    columns = config.graph[pos]["data"]["threshold"]["columns"]
+    data = config.graph[pos]["data"]["threshold"]["data"]
 
     l = [
         html.H1("Scrublet analysis"),
@@ -262,23 +228,32 @@ def plot_scrublet(name_analysis):
             [
                 dbc.Col(),
                 dbc.Col(
-                    daq.BooleanSwitch(id="scrublet_toggle",label="Removed Cells/Scrublet Score",on=node['data']['show_scores']),
+                    daq.BooleanSwitch(id="scrublet_toggle",label="Removed Cells/Scrublet Score",on=node["data"]["plot"]["show_scores"]),
                 )
             ]
         )
     ]
 
-    if node['data']['parameters']['batch_key'] == None:
-        lims_max = float(get_table_column(data,"scrublet max")[0])
-        res = int(get_table_column(data,"scrublet nBins")[0])
-        X = np.array(config.graph[pos]['data']['UMAP'])
-        c = np.array(config.graph[pos]['data']['doublets_score'])
-        if node['data']['show_scores']:
+    for b,c_sim in config.graph[pos]["data"]["uns"]["simulated_doublet_score"].items():
+
+        if b == "null":
+            b = None
+
+        if b == None:
+            sub = np.ones(np.array(config.graph[pos]["data"]["obsm"]["UMAP"]).shape[0],dtype=bool)
+        else:
+            sub = np.array(config.graph[pos]["data"]["batch"]) == b
+
+        lims_max = float(get_table_value(data,b,"scrublet max"))
+        res = int(get_table_value(data,b,"scrublet nBins"))
+        X = np.array(config.graph[pos]["data"]["obsm"]["UMAP"])[sub,:]
+        c = np.array(config.graph[pos]["data"]["obs"]["doublet_score"])[sub]
+        if node["data"]["plot"]["show_scores"]:
             c = c
         else:
             c = c > lims_max
         order = np.argsort(c)
-        c_sim = config.graph[pos]['data']['doublets_simulated_scrublet_score']
+
         plot_max = hist_vline(c_sim, res)
         l += [
                 dbc.Row([
@@ -288,129 +263,56 @@ def plot_scrublet(name_analysis):
                                     "data":[
                                         go.Histogram(
                                             x=c_sim,
-                                            nbinsx=res,
-                                            name='simulated doublets',
+                                            name="Simulated Doublets",
+                                            nbinsx=res
                                         ),
                                         go.Scatter(
                                             x=[lims_max, lims_max],
                                             y=[0,plot_max],
-                                            name='Min threshold',
-                                            marker=dict(color='orange'),
+                                            name="Max threshold",
+                                            marker=dict(color="red"),
                                             opacity=0.7
                                         ),
                                     ],
                                     "layout":{
-                                            'xlabel':'scrublet_score'
-                                            # 'yaxis':{
-                                            #     'scaleanchor':"x",
-                                            #     'scaleratio':1,
+                                            "xlabel":"scrublet_score"
+                                            # "yaxis":{
+                                            #     "scaleanchor":"x",
+                                            #     "scaleratio":1,
                                             # },
                                     }
                                 },
-                            style={'width': '90vh', 'height': '60vh'}
+                            style={"width": "90vh", "height": "60vh"}
                         ),
                     ],
+                    align="center"
                     ),
                     dbc.Col([
                         dcc.Graph(
-                            id="scrublet_scatter",
                             figure={
                                     "data":[
                                         go.Scatter(
                                             x=X[order,0],
                                             y=X[order,1],
-                                            marker={'color':qualitative_colors(c[order])},
-                                            mode='markers',
+                                            marker={"color":qualitative_colors(c[order])},
+                                            mode="markers",
                                         )
                                     ],
                                     "layout":{
-                                            'yaxis':{
-                                                'scaleanchor':"x",
-                                                'scaleratio':1,
+                                            "yaxis":{
+                                                "scaleanchor":"x",
+                                                "scaleratio":1,
                                             },
                                     }
                                 },
-                            style={'width': '60vh', 'height': '60vh'}
+                            style={"width": "60vh", "height": "60vh"}
                         ),
                     ],
                     ),
                 ],
-                justify='center'
+                justify="center"
                 )
             ]
-        
-    else:
-        for b,c_sim in config.graph[pos]['data']['doublets_simulated_scrublet_score'].items():
-            sub = np.array(config.graph[pos]['data']['batch']) == b
-            lims_max = float(get_table_value(data,b,"scrublet max"))
-            res = int(get_table_value(data,b,"scrublet nBins"))
-            X = np.array(config.graph[pos]['data']["UMAP"])[sub,:]
-            c = np.array(config.graph[pos]['data']["doublets_score"])[sub]
-            if node['data']['show_scores']:
-                c = c
-            else:
-                c = c > lims_max
-            order = np.argsort(c)
-
-            plot_max = hist_vline(c_sim, res)
-            l += [
-                    dbc.Row([
-                        dbc.Col([
-                            dcc.Graph(
-                                figure={
-                                        "data":[
-                                            go.Histogram(
-                                                x=c_sim,
-                                                name='Simulated Doublets',
-                                                nbinsx=res
-                                            ),
-                                            go.Scatter(
-                                                x=[lims_max, lims_max],
-                                                y=[0,plot_max],
-                                                name='Max threshold',
-                                                marker=dict(color='red'),
-                                                opacity=0.7
-                                            ),
-                                        ],
-                                        "layout":{
-                                                'xlabel':'scrublet_score'
-                                                # 'yaxis':{
-                                                #     'scaleanchor':"x",
-                                                #     'scaleratio':1,
-                                                # },
-                                        }
-                                    },
-                                style={'width': '90vh', 'height': '60vh'}
-                            ),
-                        ],
-                        align='center'
-                        ),
-                        dbc.Col([
-                            dcc.Graph(
-                                figure={
-                                        "data":[
-                                            go.Scatter(
-                                                x=X[order,0],
-                                                y=X[order,1],
-                                                marker={'color':qualitative_colors(c[order])},
-                                                mode='markers',
-                                            )
-                                        ],
-                                        "layout":{
-                                                'yaxis':{
-                                                    'scaleanchor':"x",
-                                                    'scaleratio':1,
-                                                },
-                                        }
-                                    },
-                                style={'width': '60vh', 'height': '60vh'}
-                            ),
-                        ],
-                        ),
-                    ],
-                    justify='center'
-                    )
-                ]
 
     return l
 
@@ -421,30 +323,30 @@ def plot_scrublet(name_analysis):
 )
 def update_table(data):
 
-    prevent_race('scrublet')
+    prevent_race("scrublet")
 
     pos = get_node_pos(config.selected)
-    config.graph[pos]['data']['threshold']['data'] = data
-    batch = get_node_parameters(config.selected)['batch_key']
+    config.graph[pos]["data"]["threshold"]["data"] = data
+    batch = get_node_parameters(config.selected)["batch_key"]
 
     if batch == None:
 
         col = np.array([float(i) for i in get_table_column(data,"scrublet max")])
-        s = np.array(config.graph[pos]['data']['doublets_score']) > float(get_table_value(data,batch,"scrublet max"))
+        s = np.array(config.graph[pos]["data"]["obs"]["doublet_score"]) > float(get_table_value(data,batch,"scrublet max"))
         s <= 1
 
-        config.graph[pos]['data']['filter'] = s
+        config.graph[pos]["data"]["filter"] = s
 
     elif batch != None:
 
         col = np.array([float(i) for i in get_table_column(data,"scrublet max")])
-        s = np.ones_like(config.graph[pos]['data']['doublets_score'])
-        for b in np.unique(config.graph[pos]['data']['batch']):    
-            sub = np.array(config.graph[pos]['data']['batch']) == b
-            s[sub] = np.array(config.graph[pos]['data']['doublets_score'])[sub] <= float(get_table_value(data,b,"scrublet max"))
+        s = np.ones_like(config.graph[pos]["data"]["obs"]["doublet_score"])
+        for b in np.unique(config.graph[pos]["data"]["batch"]):    
+            sub = np.array(config.graph[pos]["data"]["batch"]) == b
+            s[sub] = np.array(config.graph[pos]["data"]["obs"]["doublet_score"])[sub] <= float(get_table_value(data,b,"scrublet max"))
             s <= 1
 
-        config.graph[pos]['data']['filter'] = s
+        config.graph[pos]["data"]["filter"] = s
 
     return plot_scrublet(config.selected)
 
@@ -457,9 +359,9 @@ def update_table(data):
 )
 def update_table(data):
     
-    prevent_race('scrublet')
+    prevent_race("scrublet")
 
     pos = get_node_pos(config.selected)
-    config.graph[pos]['data']['show_scores'] = data
+    config.graph[pos]["data"]["plot"]["show_scores"] = data
 
     return plot_scrublet(config.selected), data

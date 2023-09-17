@@ -706,7 +706,7 @@ def graph_new_node(_, method, cytoscape):
     prevent_initial_call=True
 )
 def execute(n_clicks, warning_input, warning_computed, plot):
-    
+
     if n_clicks != None:
 
         if config.active_node_parameters['input'] == None:
@@ -728,11 +728,23 @@ def execute(n_clicks, warning_input, warning_computed, plot):
             make_node_summary(config.selected)
 
             node = get_node(config.selected)
+            pos = get_node_pos(config.selected)
             params = get_node_parameters(config.selected, str2list=True)
 
             edge_add(params['input'], config.selected)
 
-            config.functions_method[node['data']['method']](config.selected,params)
+            if 'batch_key' in params.keys():
+                if params['batch_key'] == None:
+                    sub = np.ones(config.adata.shape[0],bool)
+                    config.functions_method[node['data']['method']](config.selected,params, None, sub)
+                    config.graph[pos]['data']['batch'] = np.ones(config.adata.X.shape[0])
+                else:
+                    for i in config.adata.obs[params['batch_key']].unique():
+                        sub = i == config.adata.obs[params['batch_key']].values
+                        config.functions_method[node['data']['method']](config.selected,params, i, sub)
+                    config.graph[pos]['data']['batch'] = config.adata.obs[params['batch_key']].values
+            else:
+                config.functions_method[node['data']['method']](config.selected,params)
 
             activate_node(config.selected)
             deactivate_downstream(config.selected)
@@ -918,7 +930,7 @@ def display_click_data(tap_node_data, l):
         t = time()
         name = tap_node_data['data']['id']
 
-        if abs(config.tclick-t) < .3: #Double click
+        if abs(config.tclick-t) < 1: #Double click
 
             l = load_node(name)
         
@@ -929,7 +941,7 @@ def display_click_data(tap_node_data, l):
                         dbc.Row(
                             dbc.Button("Rename",id="analysis_rename_button", class_name="btn btn-primary btn-sm"),
                         ),
-                        width={"offset":8},
+                        width={"offset":7},
                         align="center"
                     )
                 l[0]["props"]["children"][0]["props"]["children"][0]["props"]["children"][2] = dbc.Col(

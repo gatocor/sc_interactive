@@ -29,10 +29,11 @@ def args_feature_selection():
         {
             "input":"Dropdown",
             "name":"batch_key",
-            "description":"If specified, highly-variable genes are selected within each batch separately and merged. This simple process avoids the selection of batch-specific genes and acts as a lightweight batch correction method. For all flavors, genes are first sorted by how many batches they are a HVG. For dispersion-based flavors ties are broken by normalized dispersion. If flavor = 'seurat_v3', ties are broken by the median (across batches) rank based on within-batch normalized variance.",
+            "description":"str, optional (default: None) Batch key to use. The highly varying will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
             "value":None,
             "clearable":True,
-            "options":options_batch
+            "options":options_batch,
+            "summary":True
         },
         {
             "input":"Input",
@@ -87,132 +88,146 @@ def args_feature_selection():
             "input":"Dropdown",
             "name":"flavor",
             "description":"Choose the flavor for identifying highly variable genes. For the dispersion based methods in their default workflows, Seurat passes the cutoffs whereas Cell Ranger passes n_top_genes.",
-            "value":'seurat',
+            "value":"seurat",
             "clearable":False,
-            "options":['seurat', 'cell_ranger', 'seurat_v3'] 
+            "options":["seurat", "cell_ranger", "seurat_v3"] 
         },
     ]
 
-def f_feature_selection(name_analysis, kwargs):
-        
-    adata_copy = sc.AnnData(X=config.adata.X.copy())
+def f_feature_selection(name_analysis, kwargs, sub_name, sub):
 
-    if kwargs["flavor"] != "seurat_v3":
+    l = [i["data"]["method"] for i in get_ancestors(name_analysis)]
+
+    adata_copy = sc.AnnData(X=config.adata.X[sub,:])
+
+    if kwargs["flavor"] == "seurat_v3" and "log1p" in l:
+        np.expm1(adata_copy)
+        del adata_copy.uns["log1p"]
+    elif "log1p" not in l:
         sc.pp.log1p(adata_copy)
 
     kwargs_copy = kwargs.copy()
     del kwargs_copy["input"]
+    del kwargs_copy["batch_key"]
     sc.pp.highly_variable_genes(adata_copy,
-        **kwargs_copy
+        **kwargs_copy,
     )
-    
-    config.adata.var[name_analysis+"_highly_variable"] = adata_copy.var["highly_variable"].values
-    config.adata.var[name_analysis+"_means"] = adata_copy.var["means"].values
 
+    pos = get_node_pos(name_analysis)
+    if "var" not in config.graph[pos]["data"].keys():
+        config.graph[pos]["data"]["var"] = {}
+
+    config.graph[pos]["data"]["var"]["means_"+str(sub_name)] = adata_copy.var["means"].values
+    config.graph[pos]["data"]["var"]["highly_variable_"+str(sub_name)] = adata_copy.var["highly_variable"].values
     if "dispersions" in adata_copy.var.columns:
-        config.adata.var[name_analysis+"_dispersions"] = adata_copy.var["dispersions"].values
-        config.adata.var[name_analysis+"_dispersions_norm"] = adata_copy.var["dispersions_norm"].values
+        config.graph[pos]["data"]["var"]["dispersions_"+str(sub_name)] = adata_copy.var["dispersions"].values
+        config.graph[pos]["data"]["var"]["dispersions_norm_"+str(sub_name)] = adata_copy.var["dispersions_norm"].values
     else:
-        config.adata.var[name_analysis+"_variances"] = adata_copy.var["variances"].values
-        config.adata.var[name_analysis+"_variances_norm"] = adata_copy.var["variances_norm"].values
+        config.graph[pos]["data"]["var"]["variances_"+str(sub_name)] = adata_copy.var["variances"].values
+        config.graph[pos]["data"]["var"]["variances_norm_"+str(sub_name)] = adata_copy.var["variances_norm"].values
 
 def rm_feature_selection(name_analysis):
 
-    config.adata.var.drop(name_analysis+"_highly_variable", axis=1)
-    config.adata.var.drop(name_analysis+"_means", axis=1)
+    # batch = get_node(name_analysis)["data"]["parameters"]["batch_key"]
 
-    if name_analysis+"_dispersions" in config.adata.var.columns:
-        config.adata.var.drop(name_analysis+"_dispersions", axis=1)
-        config.adata.var.drop(name_analysis+"_dispersions_norm", axis=1)
-    else:
-        config.adata.var.drop(name_analysis+"_variances",axis=1)
-        config.adata.var.drop(name_analysis+"_variances_norm",axis=1)
+    # if batch == None:
+    #     config.adata.var.drop(name_analysis+"_highly_variable", axis=1)
+    #     config.adata.var.drop(name_analysis+"_means", axis=1)
+
+    #     if name_analysis+"_dispersions" in config.adata.var.columns:
+    #         config.adata.var.drop(name_analysis+"_dispersions", axis=1)
+    #         config.adata.var.drop(name_analysis+"_dispersions_norm", axis=1)
+    #     else:
+    #         config.adata.var.drop(name_analysis+"_variances",axis=1)
+    #         config.adata.var.drop(name_analysis+"_variances_norm",axis=1)
 
     return
 
 def rename_feature_selection(name_analysis, name_new_analysis):
 
-    config.adata.var[name_new_analysis+"_highly_variable"] = config.adata.var[name_analysis+"_highly_variable"]
-    config.adata.var[name_new_analysis+"_means"] = config.adata.var[name_analysis+"_means"]
-    config.adata.var.drop(name_analysis+"_highly_variable", axis=1)
-    config.adata.var.drop(name_analysis+"_means", axis=1)
+    # config.adata.var[name_new_analysis+"_highly_variable"] = config.adata.var[name_analysis+"_highly_variable"]
+    # config.adata.var[name_new_analysis+"_means"] = config.adata.var[name_analysis+"_means"]
+    # config.adata.var.drop(name_analysis+"_highly_variable", axis=1)
+    # config.adata.var.drop(name_analysis+"_means", axis=1)
 
-    if "dispersions" in config.adata.var.columns:
-        config.adata.var[name_new_analysis+"_dispersions"] = config.adata.var[name_analysis+"_dispersions"]
-        config.adata.var[name_new_analysis+"_dispersions_norm"] = config.adata.var[name_analysis+"_dispersions_norm"]
-        config.adata.var.drop(name_analysis+"_dispersions", axis=1)
-        config.adata.var.drop(name_analysis+"_dispersions_norm", axis=1)
-    else:
-        config.adata.var[name_new_analysis+"_variances"] = config.adata.var[name_analysis+"_variances"]
-        config.adata.var[name_new_analysis+"_variances_norm"] = config.adata.var[name_analysis+"_variances_norm"]
-        config.adata.var.drop(name_analysis+"_variances",axis=1)
-        config.adata.var.drop(name_analysis+"_variances_norm",axis=1)
+    # if "dispersions" in config.adata.var.columns:
+    #     config.adata.var[name_new_analysis+"_dispersions"] = config.adata.var[name_analysis+"_dispersions"]
+    #     config.adata.var[name_new_analysis+"_dispersions_norm"] = config.adata.var[name_analysis+"_dispersions_norm"]
+    #     config.adata.var.drop(name_analysis+"_dispersions", axis=1)
+    #     config.adata.var.drop(name_analysis+"_dispersions_norm", axis=1)
+    # else:
+    #     config.adata.var[name_new_analysis+"_variances"] = config.adata.var[name_analysis+"_variances"]
+    #     config.adata.var[name_new_analysis+"_variances_norm"] = config.adata.var[name_analysis+"_variances_norm"]
+    #     config.adata.var.drop(name_analysis+"_variances",axis=1)
+    #     config.adata.var.drop(name_analysis+"_variances_norm",axis=1)
 
     return
 
 def plot_feature_selection(name_analysis):
 
     node = get_node(config.selected)
-    if node['data']['computed']:
+    if not node["data"]["computed"]:
+        return []
 
-        m = config.adata.var[name_analysis+"_means"].values
-        c =config.adata.var[name_analysis+"_highly_variable"].values
-        if name_analysis+"_dispersions" in config.adata.var.columns:
-            v = config.adata.var[name_analysis+"_dispersions"].values
-            vn = config.adata.var[name_analysis+"_dispersions_norm"].values
+    l = []
+
+    for i in [i.split("means_")[-1] for i in node["data"]["var"].keys() if "means_" in i]:
+        m = node["data"]["var"]["means_"+str(i)]
+        c = node["data"]["var"]["highly_variable_"+str(i)]
+        if "dispersions_"+str(i) in node["data"]["var"].keys():
+            v = node["data"]["var"]["dispersions_"+str(i)]
+            vn = node["data"]["var"]["dispersions_norm_"+str(i)]
         else:
-            v = config.adata.var[name_analysis+"_variances"].values
-            vn = config.adata.var[name_analysis+"_variances_norm"].values
+            v = node["data"]["var"]["variances_"+str(i)]
+            vn = node["data"]["var"]["variances_norm_"+str(i)]
 
         color_map = {
             True:"orange",
             False:"blue"
         }
 
-        return [
+        l += [
             dbc.Col(
                 dcc.Graph(
-                    figure = {'data':[
+                    figure = {"data":[
                                 go.Scattergl(
                                     x=m,
                                     y=v,
-                                    mode='markers',
-                                    name='Min threshold',
+                                    mode="markers",
+                                    name="Min threshold",
                                     marker=dict(
                                         color=[color_map[i] for i in c],
                                     ),
                                 )],
-                            #  'layout':{
-                            #          'title': "Unnormalized analysis",
-                            #          'xaxis': "Mean",
-                            #          'yaxis': "Dispersion",
-                            #          'barmode': 'overlay'
+                            #  "layout":{
+                            #          "title": "Unnormalized analysis",
+                            #          "xaxis": "Mean",
+                            #          "yaxis": "Dispersion",
+                            #          "barmode": "overlay"
                             #  }
                             },
                 )
             ),
             dbc.Col(
                 dcc.Graph(
-                    figure = {'data':[
+                    figure = {"data":[
                                 go.Scattergl(
                                     x=m,
                                     y=vn,
-                                    mode='markers',
-                                    name='Min threshold',
+                                    mode="markers",
+                                    name="Min threshold",
                                     marker=dict(
                                         color=[color_map[i] for i in c],
                                     ),
                                 )],
-                            #   'layout':{
-                            #           'title': "Normalized analysis",
-                            #           'xaxis': "Mean",
-                            #           'yaxis': "Normalized Dispersion",
+                            #   "layout":{
+                            #           "title": "Normalized analysis",
+                            #           "xaxis": "Mean",
+                            #           "yaxis": "Normalized Dispersion",
                             #   }
                             },
                 )
             ),
         ]
-    
-    else:
-
-        return []
+            
+    return l

@@ -32,6 +32,33 @@ def make_graph_path(name):
 def make_file_path(name):
     return "./__graph__/"+name.split("/")[-1].split(".")[0]+"_qc"+".h5ad"
 
+def list_observables(name):
+    l = list(config.adata.obs.columns.values)
+    ancestors = get_ancestors(name)
+    for i in ancestors:
+        if "obs" in i["data"].keys():
+            for j in i["data"]["obs"].keys():
+                l += [f"{i['data']['name']}---{j}"]
+
+    return l
+
+def get_observable(name, obs):
+
+    l = list(config.adata.obs.columns.values)
+    
+    if obs in l:
+        return config.adata.obs[obs].values
+    
+    ancestors = get_ancestors(name)
+    for i in ancestors:
+        if "obs" in i["data"].keys():
+            for j in i["data"]["obs"].keys():
+                l = f"{i['data']['name']}---{j}"
+                if obs == l:
+                    return i["data"]["obs"][j]
+
+    return None
+
 def prevent_race(name,computed=True,method=True):
 
     node = get_node(config.selected)
