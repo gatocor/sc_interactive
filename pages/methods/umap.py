@@ -236,18 +236,18 @@ def plot_umap(name_analysis):
                                         mode='markers',
                                         marker={"color":qualitative_colors(c)},
                                     )],
-                                    'layout':{
-                                            'yaxis': {
-                                                'scaleanchor': 'x',
-                                                'scaleratio': 1
-                                            },
-                                            'zaxis': {
-                                                'scaleanchor': 'x',
-                                                'scaleratio': 1
-                                            },
-                                            'width':900,
-                                            'height':800,
-                                    },
+                                'layout':{
+                                        'yaxis': {
+                                            'scaleanchor': 'x',
+                                            'scaleratio': 1
+                                        },
+                                        'zaxis': {
+                                            'scaleanchor': 'x',
+                                            'scaleratio': 1
+                                        },
+                                        'width':900,
+                                        'height':800,
+                                },
                         }
                     )
                 ),

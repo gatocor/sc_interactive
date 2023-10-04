@@ -28,6 +28,7 @@ from .methods.neighbors import *
 from .methods.umap import *
 from .methods.leiden import *
 from .methods.louvain import *
+from .methods.differential_expression import *
 
 methods = {
     "qc":{"method":"qc","type":"QC","recompute":False},
@@ -41,6 +42,7 @@ methods = {
     "umap":{"method":"umap","type":"Visualization","recompute":False},
     "leiden":{"method":"leiden","type":"Clustering","recompute":False},
     "louvain":{"method":"louvain","type":"Clustering","recompute":False},
+    "differential_expression":{"method":"differential_expression","type":"Clustering","recompute":False},
 }
 
 graph_colormap={

@@ -22,7 +22,7 @@ def args_leiden():
     options_batch = get_batch_keys()
     
     return [
-            {
+        {
             "input":"Dropdown",
             "name":"input",
             "description":"Neighbor representation to use for clustering.",
@@ -91,7 +91,10 @@ def f_leiden(name_analysis, kwargs, sub_name, sub):
         directed=kwargs["directed"], 
         use_weights=kwargs["use_weights"], 
         n_iterations=kwargs["n_iterations"], 
+        key_added=name_analysis
     )
+
+    config.adata.obs[name_analysis] = adata_copy.obs["leiden"].values
 
     pos = get_node_pos(name_analysis)
     if "obs" not in config.graph[pos]["data"]:

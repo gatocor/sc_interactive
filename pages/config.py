@@ -23,6 +23,9 @@ try:
 except:
     adata = sc.read(file_path) #None
 
+if not adata.raw:
+    adata.raw = adata
+
 cache = False
 
 graph = [
