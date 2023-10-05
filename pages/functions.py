@@ -530,3 +530,23 @@ def make_adata_layout(adata):
             ]
     
     return layout
+
+def de2array(de, n_genes=2):
+
+    clusters = de["scores"].dtype.names
+    labels_x = []
+    for cluster in clusters:
+        order = np.argsort(-np.abs(de["scores"][cluster]))
+        labels_x = np.append(labels_x, de["names"][cluster][order[:n_genes]])
+
+    labels_y = clusters
+
+    data_array = np.zeros([n_genes*len(clusters),len(clusters)])
+    color = []
+    for i,cluster in enumerate(clusters):
+        for j,gene in enumerate(labels_x):
+            g = gene == de["names"][cluster]
+            data_array[j,i] = de["scores"][cluster][g][0]
+            color.append(de["scores"][cluster][g][0])
+
+    return data_array, labels_x, labels_y

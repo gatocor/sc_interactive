@@ -14,6 +14,7 @@ from scipy.spatial.distance import pdist, squareform
 import dash_ag_grid as dag
 
 from ..functions import *
+from ..plots import *
 
 from app import app
 
@@ -132,12 +133,46 @@ def plot_differential_expression(name_analysis):
 
     l = []
 
+    data_array, labels_x, labels_y = de2array(config.adata.uns[name_analysis], node["data"]["plotting"]["n_genes"])
+
     if node["data"]["plotting"]["style"] == "heatmap":
-        l = heatmap(node["data"]["plotting"]["n_genes"])
-    elif node["data"]["plotting"]["style"] == "clustermap":
-        l = clustermap(node["data"]["plotting"]["n_genes"])
+        l = [
+                dcc.Dropdown(
+                    id = "differential_expression_plot_style",
+                    value=get_node(config.selected)["data"]["plotting"]["style"],
+                    options=["heatmap","scattermap","table"],
+                    clearable=False
+                ),
+                dcc.Dropdown(
+                    id = "differential_expression_plot_n_genes",
+                    value=get_node(config.selected)["data"]["plotting"]["n_genes"],
+                    options=[i for i in range(1,10)],
+                    clearable=False
+                )
+        ] + plot_clustermap(data_array, labels_x, labels_y, style="heatmap")
+    elif node["data"]["plotting"]["style"] == "scattermap":
+        l = [
+                dcc.Dropdown(
+                    id = "differential_expression_plot_style",
+                    value=get_node(config.selected)["data"]["plotting"]["style"],
+                    options=["heatmap","scattermap","table"],
+                    clearable=False
+                ),
+                dcc.Dropdown(
+                    id = "differential_expression_plot_n_genes",
+                    value=get_node(config.selected)["data"]["plotting"]["n_genes"],
+                    options=[i for i in range(1,10)],
+                    clearable=False
+                )
+        ] + plot_clustermap(data_array, labels_x, labels_y, style="scattermap")
     elif node["data"]["plotting"]["style"] == "table":
-        l = table()
+        ll = ["names","scores","pvals","pvals_adj"]
+
+        df = pd.DataFrame(columns = ll,
+                        data={i:config.adata.uns[config.selected][i][get_node(config.selected)["data"]["plotting"]["cluster"]] for i in ll}
+        )
+
+        l = plot_table(df)
 
     return l
 
@@ -152,325 +187,6 @@ def change_raw(v):
         return True
     else:
         return False
-    
-def clustermap(n_genes):
-
-    name_analysis = config.selected
-
-    clusters = config.adata.uns[name_analysis]["scores"].dtype.names
-    labels_x = []
-    for cluster in clusters:
-        order = np.argsort(-np.abs(config.adata.uns[name_analysis]["scores"][cluster]))
-        labels_x = np.append(labels_x, config.adata.uns[name_analysis]["names"][cluster][order[:n_genes]])
-
-    labels_y = clusters
-
-    data_array = np.zeros([n_genes*len(clusters),len(clusters)])
-    color = []
-    for i,cluster in enumerate(clusters):
-        for j,gene in enumerate(labels_x):
-            g = gene == config.adata.uns[name_analysis]["names"][cluster]
-            data_array[j,i] = config.adata.uns[name_analysis]["scores"][cluster][g][0]
-            color.append(config.adata.uns[name_analysis]["scores"][cluster][g][0])
-
-    ratio = int(data_array.shape[0]/data_array.shape[1])
-
-    fig = make_subplots(rows=2, cols=2, 
-                        column_widths=[1-0.2/ratio, 0.2/ratio], row_heights=[0.2, 0.8],
-                        horizontal_spacing=0, vertical_spacing=0,
-                        shared_xaxes=True, shared_yaxes=True,
-                        )
-
-    # Initialize figure by creating upper dendrogram
-    p1 = list(range(0, data_array.shape[0], ratio))
-    data = data_array[p1,:]
-    for i in range(1,int(data_array.shape[0]/data_array.shape[1])):
-        p1 = list(range(0, data_array.shape[0], ratio))
-        data = np.append(data,data_array[p1,:],axis=1)
-
-    dendro_top = ff.create_dendrogram(data, orientation='bottom')#, labels=labels_y)
-    mm = np.inf
-    MM = -np.inf
-    for i in range(len(dendro_top['data'])):
-        m = min(dendro_top['data'][i]['x'])
-        M = max(dendro_top['data'][i]['x'])
-        mm = min(m,mm)
-        MM = max(M,MM)
-    for i in range(len(dendro_top['data'])):
-        dendro_top['data'][i]['yaxis'] = 'y2'
-        dendro_top['data'][i]['x'] -= mm
-        dendro_top['data'][i]['x'] *= (len(labels_x)-ratio)/(MM-mm)
-        dendro_top['data'][i]['x'] += ratio/4
-    
-    dendro_leaves_x =[]
-    for i in np.array(dendro_top['layout']['xaxis']['ticktext'],int)*ratio:
-        for j in range(ratio):
-            dendro_leaves_x.append(i+j)
-
-    # Add Side Dendrogram Data to Figure
-    for data in dendro_top['data']:
-        fig.add_trace(data, row=1, col=1)
-    
-    fig.update_xaxes(showticklabels=False, row=1, col=1)
-    fig.update_yaxes(showticklabels=False, row=1, col=1)
-
-    # Create Side Dendrogram
-    dendro_side = ff.create_dendrogram(data_array.transpose(), orientation='left')
-    mm = np.inf
-    MM = -np.inf
-    for i in range(len(dendro_side['data'])):
-        m = min(dendro_side['data'][i]['y'])
-        M = max(dendro_side['data'][i]['y'])
-        mm = min(m,mm)
-        MM = max(M,MM)
-    for i in range(len(dendro_side['data'])):
-        dendro_side['data'][i]['xaxis'] = 'x2'
-        dendro_side['data'][i]['y'] -= mm
-        dendro_side['data'][i]['y'] *= (len(labels_y)-1)/(MM-mm)
-
-    # Add Side Dendrogram Data to Figure
-    for data in dendro_side['data']:
-        fig.add_trace(data, row=2, col=2)
-
-    fig.update_xaxes(showticklabels=False, row=2, col=2)
-    fig.update_yaxes(showticklabels=False, row=2, col=2)
-
-    # Create Heatmap
-    dendro_leaves_y = dendro_side['layout']['yaxis']['ticktext']
-    dendro_leaves_y = list(map(int, dendro_leaves_y))
-    heat_data = data_array.copy()
-    # heat_data = squareform(data_dist)
-    heat_data = heat_data[dendro_leaves_x,:]
-    heat_data = heat_data[:,dendro_leaves_y]
-    heat_data = heat_data.transpose()
-
-    X,Y = np.meshgrid(np.arange(0,len(labels_y),1),np.arange(0,len(labels_x),1))
-    X = X[dendro_leaves_x,:]
-    X = X[:,dendro_leaves_y]
-    Y = Y[dendro_leaves_x,:]
-    Y = Y[:,dendro_leaves_y]
-
-    heatmap = [
-        go.Scatter(
-            x = Y.reshape(-1),
-            y = X.reshape(-1),
-            mode = "markers",
-            marker = {
-                "color":heat_data.reshape(-1),
-                "size":np.abs(heat_data.reshape(-1)),
-            },
-            text=list(map(str,heat_data.reshape(-1)))
-        )
-    ]
-
-    # Add Heatmap Data to Figure
-    for data in heatmap:
-        fig.add_trace(data, row=2, col=1)
-
-    fig.update_xaxes(tickvals=np.arange(0,len(labels_x),1),
-                     ticktext=np.array(labels_x)[dendro_leaves_x],
-                     row=2, col=1)
-    fig.update_yaxes(tickvals=np.arange(0,len(labels_y),1),
-                     ticktext=np.array(labels_y)[dendro_leaves_y],
-                     row=2, col=1)
-
-    # Edit Layout
-    fig.update_layout({'width':700*ratio, 'height':800,
-                            'showlegend':False, 'hovermode': 'closest',
-                            })
-
-    return [
-            dcc.Dropdown(
-                id = "differential_expression_plot_style",
-                value=get_node(config.selected)["data"]["plotting"]["style"],
-                options=["heatmap","clustermap","table"],
-                clearable=False
-            ),
-            dcc.Dropdown(
-                id = "differential_expression_plot_n_genes",
-                value=get_node(config.selected)["data"]["plotting"]["n_genes"],
-                options=[i for i in range(1,10)],
-                clearable=False
-            ),
-            dbc.Col(),
-            dbc.Col(
-                dcc.Graph(figure=fig)
-            ),
-            dbc.Col(),
-    ]
-
-def heatmap(n_genes):
-
-    name_analysis = config.selected
-
-    clusters = config.adata.uns[name_analysis]["scores"].dtype.names
-    labels_x = []
-    for cluster in clusters:
-        order = np.argsort(-np.abs(config.adata.uns[name_analysis]["scores"][cluster]))
-        labels_x = np.append(labels_x, config.adata.uns[name_analysis]["names"][cluster][order[:n_genes]])
-
-    labels_y = clusters
-
-    data_array = np.zeros([n_genes*len(clusters),len(clusters)])
-    color = []
-    for i,cluster in enumerate(clusters):
-        for j,gene in enumerate(labels_x):
-            g = gene == config.adata.uns[name_analysis]["names"][cluster]
-            data_array[j,i] = config.adata.uns[name_analysis]["scores"][cluster][g][0]
-            color.append(config.adata.uns[name_analysis]["scores"][cluster][g][0])
-
-    ratio = int(data_array.shape[0]/data_array.shape[1])
-
-    fig = make_subplots(rows=2, cols=2, 
-                        column_widths=[1-0.2/ratio, 0.2/ratio], row_heights=[0.2, 0.8],
-                        horizontal_spacing=0, vertical_spacing=0,
-                        shared_xaxes=True, shared_yaxes=True,
-                        )
-
-    # Initialize figure by creating upper dendrogram
-    p1 = list(range(0, data_array.shape[0], ratio))
-    data = data_array[p1,:]
-    for i in range(1,int(data_array.shape[0]/data_array.shape[1])):
-        p1 = list(range(0, data_array.shape[0], ratio))
-        data = np.append(data,data_array[p1,:],axis=1)
-
-    dendro_top = ff.create_dendrogram(data, orientation='bottom')#, labels=labels_y)
-    mm = np.inf
-    MM = -np.inf
-    for i in range(len(dendro_top['data'])):
-        m = min(dendro_top['data'][i]['x'])
-        M = max(dendro_top['data'][i]['x'])
-        mm = min(m,mm)
-        MM = max(M,MM)
-    for i in range(len(dendro_top['data'])):
-        dendro_top['data'][i]['yaxis'] = 'y2'
-        dendro_top['data'][i]['x'] -= mm
-        dendro_top['data'][i]['x'] *= (len(labels_x)-ratio)/(MM-mm)
-        dendro_top['data'][i]['x'] += ratio/4
-    
-    dendro_leaves_x =[]
-    for i in np.array(dendro_top['layout']['xaxis']['ticktext'],int)*ratio:
-        for j in range(ratio):
-            dendro_leaves_x.append(i+j)
-
-    # Add Side Dendrogram Data to Figure
-    for data in dendro_top['data']:
-        fig.add_trace(data, row=1, col=1)
-    
-    fig.update_xaxes(showticklabels=False, row=1, col=1)
-    fig.update_yaxes(showticklabels=False, row=1, col=1)
-
-    # Create Side Dendrogram
-    dendro_side = ff.create_dendrogram(data_array.transpose(), orientation='left')
-    mm = np.inf
-    MM = -np.inf
-    for i in range(len(dendro_side['data'])):
-        m = min(dendro_side['data'][i]['y'])
-        M = max(dendro_side['data'][i]['y'])
-        mm = min(m,mm)
-        MM = max(M,MM)
-    for i in range(len(dendro_side['data'])):
-        dendro_side['data'][i]['xaxis'] = 'x2'
-        dendro_side['data'][i]['y'] -= mm
-        dendro_side['data'][i]['y'] *= (len(labels_y)-1)/(MM-mm)
-
-    # Add Side Dendrogram Data to Figure
-    for data in dendro_side['data']:
-        fig.add_trace(data, row=2, col=2)
-
-    fig.update_xaxes(showticklabels=False, row=2, col=2)
-    fig.update_yaxes(showticklabels=False, row=2, col=2)
-
-    # Create Heatmap
-    dendro_leaves_y = dendro_side['layout']['yaxis']['ticktext']
-    dendro_leaves_y = list(map(int, dendro_leaves_y))
-    heat_data = data_array.copy()
-    # heat_data = squareform(data_dist)
-    heat_data = heat_data[dendro_leaves_x,:]
-    heat_data = heat_data[:,dendro_leaves_y]
-    heat_data = heat_data.transpose()
-
-    heatmap = [
-        go.Heatmap(
-            x = dendro_leaves_x,
-            y = dendro_leaves_y,
-            z = heat_data,
-            colorscale = 'Blues'
-        )
-    ]
-
-    heatmap[0]['x'] = np.arange(0,len(labels_x),1)
-    heatmap[0]['y'] = np.arange(0,len(labels_y),1)
-
-    # Add Heatmap Data to Figure
-    for data in heatmap:
-        fig.add_trace(data, row=2, col=1)
-
-    fig.update_xaxes(tickvals=np.arange(0,len(labels_x),1),
-                     ticktext=np.array(labels_x)[dendro_leaves_x],
-                     row=2, col=1)
-    fig.update_yaxes(tickvals=np.arange(0,len(labels_y),1),
-                     ticktext=np.array(labels_y)[dendro_leaves_y],
-                     row=2, col=1)
-
-    # Edit Layout
-    fig.update_layout({'width':700*ratio, 'height':800,
-                            'showlegend':False, 'hovermode': 'closest',
-                            })
-
-    return [
-            dcc.Dropdown(
-                id = "differential_expression_plot_style",
-                value=get_node(config.selected)["data"]["plotting"]["style"],
-                options=["heatmap","clustermap","table"],
-                clearable=False
-            ),
-            dcc.Dropdown(
-                id = "differential_expression_plot_n_genes",
-                value=get_node(config.selected)["data"]["plotting"]["n_genes"],
-                options=[i for i in range(1,10)],
-                clearable=False
-            ),
-            dbc.Col(),
-            dbc.Col(
-                dcc.Graph(figure=fig)
-            ),
-            dbc.Col(),
-    ]
-
-def table():
-
-    l = ["names","scores","pvals","pvals_adj"]
-
-    df = pd.DataFrame(columns = l,
-                     data={i:config.adata.uns[config.selected][i][get_node(config.selected)["data"]["plotting"]["cluster"]] for i in l}
-    )
-
-    fig = dag.AgGrid(
-        id="row-sorting-simple",
-        rowData=df.to_dict("records"),
-        columnDefs=[{"field":i} for i in l],
-        defaultColDef={"resizable": True, "sortable": True, "filter": False},
-        columnSize="sizeToFit",
-    )
-
-    return [
-            dcc.Dropdown(
-                id = "differential_expression_plot_style",
-                value=get_node(config.selected)["data"]["plotting"]["style"],
-                options=["heatmap","clustermap","table"],
-                clearable=False
-            ),
-            dcc.Dropdown(
-                id = "differential_expression_cluster",
-                value=get_node(config.selected)["data"]["plotting"]["cluster"],
-                options=config.adata.uns[config.selected]["scores"].dtype.names,
-                clearable=False
-            ),
-            dbc.Col(
-                fig
-            ),
-    ]
 
 @app.callback(
     dash.Output("analysis_plot","children", allow_duplicate=True),
