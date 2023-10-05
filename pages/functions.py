@@ -550,3 +550,22 @@ def de2array(de, n_genes=2):
             color.append(de["scores"][cluster][g][0])
 
     return data_array, labels_x, labels_y
+
+def de_markers2array(de, genes, var):
+
+    clusters = de["scores"].dtype.names
+
+    data_array = np.zeros([len(genes),len(clusters)])
+    color = []
+    for i,cluster in enumerate(clusters):
+        names = de["names"][cluster]
+        names = config.adata.var.loc[names,var].values
+        for j,gene in enumerate(genes):
+            try:
+                g = gene == names
+                data_array[j,i] = de["scores"][cluster][g][0]
+                color.append(de["scores"][cluster][g][0])
+            except:
+                None
+
+    return data_array, genes, clusters

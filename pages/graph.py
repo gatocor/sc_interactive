@@ -29,6 +29,7 @@ from .methods.umap import *
 from .methods.leiden import *
 from .methods.louvain import *
 from .methods.differential_expression import *
+from .methods.marker_genes import *
 
 methods = {
     "qc":{"method":"qc","type":"QC","recompute":False},
@@ -43,6 +44,7 @@ methods = {
     "leiden":{"method":"leiden","type":"Clustering","recompute":False},
     "louvain":{"method":"louvain","type":"Clustering","recompute":False},
     "differential_expression":{"method":"differential_expression","type":"Clustering","recompute":False},
+    "marker_genes":{"method":"marker_genes","type":"Clustering","recompute":False},
 }
 
 graph_colormap={

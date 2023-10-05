@@ -9,8 +9,6 @@ import plotly.figure_factory as ff
 from plotly.subplots import make_subplots
 import dash
 import scrublet
-from scipy.stats import mode
-from scipy.spatial.distance import pdist, squareform
 import dash_ag_grid as dag
 
 from ..functions import *
@@ -172,7 +170,21 @@ def plot_differential_expression(name_analysis):
                         data={i:config.adata.uns[config.selected][i][get_node(config.selected)["data"]["plotting"]["cluster"]] for i in ll}
         )
 
-        l = plot_table(df)
+        l = [
+            dcc.Dropdown(
+                id = "differential_expression_plot_style",
+                value=get_node(config.selected)["data"]["plotting"]["style"],
+                options=["heatmap","clustermap","table"],
+                clearable=False
+            ),
+            dcc.Dropdown(
+                id = "differential_expression_cluster",
+                value=get_node(config.selected)["data"]["plotting"]["cluster"],
+                options=config.adata.uns[config.selected]["scores"].dtype.names,
+                clearable=False
+            ),
+            plot_table(df)
+        ]
 
     return l
 

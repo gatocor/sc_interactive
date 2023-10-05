@@ -61,20 +61,23 @@ def plot_dendogram(data_array, groups=None, orientation='bottom'):
 def plot_scattermap(data_array, xorder=None, yorder=None):
 
     if xorder == None:
-        xorder = np.arange(0,data_array.shape[0]+1,1)
+        xorder = np.arange(0,data_array.shape[0],1)
 
     if yorder == None:
-        yorder = np.arange(0,data_array.shape[0]+1,1)
+        yorder = np.arange(0,data_array.shape[1],1)
 
     data_array = data_array[xorder,:]
     data_array = data_array[:,yorder]
-    data_array = data_array.transpose()
 
     X,Y = np.meshgrid(np.arange(0,len(yorder),1),np.arange(0,len(xorder),1))
     X = X[xorder,:]
     X = X[:,yorder]
     Y = Y[xorder,:]
     Y = Y[:,yorder]
+
+    data_array = data_array.transpose()
+    X = X.transpose()
+    Y = Y.transpose()
 
     heatmap = go.Scatter(
             x = Y.reshape(-1),
@@ -92,8 +95,7 @@ def plot_scattermap(data_array, xorder=None, yorder=None):
 def plot_heatmap(data_array, xorder=None, yorder=None):
 
     return go.Heatmap(
-            z = data_array.transpose(),
-            colorscale = 'Blues'
+            z = data_array.transpose()
         )
 
 def plot_clustermap(data_array, labels_x, labels_y, style="heatmap"):
@@ -146,30 +148,41 @@ def plot_clustermap(data_array, labels_x, labels_y, style="heatmap"):
             dbc.Col(),
     ]
 
-def plot_table(df, resizable=True,sortable=True,filter=False):
+def plot_table(df, resizable=True,sortable=True,filter=False, editable=False, rowdeletable=False):
 
-    fig = dag.AgGrid(
-        id="row-sorting-simple",
-        rowData=df.to_dict("records"),
-        columnDefs=[{"field":i} for i in df.columns.values],
-        defaultColDef={"resizable": resizable, "sortable": sortable, "filter": filter},
-        columnSize="sizeToFit",
-    )
+    if rowdeletable:
 
-    return [
-            dcc.Dropdown(
-                id = "differential_expression_plot_style",
-                value=get_node(config.selected)["data"]["plotting"]["style"],
-                options=["heatmap","clustermap","table"],
-                clearable=False
-            ),
-            dcc.Dropdown(
-                id = "differential_expression_cluster",
-                value=get_node(config.selected)["data"]["plotting"]["cluster"],
-                options=config.adata.uns[config.selected]["scores"].dtype.names,
-                clearable=False
-            ),
-            dbc.Col(
+        l = []
+        for i in df.to_dict("records"):
+            i["del"] = "X"
+            l.append(i)
+
+        l.append({"del":"X","Type":"","Genes":"[]"})
+
+        fig = dag.AgGrid(
+            id="table",
+            rowData=l,
+            columnDefs=[{
+                "field":"del", "cellRenderer": "Button", "lockPosition":'left', "cellRendererParams": {"className": "file-selector-button"},  "editable": False
+            }]+[{"field":i} for i in df.columns.values],
+            defaultColDef={"resizable": resizable, "sortable": sortable, "filter": filter, "editable": editable},
+            deleteSelectedRows=True,
+            dashGridOptions={"suppressRowClickSelection":True},
+            columnSize="sizeToFit",
+        )
+
+    else:
+
+        fig = dag.AgGrid(
+            id="table",
+            rowData=l,
+            columnDefs=[{"field":i} for i in df.columns.values],
+            defaultColDef={"resizable": resizable, "sortable": sortable, "filter": filter, "editable": editable},
+            deleteSelectedRows=True,
+            dashGridOptions={"suppressRowClickSelection":True},
+            columnSize="sizeToFit",
+        )
+
+    return dbc.Col(
                 fig
-            ),
-    ]
+            )
