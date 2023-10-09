@@ -328,6 +328,15 @@ def make_arguments(id, arglist, loaded_args, add_execution_button=True):
         )
     ]
 
+    arglist = [{
+            "input":"Dropdown",
+            "name":"input",
+            "description":"Observable to use",
+            "value":None,
+            "clearable":False,
+            "options": node_names(exclude_downstream_from_node=config.selected) 
+        }]+arglist
+
     for i,arg in enumerate(arglist):
         if type(arg) != str:
             if loaded_args != {}:
@@ -376,6 +385,15 @@ def make_arguments(id, arglist, loaded_args, add_execution_button=True):
                     dbc.Col(dbc.Button("Add", id="analysis_"+str(arg["name"])+"_button")),
                     # dbc.Col(dbc.Button("Remove", id="analysis_"+str(arg["name"])+"_button_rem")),
                 ])
+            ]
+        elif arg["input"] == "GeneTable":
+            input = [
+                dbc.Row(
+                    html.Div(
+                            id="analysis_"+str(arg["name"]),
+                            children=gene_table(),
+                    ),
+                ),
             ]
         elif arg["input"] == "ThresholdTable":
             input = [

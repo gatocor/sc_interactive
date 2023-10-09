@@ -148,6 +148,50 @@ def plot_clustermap(data_array, labels_x, labels_y, style="heatmap"):
             dbc.Col(),
     ]
 
+def gene_table():
+
+    a = list(config.adata.var.columns.values)
+
+    columnDefs = [
+        {
+            "headerName": ".var",
+            "field": "var",
+            "cellEditor": {"function": "DCC_Dropdown"},
+            "cellEditorParams": {"function": f"dynamicOptions(params,{a})"},
+            "cellEditorPopup": True,
+            "cellEditorPopupPosition": 'under',
+        },
+        {
+            "headerName": "Pattern",
+            "field": "pattern",
+            "editable": True
+        },
+        {
+            "headerName": "Genes",
+            "field": "genes",
+            "editable": False
+        },
+    ]
+
+    rowData = [
+        {"var": "", "pattern": "", "Genes":"[]"},
+    ]
+
+    fig = dag.AgGrid(
+        id="gene_table",
+        rowData=rowData,
+        columnDefs=columnDefs,
+        # columnDefs=[{
+        #         "field":"var"},
+        #     ],
+        defaultColDef={"editable": True},
+        deleteSelectedRows=True,
+        dashGridOptions={"suppressRowTransform":True},
+        columnSize="sizeToFit",
+    )
+
+    return fig
+
 def plot_table(df, resizable=True,sortable=True,filter=False, editable=False, rowdeletable=False):
 
     if rowdeletable:
@@ -186,3 +230,20 @@ def plot_table(df, resizable=True,sortable=True,filter=False, editable=False, ro
     return dbc.Col(
                 fig
             )
+
+@app.callback(
+    dash.Output("gene_table","rowData"),
+    dash.Input("gene_table","cellValueChanged"),
+    dash.State("gene_table","rowData"),
+)
+def f(b,c):
+
+    if b != None:
+        v =  [i for i in config.adata.var[b["data"]["var"]].values if b["data"]["pattern"] in i]
+        print(v)
+        if len(v) != config.adata.shape[1]:
+            c[b["rowIndex"]]["Genes"] = str(v)
+
+        print(c)
+
+    return c

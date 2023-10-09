@@ -144,9 +144,6 @@ def node_rename(name_old, name_new):
 
     for pos,i in enumerate(config.graph):
         if 'id' in i['data'].keys():
-            if i['data']['parameters']['input'] == name_old: #Change all input names
-                config.graph[pos]['data']['parameters']['input'] = name_new
-
             if i['data']['id'] == name_old:
                 config.graph[pos]['data']['id'] = name_new
                 config.graph[pos]['data']['summary'] = make_node_summary(name_new, inplace=False)
@@ -162,9 +159,10 @@ def node_names(exclude_downstream_from_node=None):
     exclude = []
     if exclude_downstream_from_node != None:
         exclude.append(exclude_downstream_from_node)
-        for node in get_nodes():
-            if node['data']['parameters']['input'] in exclude:
-                exclude.append(node['data']['id'])
+        for edge in get_edges():
+            None
+            # if edge['data']['parameters']['input'] in exclude:
+            #     exclude.append(node['data']['id'])
 
     d = [i['data']['id'] for i in config.graph if 'id' in i['data'].keys()]
     d = [i for i in d if i not in exclude] #exclude

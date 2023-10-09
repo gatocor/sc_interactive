@@ -17,30 +17,19 @@ from .. import config
 
 def args_qc():
 
-    options = node_names(exclude_downstream_from_node=config.selected) 
     optionsthreshold = ["total_counts","n_genes_by_counts"]+[i for i in config.adata.var.columns.values if config.adata.var.dtypes[i] in [bool]]
-    options_batch = get_batch_keys()
 
     return [
+        # {
+        #     "input":"MeasureTable",
+        #     "name":"measure",
+        #     "description":"Metrics of quality control to compute",
+        #     "value":"[total_counts,n_genes_by_counts]",
+        #     "options":optionsthreshold,
+        #     "summary":True
+        # },
         {
-            "input":"Dropdown",
-            "name":"input",
-            "description":"Observable to use",
-            "value":None,
-            "clearable":False,
-            "options":options
-        },
-        {
-            "input":"Dropdown",
-            "name":"batch_key",
-            "description":"str, optional (default: None) Batch key to use. The Doublet metric will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
-            "value":None,
-            "clearable":True,
-            "options":options_batch,
-            "summary":True
-        },
-        {
-            "input":"MeasureTable",
+            "input":"GeneTable",
             "name":"measure",
             "description":"Metrics of quality control to compute",
             "value":"[total_counts,n_genes_by_counts]",
@@ -49,7 +38,7 @@ def args_qc():
         },
     ]
 
-def f_qc(name_analysis, kwargs, sub_name, sub):
+def f_qc(name_analysis, kwargs):
         
     pos = get_node_pos(name_analysis)
 
@@ -65,11 +54,7 @@ def f_qc(name_analysis, kwargs, sub_name, sub):
 
     #Make empty table
     add = ["min","max","resolution"]
-    if kwargs["batch_key"] == None:
-        rows = [None]
-
-    else:
-        rows = np.sort(config.adata.obs[kwargs["batch_key"]].unique())
+    rows = [None]
 
     columns, data = make_thresholds_table(kwargs["measure"], rows, add)
  
@@ -126,7 +111,6 @@ def plot_qc(name_analysis):
         return []
 
     dic = get_node_parameters(name_analysis,str2list=True)["measure"] 
-    batch_key = get_node_parameters(name_analysis,str2list=True)["batch_key"]
 
     node = get_node(name_analysis)
     columns = node["data"]["threshold"]["columns"]
@@ -146,14 +130,10 @@ def plot_qc(name_analysis):
     for metric in dic:
         var_selected_data = name_analysis+"_"+metric
             
-        cols = get_table_column(data,"Batch")
-        if cols[0] == None:
-            cols[0] = 1
+        cols = [1]
         lims_min = get_table_column(data,metric+" min")
         lims_max = get_table_column(data,metric+" max")
         res = get_table_column(data,metric+" resolution")[0]
-
-        x = config.graph[pos]["data"]["batch"]
 
         custom_marker = {
             "symbol": "line-ns",  # Symbol code for a horizontal line (short dash)
@@ -170,7 +150,6 @@ def plot_qc(name_analysis):
                                 figure={
                                         "data":[
                                             go.Violin(
-                                                x=x,
                                                 y=node["data"]["obs"][metric],
                                                 bandwidth=res,
                                                 name="var_selected_data",
@@ -201,7 +180,7 @@ def plot_qc(name_analysis):
                                         ],
                                         "layout":{
                                                 "title": f"Violinplot of {var_selected_data}",
-                                                "xaxis": {"title": batch_key},
+                                                "xaxis": {"title": ""},
                                                 "yaxis": {"title": var_selected_data},
                                                 "barmode": "overlay",
                                         }
@@ -215,69 +194,67 @@ def plot_qc(name_analysis):
                 )
         ]
             
-    if batch_key == None:
+    lims_min_x = get_table_column(data,node["data"]["plot"]["x_label"]+" min")[0]
+    lims_max_x = get_table_column(data,node["data"]["plot"]["x_label"]+" max")[0]
+    lims_min_y = get_table_column(data,node["data"]["plot"]["y_label"]+" min")[0]
+    lims_max_y = get_table_column(data,node["data"]["plot"]["y_label"]+" max")[0]
 
-        lims_min_x = get_table_column(data,node["data"]["plot"]["x_label"]+" min")[0]
-        lims_max_x = get_table_column(data,node["data"]["plot"]["x_label"]+" max")[0]
-        lims_min_y = get_table_column(data,node["data"]["plot"]["y_label"]+" min")[0]
-        lims_max_y = get_table_column(data,node["data"]["plot"]["y_label"]+" max")[0]
-
-        l += [
-                html.H1("Summary"),
-                dcc.Dropdown(
-                    id="qc_summary_plot_x",
-                    value=node["data"]["plot"]["x_label"], 
-                    options=dic
+    l += [
+            html.H1("Summary"),
+            dcc.Dropdown(
+                id="qc_summary_plot_x",
+                value=node["data"]["plot"]["x_label"], 
+                options=dic
+            ),
+            dcc.Dropdown(
+                id="qc_summary_plot_y",
+                value=node["data"]["plot"]["y_label"], 
+                options=dic
+            ),
+            dcc.Dropdown(
+                id="qc_summary_plot_c",
+                value=node["data"]["plot"]["c_label"], 
+                options=dic
+            ),
+            dbc.Row([
+                dbc.Col(),
+                dbc.Col(
+                    [dcc.Graph(
+                            id="summary_qc_scatter",
+                            figure={
+                                    "data":[
+                                        go.Scatter(
+                                            x=node["data"]["obs"][node["data"]["plot"]["x_label"]],
+                                            y=node["data"]["obs"][node["data"]["plot"]["y_label"]],
+                                            mode="markers",
+                                            name="Local max threshold",
+                                            # nbinsx=100,
+                                            # name="Histogram",
+                                            marker=dict(color=qualitative_colors(node["data"]["obs"][node["data"]["plot"]["c_label"]])),
+                                            # opacity=0.7
+                                        ),
+                                        go.Scatter(
+                                            x=[lims_min_x, lims_min_x, lims_max_x, lims_max_x, lims_min_x], 
+                                            y=[lims_min_y,lims_max_y,lims_max_y,lims_min_y,lims_min_y],
+                                            name="Limits",
+                                            marker={"color":"black"}
+                                        ),
+                                    ],
+                                    "layout":{
+                                            "title": f"Summary plot",
+                                            "xaxis": {"title": name_analysis+"_"+node["data"]["plot"]["x_label"]},
+                                            "yaxis": {"title": name_analysis+"_"+node["data"]["plot"]["y_label"]},
+                                            "barmode": "overlay",
+                                    }
+                                },
+                            style={"width": "90vh", "height": "90vh"}
+                    )],
                 ),
-                dcc.Dropdown(
-                    id="qc_summary_plot_y",
-                    value=node["data"]["plot"]["y_label"], 
-                    options=dic
-                ),
-                dcc.Dropdown(
-                    id="qc_summary_plot_c",
-                    value=node["data"]["plot"]["c_label"], 
-                    options=dic
-                ),
-                dbc.Row([
-                    dbc.Col(),
-                    dbc.Col(
-                        [dcc.Graph(
-                                id="summary_qc_scatter",
-                                figure={
-                                        "data":[
-                                            go.Scatter(
-                                                x=node["data"]["obs"][node["data"]["plot"]["x_label"]],
-                                                y=node["data"]["obs"][node["data"]["plot"]["y_label"]],
-                                                mode="markers",
-                                                name="Local max threshold",
-                                                # nbinsx=100,
-                                                # name="Histogram",
-                                                marker=dict(color=qualitative_colors(node["data"]["obs"][node["data"]["plot"]["c_label"]])),
-                                                # opacity=0.7
-                                            ),
-                                            go.Scatter(
-                                                x=[lims_min_x, lims_min_x, lims_max_x, lims_max_x, lims_min_x], 
-                                                y=[lims_min_y,lims_max_y,lims_max_y,lims_min_y,lims_min_y],
-                                                name="Limits",
-                                                marker={"color":"black"}
-                                            ),
-                                        ],
-                                        "layout":{
-                                                "title": f"Summary plot",
-                                                "xaxis": {"title": name_analysis+"_"+node["data"]["plot"]["x_label"]},
-                                                "yaxis": {"title": name_analysis+"_"+node["data"]["plot"]["y_label"]},
-                                                "barmode": "overlay",
-                                        }
-                                    },
-                                style={"width": "90vh", "height": "90vh"}
-                        )],
-                    ),
-                    dbc.Col(),
-                    ],
-                    justify="center"
-                )
-        ]
+                dbc.Col(),
+                ],
+                justify="center"
+            )
+    ]
 
     return l
 
@@ -294,28 +271,13 @@ def update_table(data):
     pos = get_node_pos(config.selected)
 
     dic = get_node_parameters(config.selected,str2list=True)["measure"] 
-    batch = get_node_parameters(config.selected,str2list=True)["batch_key"] 
     for i in dic:
-        if batch == None:
-            col = np.array([int(i) for i in get_table_column(data,i+" resolution")])
+        col = np.array([int(i) for i in get_table_column(data,i+" resolution")])
 
-            s = np.array(node["data"]["obs"][i]) >= float(get_table_value(data,batch,i+" min"))
-            s *= np.array(node["data"]["obs"][i]) <= float(get_table_value(data,batch,i+" max"))
-            s = s < 1
-            config.graph[pos]["data"]["filter"][i] = s
-
-        elif batch != None:
-            col = np.array([float(i) for i in get_table_column(data,i+" resolution")])
-
-            s = np.ones_like(np.array(node["data"]["obs"][i]))
-            for b in config.adata.obs[batch].unique():    
-                sub = config.adata.obs[batch].values == b
-
-                s[sub] = np.array(node["data"]["obs"][i])[sub] >= float(get_table_value(data,b,i+" min"))
-                s[sub] *= np.array(node["data"]["obs"][i])[sub] <= float(get_table_value(data,b,i+" max"))
-                s = s < 1
-
-            config.graph[pos]["data"]["filter"][i] = s
+        s = np.array(node["data"]["obs"][i]) >= float(get_table_value(data,None,i+" min"))
+        s *= np.array(node["data"]["obs"][i]) <= float(get_table_value(data,None,i+" max"))
+        s = s < 1
+        config.graph[pos]["data"]["filter"][i] = s
 
         v1 = mode(col).mode
         if sum(col!=v1)>0:
