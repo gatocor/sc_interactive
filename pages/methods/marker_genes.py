@@ -16,6 +16,7 @@ import datetime
 import io
 
 from ..functions import *
+from ..graph import *
 from ..plots import *
 
 from app import app

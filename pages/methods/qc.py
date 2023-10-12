@@ -9,123 +9,208 @@ from plotly.subplots import make_subplots
 import dash
 from scipy.stats import mode
 
+from ..arguments import *
 from ..functions import *
+from ..graph import *
+from ..plots import *
 
 from app import app
 
 from .. import config
 
-def args_qc():
+args = {
 
-    optionsthreshold = ["total_counts","n_genes_by_counts"]+[i for i in config.adata.var.columns.values if config.adata.var.dtypes[i] in [bool]]
-
-    return [
-        # {
-        #     "input":"MeasureTable",
-        #     "name":"measure",
-        #     "description":"Metrics of quality control to compute",
-        #     "value":"[total_counts,n_genes_by_counts]",
-        #     "options":optionsthreshold,
-        #     "summary":True
-        # },
+    "execution" : [
+        ARGINPUT,
         {
-            "input":"GeneTable",
+            "input":"QCTable",
             "name":"measure",
             "description":"Metrics of quality control to compute",
-            "value":"[total_counts,n_genes_by_counts]",
-            "options":optionsthreshold,
-            "summary":True
+            "value":[
+                {
+                    "name":"counts",
+                    "var":" ",
+                    "pattern":" ",
+                    "style":"counts",
+                    "genes":"all",
+                },
+                {
+                    "name":"n_expressed_genes",
+                    "var":" ",
+                    "pattern":" ",
+                    "style":"n_expressed_genes",
+                    "genes":"all",
+                }
+            ],
+        },
+    ],
+
+    "postexecution" : [
+        ARGBATCH,
+        {
+            "input":"Dropdown",
+            "name":"plot_style",
+            "description":"Chose between violin or 2D scatterplot.",
+            "value":"violin",
+            "clearable":False,
+            "options":["violin","scatter"],
+        },
+        {
+            "input":"Dropdown",
+            "name":"plot_measure",
+            "description":"Genes to use to for the dimensionality reduction.",
+            "value":{"function": "qc_measures()[0]"},
+            "clearable":False,
+            "options":{"function": "qc_measures()"},
+            "visible":{"function": "config.adata.uns[config.selected]['parameters']['plot_style'] == 'scatter'"}
+        },
+        {
+            "input":"AgTable",
+            "name":"thresholds",
+            "description":"Thresholds to apply to the data",
+            "header":[
+                { "headerName": "Metric", "field":"metric", "editable": False },
+                { "headerName": "Cluster", "field":"cluster", "editable": False },
+                { "headerName": "Min", "field":"min", "editable": True },
+                { "headerName": "Max", "field":"max", "editable": True },
+                { "headerName": "Plot resolution", "field":"resolution", "editable": True },
+            ],
+            "value":{"function":"qc_data()"},
         },
     ]
 
-def f_qc(name_analysis, kwargs):
+}
+
+def qc_measures():
+    selected = config.selected
+    adata = config.adata
+
+    return [i["name"] for i in adata.uns[selected]["parameters"]["measure"]]
+
+def qc_data():
+
+    selected = config.selected
+    adata = config.adata
+
+    a = adata.uns[selected]["parameters"]
+
+    # #Reset table
+    # if "batch" in modified_arg.keys():
+    #     if "batch" in config.adata.uns[config.selected]["parameters"].keys():
+    #         del config.adata.uns[config.selected]["parameters"]["batch"]
+
+    measures = [i["name"] for i in adata.uns[selected]["parameters"]["measure"]]
+
+    measure = a["measure"][0]
+    if "plot_measure" in a.keys():
+        measure = a["plot_measure"]
+
+    data = []
+    for i in a["measure"]:
+        if i["name"] in measures:
+            i = i["name"]
+            j = f"{config.selected}--{measure}"
+            data.append({"metric":i, "cluster":None,"min":adata.obs[j].min(),"max":adata.obs[j].max(),"resolution":adata.obs[j].std()})
+
+    return data
+
+def f_qc(adata, inputArgs, kwargs):
         
-    pos = get_node_pos(name_analysis)
+    X = inputArgs["obsm"]
 
-    config.graph[pos]["data"]["obs"] = {}
+    d = {"obs":{}}
     for l in kwargs["measure"]:
-        if "total_counts" == l:
-            config.graph[pos]["data"]["obs"][l] = np.array(config.adata.X.sum(axis=1)).reshape(-1)
-        elif "n_genes_by_counts" == l:
-            config.graph[pos]["data"]["obs"][l] = np.array((config.adata.X > 0).sum(axis=1)).reshape(-1)
+        if l["genes"] == "all":
+            x = range(X.shape[0])
         else:
-            config.graph[pos]["data"]["obs"][l] = np.array(config.adata.X[:,config.adata.var[l].values].sum(axis=1)).reshape(-1)/np.array(config.adata.X.sum(axis=1)).reshape(-1)
-            config.graph[pos]["data"]["obs"][l] = np.nan_to_num(config.adata.obs[l].values, nan=0)
+            x = np.isin(adata.var[l["var"]].values, l["genes"])
 
-    #Make empty table
-    add = ["min","max","resolution"]
-    rows = [None]
+        if "counts" == l:
+            d["obs"][l["name"]] = np.array(X[:,x].sum(axis=1)).reshape(-1)
+        elif "n_expressed_genes" == l:
+            d["obs"][l["name"]] = np.array((X[:,x] > 0).sum(axis=1)).reshape(-1)
+        elif "proportion":
+            p = np.array(config.adata.X[:,x].sum(axis=1)).reshape(-1)/np.array(config.adata.X.sum(axis=1)).reshape(-1)
+            d["obs"][l["name"]] =  p
 
-    columns, data = make_thresholds_table(kwargs["measure"], rows, add)
- 
-    #Fill table 
-    for j in kwargs["measure"]:
-        max_threshold = np.max(config.graph[pos]["data"]["obs"][j])
-        for i in rows:
-            set_table_value(data, i, j+" min", 0)
-            set_table_value(data, i, j+" max", max_threshold)
-            set_table_value(data, i, j+" resolution", 100)
+    return d
 
-    pos = get_node_pos(config.selected)
-    config.graph[pos]["data"]["threshold"] = {"columns":columns,"data":data}
-    config.graph[pos]["data"]["filter"] = {i:np.ones_like(config.adata.X.shape[0])>0 for i in get_node_parameters(name_analysis,str2list=True)["measure"]}
+def plot_violin(x=None, y=None, bandwidth=1):
 
-    if len(kwargs["measure"]) == 0:
-        config.graph[pos]["data"]["plot"] = {
-            "x_label": None,
-            "y_label": None,
-            "c_label": None
-        }
-    elif len(kwargs["measure"]) == 1:
-        config.graph[pos]["data"]["plot"] = {
-            "x_label": kwargs["measure"][0],
-            "y_label": kwargs["measure"][0],
-            "c_label": kwargs["measure"][0],
-        }
-    elif len(kwargs["measure"]) == 2:
-        config.graph[pos]["data"]["plot"] = {
-            "x_label": kwargs["measure"][0],
-            "y_label": kwargs["measure"][1],
-            "c_label": kwargs["measure"][0],
-        }
-    elif len(kwargs["measure"]) >= 3:
-        config.graph[pos]["data"]["plot"] = {
-            "x_label": kwargs["measure"][0],
-            "y_label": kwargs["measure"][1],
-            "c_label": kwargs["measure"][2],
-        }
+    return go.Violin(
+                        x=x,
+                        y=y,
+                        # bandwidth=bandwidth,
+            )
 
-def rm_qc(name_analysis):
+def make_Graph(data=[],title="",x_label="",y_label="",style={"width": "90vw", "height": "50vh"}, center=True):
+     
+    graph =  dcc.Graph(
+        figure={
+                    "data":data,
+                    "layout":{
+                            "title": title,
+                            "xaxis": {"title": x_label},
+                            "yaxis": {"title": y_label},
+                    }
+        },
+        style=style
+    )
 
-    return
+    if center:
 
-def rename_qc(name_analysis, name_new_analysis):
+        graph = [
+            dbc.Col(),
+            dbc.Col(graph),
+            dbc.Col()
+        ]
 
-    return
+    return graph
 
-def plot_qc(name_analysis):
+def plot_qc():
 
-    node = get_node(name_analysis)
-    pos = get_node_pos(name_analysis)
-    if not node["data"]["computed"]:
+    params = config.adata.uns[config.selected]["parameters"]
+
+    if params["plot_style"] == "scatter":
+        l = []
+        # for i in data:
+
+        #     x = None
+        #     y = params["obs"][f"{config.selected}--{params['uns']['parameters']['plot_measure']}"].values
+
+        #     l.append(
+        #         make_Graph([plot_violin(x,y)], x_label=params['uns']['parameters']['batch'], y_label=params['uns']['parameters']['plot_measure'])
+        #     )
+
+        return l
+        
+    else:
+
         return []
 
-    dic = get_node_parameters(name_analysis,str2list=True)["measure"] 
+    # node = get_node(name_analysis)
+    # pos = get_node_pos(name_analysis)
+    # if not node["data"]["computed"]:
+    #     return []
 
-    node = get_node(name_analysis)
-    columns = node["data"]["threshold"]["columns"]
-    data = node["data"]["threshold"]["data"]
+    # dic = get_node_parameters(name_analysis,str2list=True)["measure"] 
 
-    l = [
-            html.H1("Thresholds"),
-            dbc.Row(
-                dash_table.DataTable(
-                    id="qc_threshold_table",
-                    columns=columns,
-                    data=data
-                )
-            ),
-        ]
+    # node = get_node(name_analysis)
+    # columns = node["data"]["threshold"]["columns"]
+    # data = node["data"]["threshold"]["data"]
+
+    # l = [
+    #         html.H1("Thresholds"),
+    #         dbc.Row(
+    #             dash_table.DataTable(
+    #                 id="qc_threshold_table",
+    #                 columns=columns,
+    #                 data=data
+    #             )
+    #         ),
+    #     ]
+
+    args = get_args(config.selected, adata)
 
     for metric in dic:
         var_selected_data = name_analysis+"_"+metric
@@ -149,13 +234,6 @@ def plot_qc(name_analysis):
                         [dcc.Graph(id="Histogram",
                                 figure={
                                         "data":[
-                                            go.Violin(
-                                                y=node["data"]["obs"][metric],
-                                                bandwidth=res,
-                                                name="var_selected_data",
-                                                # marker=dict(color="blue"),
-                                                # opacity=0.7
-                                            ),
                                             go.Scatter(
                                                 x=cols,
                                                 y=lims_min,
@@ -258,88 +336,99 @@ def plot_qc(name_analysis):
 
     return l
 
-@app.callback(
-    dash.Output("analysis_plot","children",allow_duplicate=True),
-    dash.Input("qc_threshold_table","data"),
-    prevent_initial_call=True
-)
-def update_table(data):
+# @app.callback(
+#     dash.Output("analysis_plot","children",allow_duplicate=True),
+#     dash.Input("qc_threshold_table","data"),
+#     prevent_initial_call=True
+# )
+# def update_table(data):
 
-    prevent_race("qc")
+#     prevent_race("qc")
 
-    node = get_node(config.selected)
-    pos = get_node_pos(config.selected)
+#     node = get_node(config.selected)
+#     pos = get_node_pos(config.selected)
 
-    dic = get_node_parameters(config.selected,str2list=True)["measure"] 
-    for i in dic:
-        col = np.array([int(i) for i in get_table_column(data,i+" resolution")])
+#     dic = get_node_parameters(config.selected,str2list=True)["measure"] 
+#     for i in dic:
+#         col = np.array([int(i) for i in get_table_column(data,i+" resolution")])
 
-        s = np.array(node["data"]["obs"][i]) >= float(get_table_value(data,None,i+" min"))
-        s *= np.array(node["data"]["obs"][i]) <= float(get_table_value(data,None,i+" max"))
-        s = s < 1
-        config.graph[pos]["data"]["filter"][i] = s
+#         s = np.array(node["data"]["obs"][i]) >= float(get_table_value(data,None,i+" min"))
+#         s *= np.array(node["data"]["obs"][i]) <= float(get_table_value(data,None,i+" max"))
+#         s = s < 1
+#         config.graph[pos]["data"]["filter"][i] = s
 
-        v1 = mode(col).mode
-        if sum(col!=v1)>0:
-            v1 = col[col!=v1][0]
+#         v1 = mode(col).mode
+#         if sum(col!=v1)>0:
+#             v1 = col[col!=v1][0]
 
-        set_table_column(data,i+" resolution",v1)
+#         set_table_column(data,i+" resolution",v1)
 
-    pos = get_node_pos(config.selected)
-    config.graph[pos]["data"]["threshold"]["data"] = data
+#     pos = get_node_pos(config.selected)
+#     config.graph[pos]["data"]["threshold"]["data"] = data
 
-    return plot_qc(config.selected)
+#     return plot_qc(config.selected)
 
-@app.callback(
-    dash.Output("summary_qc_scatter","figure",allow_duplicate=True),
-    dash.Input("qc_summary_plot_x","value"),
-    dash.Input("qc_summary_plot_y","value"),
-    dash.Input("qc_summary_plot_c","value"),
-    prevent_initial_call=True
-)
-def update_qc_summary(a,b,c):
+# @app.callback(
+#     dash.Output("summary_qc_scatter","figure",allow_duplicate=True),
+#     dash.Input("qc_summary_plot_x","value"),
+#     dash.Input("qc_summary_plot_y","value"),
+#     dash.Input("qc_summary_plot_c","value"),
+#     prevent_initial_call=True
+# )
+# def update_qc_summary(a,b,c):
 
-    prevent_race("qc")
+#     prevent_race("qc")
 
-    node = get_node(config.selected)
+#     node = get_node(config.selected)
 
-    pos = get_node_pos(config.selected)
-    node = get_node(config.selected)
-    data = node["data"]["thresholds"]["data"]
-    config.graph[pos]["data"]["x_label"] = a
-    config.graph[pos]["data"]["y_label"] = b
-    config.graph[pos]["data"]["c_label"] = c
+#     pos = get_node_pos(config.selected)
+#     node = get_node(config.selected)
+#     data = node["data"]["thresholds"]["data"]
+#     config.graph[pos]["data"]["x_label"] = a
+#     config.graph[pos]["data"]["y_label"] = b
+#     config.graph[pos]["data"]["c_label"] = c
 
-    lims_min_x = get_table_column(data,node["data"]["x_label"]+" min")[0]
-    lims_max_x = get_table_column(data,node["data"]["x_label"]+" max")[0]
-    lims_min_y = get_table_column(data,node["data"]["y_label"]+" min")[0]
-    lims_max_y = get_table_column(data,node["data"]["y_label"]+" max")[0]
+#     lims_min_x = get_table_column(data,node["data"]["x_label"]+" min")[0]
+#     lims_max_x = get_table_column(data,node["data"]["x_label"]+" max")[0]
+#     lims_min_y = get_table_column(data,node["data"]["y_label"]+" min")[0]
+#     lims_max_y = get_table_column(data,node["data"]["y_label"]+" max")[0]
 
-    f = {
-            "data":[
-                go.Scatter(
-                    x=node["data"]["obs"][node["data"]["x_label"]],
-                    y=node["data"]["obs"][node["data"]["y_label"]],
-                    mode="markers",
-                    name="Local max threshold",
-                    # nbinsx=100,
-                    # name="Histogram",
-                    marker=dict(color=qualitative_colors(node["data"]["obs"][node["data"]["c_label"]])),
-                    # opacity=0.7
-                ),
-                go.Scatter(
-                    x=[lims_min_x, lims_min_x, lims_max_x, lims_max_x, lims_min_x], 
-                    y=[lims_min_y,lims_max_y,lims_max_y,lims_min_y,lims_min_y],
-                    name="Limits",
-                    marker={"color":"black"}
-                ),
-            ],
-            "layout":{
-                    "title": f"Summary plot",
-                    "xaxis": {"title": config.selected+"_"+node["data"]["x_label"]},
-                    "yaxis": {"title": config.selected+"_"+node["data"]["y_label"]},
-                    "barmode": "overlay",
-            }
-        }
+#     f = {
+#             "data":[
+#                 go.Scatter(
+#                     x=node["data"]["obs"][node["data"]["x_label"]],
+#                     y=node["data"]["obs"][node["data"]["y_label"]],
+#                     mode="markers",
+#                     name="Local max threshold",
+#                     # nbinsx=100,
+#                     # name="Histogram",
+#                     marker=dict(color=qualitative_colors(node["data"]["obs"][node["data"]["c_label"]])),
+#                     # opacity=0.7
+#                 ),
+#                 go.Scatter(
+#                     x=[lims_min_x, lims_min_x, lims_max_x, lims_max_x, lims_min_x], 
+#                     y=[lims_min_y,lims_max_y,lims_max_y,lims_min_y,lims_min_y],
+#                     name="Limits",
+#                     marker={"color":"black"}
+#                 ),
+#             ],
+#             "layout":{
+#                     "title": f"Summary plot",
+#                     "xaxis": {"title": config.selected+"_"+node["data"]["x_label"]},
+#                     "yaxis": {"title": config.selected+"_"+node["data"]["y_label"]},
+#                     "barmode": "overlay",
+#             }
+#         }
 
-    return f
+#     return f
+
+config.methods["qc"] = {
+
+    "properties":{"method":"qc","type":"QC","recompute":False},
+
+    "args": args,
+
+    "function":f_qc,
+
+    "plot":plot_qc,
+}

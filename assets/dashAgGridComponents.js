@@ -1,4 +1,17 @@
 var dagcomponentfuncs = window.dashAgGridComponentFunctions = window.dashAgGridComponentFunctions || {};
+var dagfuncs = window.dashAgGridFunctions = window.dashAgGridFunctions || {};
+
+function isHeaderRow(params) {
+    return params.data.section === 'big-title';
+}
+
+dagfuncs.titleColSpan = function (params, ncols) {
+    if (isHeaderRow(params)) {
+        return ncols;
+    } else {
+        return 1;
+    }
+}
 
 //Button
 dagcomponentfuncs.Button = function (props) {
@@ -18,8 +31,6 @@ dagcomponentfuncs.Button = function (props) {
 };
 
 //Dropdown
-
-var dagfuncs = window.dashAgGridFunctions = window.dashAgGridFunctions || {};
 
 dagfuncs.dynamicOptions = function(params, values) {
     return {
@@ -54,7 +65,7 @@ dagfuncs.DCC_Dropdown = class {
 
     // renders component into the editor element
     ReactDOM.render(React.createElement(window.dash_core_components.Dropdown, {
-        options: params.values, value: params.value, ref: this.ref, setProps, style: {width: params.column.actualWidth},
+        options: params.values, value: params.value, clearable: true, ref: this.ref, setProps, style: {width: params.column.actualWidth},
     }), this.eInput)
 
     // allows focus event

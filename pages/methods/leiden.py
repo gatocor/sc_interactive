@@ -11,6 +11,8 @@ import scrublet
 from scipy.stats import mode
 
 from ..functions import *
+from ..graph import *
+from ..plots import *
 
 from app import app
 

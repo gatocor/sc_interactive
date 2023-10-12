@@ -7,6 +7,8 @@ from plotly.subplots import make_subplots
 import dash
 
 from ..functions import *
+from ..graph import *
+from ..plots import *
 
 from app import app
 

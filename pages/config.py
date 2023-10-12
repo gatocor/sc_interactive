@@ -56,3 +56,5 @@ functions_plot = {}
 arguments = {}
 tclick = 0
 selected = 'Raw'
+
+methods = {}

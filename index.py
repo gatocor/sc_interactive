@@ -4,7 +4,7 @@ from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import os
 import scanpy as sc
-from pages.functions import make_nodes_summaries
+from pages.graph import make_nodes_summaries
 import json
 
 from pages.functions import *
@@ -13,7 +13,7 @@ from pages.functions import *
 from app import server
 from app import app
 # import all pages in the app
-from pages import config, home, graph
+from pages import config, home, page_analysis
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -102,7 +102,7 @@ def display_page(pathname):
         #     config.file_path = config.CACHEFOLDER+config.file_path
         #     config.adata = sc.read(config.file_path)
 
-        return graph.layout()
+        return page_analysis.layout()
 
 @app.callback(Output('nav_brand', 'children'),
               [Input('h5ad-load-button','n_clicks')],
