@@ -209,37 +209,11 @@ def make_interactive():
     if 'sc_interactive' not in config.adata.uns.keys():
         config.adata.uns['sc_interactive'] = {}
 
-# def make_method_layout(method):
-
-#     return f"""
-# def layout_{method}(name_analysis):
-
-#     node_pars = get_node(name_analysis)['data']['parameters']
-#     l = make_arguments('{method}', config.methods[{method}]["args"](), node_pars)
-#     l2 = make_arguments('{method}', config.methods[{method}]["args"](), node_pars, add_execution_button=False)
-#     p = plot_{method}(name_analysis)
-        
-#     style = dict()
-#     style["background-color"]="lightgray"
-    
-#     return  [
-#                 dbc.Row(l,  
-#                         # width='50%',
-#                         style=style
-#                         ),
-#                 dbc.Row(l2,  
-#                         # width='50%',
-#                         style=style
-#                         ),
-#                 dbc.Row(id='analysis_plot',children=p)
-#             ]
-# """
-
 #Add new parameter
 methods_implemented = []
 for method in config.methods.keys():
 
-    for i in config.methods[method]["args"]["execution"]:
+    for i in config.methods[method]["args"]["execution"].copy():
 
         m_i = (i['name'],i['input'])
 
@@ -271,7 +245,7 @@ def change_parameter_{i['name']}(data):
 methods_implemented = []
 for method in config.methods.keys():
 
-    for i in config.methods[method]["args"]["postexecution"]:
+    for i in config.methods[method]["args"]["postexecution"].copy():
 
         m_i = (i['name'],i['input'])
 
@@ -287,8 +261,8 @@ for method in config.methods.keys():
 
             add_function = f"""
 @app.callback(
-    dash.Output("analysis_plot","children", allow_duplicate=True),
     dash.Output("analysis_postargs","children", allow_duplicate=True),
+    dash.Output("analysis_plot","children", allow_duplicate=True),
     {input}
     prevent_initial_call=True
 )
@@ -300,8 +274,8 @@ def change_parameter_{i['name']}(data):
     config.adata.uns[config.selected]['parameters']['{i['name']}'] = data
 
     method = get_node(config.selected)["data"]["method"]
-    post_args = config.methods[method]["args"]["postexecution"]
-    post_args_object = make_arguments(method, post_args, add_execution_button=False, add_header=False)
+    post_args = config.methods[method]["args"]["postexecution"].copy()
+    post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header=False)
 
     plot = config.methods[method]['plot']()
 
@@ -310,19 +284,6 @@ def change_parameter_{i['name']}(data):
 
             exec(add_function, globals(), locals())
 
-for name, method in zip(get_method('name'),get_method('method')):
-
-    # callback_code = make_method_layout(method)
-    # exec(callback_code)
-
-    # add_function_to_dict = f"""config.methods["{method}"]["layout"] = layout_{method}"""
-    # exec(add_function_to_dict)
-
-    add_function_to_dict = f"""config.functions_method["{method}"] = f_{method}"""
-    exec(add_function_to_dict)
-
-    add_function_to_dict = f"""config.functions_plot["{method}"] = plot_{method}"""
-    exec(add_function_to_dict)
 
 ############################################################################################################################################
 ############################################################################################################################################
@@ -353,62 +314,6 @@ def graph_update_dropdown(_):
 def graph_update_table(_):
 
     return graph2table()
-
-# #Add new parameter value to active node info (Measure table)
-# for method in get_method('method'):
-
-#     for i in config.methods[method]["args"]():
-
-#         m_i = (i['name'],i['input'])
-
-#         if i['input'] == "MeasureTable" and m_i not in methods_implemented:
-
-#             methods_implemented.append(m_i)
-
-#             add_function = f"""
-# @app.callback(
-#     dash.Output("analysis_{i['name']}","children", allow_duplicate=True),
-#     dash.Input("analysis_{i['name']}_button","n_clicks"),
-#     dash.State("analysis_{i['name']}_dropdown","value"),
-#     dash.State("analysis_{i['name']}","children"),
-#     prevent_initial_call=True
-# )
-# def add_measuretable_{i['name']}(n_clicks,value,data):
-
-#     if  n_clicks != None and value != None and value not in data:
-    
-#         if len(data) == 2:
-#             data = data[:-1]+value+"]"
-#         else:
-#             data = data[:-1]+","+value+"]"
-
-#         config.active_node_parameters['{i['name']}'] = data
-
-#     return data #, config.graph
-# """
-#             exec(add_function, globals(), locals())
-
-#             add_function = f"""
-# @app.callback(
-#     dash.Output("analysis_{i['name']}","children", allow_duplicate=True),
-#     dash.Input("analysis_{i['name']}_button_rem","n_clicks"),
-#     dash.State("analysis_{i['name']}_dropdown","value"),
-#     dash.State("analysis_{i['name']}","children"),
-#     prevent_initial_call=True
-# )
-# def add_measuretable_{i['name']}_rem(n_clicks,value,data):
-
-#     if n_clicks != None and value != None and value in data:
-    
-#         data = data.replace(value,'')
-#         data = data.replace('[,','[')
-#         data = data.replace(',]',']')
-
-#         config.active_node_parameters['{i['name']}'] = data
-
-#     return data #, config.graph
-# """
-#             exec(add_function, globals(), locals())
 
 @app.callback(
     dash.Output('dumb', 'children', allow_duplicate=True),
@@ -447,7 +352,7 @@ def graph_new_node(_, method, cytoscape):
         count += 1
         name = method + " " + str(count)
 
-    args = config.methods[method]["args"]["execution"]
+    args = config.methods[method]["args"]["execution"].copy()
 
     node = {
         'data': {
@@ -569,7 +474,7 @@ def execute(n_clicks, warning_input, warning_computed, plot):
 
                 #Add post arguments
                 args = get_args(config.selected, config.adata)
-                post_args = config.methods[method]["args"]["postexecution"]
+                post_args = config.methods[method]["args"]["postexecution"].copy()
                 for i in post_args:
                     val = fvalue(i["value"])
                     config.adata.uns[config.selected]["parameters"][i["name"]] = val
@@ -580,7 +485,7 @@ def execute(n_clicks, warning_input, warning_computed, plot):
     post_args_object = []
     plot = []
     if get_node(config.selected)['data']['computed']:
-        post_args = config.methods[method]["args"]["postexecution"]
+        post_args = config.methods[method]["args"]["postexecution"].copy()
         post_args_object = make_arguments(method, post_args, add_execution_button=False, add_header=False)
 
         args = get_args(config.selected, config.adata)

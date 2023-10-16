@@ -33,7 +33,7 @@ ARGBATCH = {
             "description":"Observable to use",
             "value":None,
             "clearable":False,
-            "options": {"function":"[i for i,j in zip(config.adata.obs.columns.values, config.adata.obs.dtypes) if j in ['str','object','categorical']]"}
+            "options": {"function":"[i for i,j in zip(config.adata.obs.columns.values, config.adata.obs.dtypes) if j in ['str','object','category','int']]"}
         }
 
 from .methods.qc import *
@@ -41,6 +41,7 @@ from .methods.qc import *
 def fvalue(value):
     val = {"val":value}
     if type(value) == dict:
+        value = value.copy()
         if "function" in value.keys():
             m = f"val = {value['function']}"
             exec(m, globals(), val)
@@ -59,7 +60,7 @@ def get_args(name, adata):
     d = {}
     #obs
     obs_key = f"{name}--"
-    l = [i for i in adata.obs.columns.values if i.startswith(obs_key)]     
+    l = [i for i in adata.obs.columns.values if i.startswith(obs_key)]   
     if len(l) > 0:   
         d["obs"] = adata.obs[l]
 
@@ -134,9 +135,9 @@ def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_h
             )
         ]
 
-    arglist = arglist
-
     for i,arg in enumerate(arglist):
+
+        arg = arg.copy()
 
         if fvisible(arg):
 
@@ -180,6 +181,11 @@ def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_h
                                 children=qc_table(arg["value"]),
                         ),
                     ),
+                    dbc.Row(
+                        html.Div(
+                                children= dbc.Button(id="analysis_"+str(arg["name"])+"_button", children="Add"),
+                        ),
+                    ),
                 ]
             elif arg["input"] == "AgTable":
                 input = [
@@ -189,30 +195,6 @@ def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_h
                         ),
                     ),
                 ]
-        # elif arg["input"] == "ThresholdTable":
-        #     input = [
-        #         dbc.Row(
-        #             dash_table.DataTable(
-        #                     id="analysis_"+str(arg["name"]),
-        #                     columns=[
-        #                         {"name": i, "id": i, "deletable": False, "editable": False if ("Measure" in i) else True} for i in ["Measure","Min","Max","#bins"]
-        #                     ],
-        #                     data=value,
-        #                     editable=False, 
-        #                     row_deletable=False,
-        #                     style_table={'overflowY': 'auto', 'overflowX': 'auto'},
-        #                     style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'}
-        #             ),
-        #         ),
-        #         # dbc.Row([
-        #         #     dbc.Col(dcc.Dropdown(
-        #         #         id = "analysis_"+str(arg["name"])+"_dropdown",
-        #         #         value = None,
-        #         #         options = arg["options"]
-        #         #     )),
-        #         #     dbc.Col(dbc.Button("Add", id="analysis_"+str(arg["name"])+"_button")),
-        #         # ])
-        #     ]
             else:
                 print("ERROR: NO METHOD")
 
@@ -333,16 +315,6 @@ def qc_table(rowData):
 
     d = rowData[-1]
     
-    if d["name"] != "":
-        rowData.append({
-            "del":"Delete",
-            "name":"",
-            "var":" ",
-            "pattern":"",
-            "style":"counts",
-            "genes":"all",
-        })
-
     fig = dag.AgGrid(
         id="analysis_measure",
         rowData=rowData,
@@ -356,10 +328,11 @@ def qc_table(rowData):
     return fig
 
 @app.callback(
-    dash.Output("analysis_measure","rowData"),
+    dash.Output("analysis_measure","rowData", allow_duplicate=True),
     dash.Input("analysis_measure","cellValueChanged"),
     dash.Input("analysis_measure","cellRendererData"),
     dash.State("analysis_measure","rowData"),
+    prevent_initial_call = True
 )
 def f(b,click,c):
 
@@ -375,10 +348,20 @@ def f(b,click,c):
 
     if click:
         if click["colId"] == "del":
-            c.pop(click["rowIndex"])
+            c.pop(click["rowIndex"])   
 
-    d = c[-1]
-    if d["name"] != "":
+    return c
+
+@app.callback(
+    dash.Output("analysis_measure","rowData", allow_duplicate=True),
+    dash.Input("analysis_measure_button","n_clicks"),
+    dash.State("analysis_measure","rowData"),
+    prevent_initial_call = True
+)
+def add_row(n_clicks, c):
+
+    if n_clicks:
+
         c.append({
             "del":"Delete",
             "name":"",
@@ -418,11 +401,11 @@ def layout(name_analysis):
 
     node_pars = get_node(name_analysis)['data']['parameters']
     method = get_node(name_analysis)['data']['method']
-    l = make_arguments(method, config.methods[method]["args"]["execution"], node_pars)
+    l = make_arguments(method, config.methods[method]["args"]["execution"].copy(), node_pars)
     l2 = []
     p = []
     if get_node(name_analysis)['data']['computed']:
-        l2 = make_arguments(method, config.methods[method]["args"]["postexecution"], node_pars, add_execution_button=False, add_header=False)
+        l2 = make_arguments(method, config.methods[method]["args"]["postexecution"].copy(), node_pars, add_execution_button=False, add_header=False)
         p = config.methods[method]["plot"](config.adata, node_pars)
         
     style = dict()

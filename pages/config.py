@@ -11,7 +11,7 @@ def make_file_path(name):
 # Initialize the global variable
 folder_path = './'  # Replace with the actual path to the folder containing .h5ad files
 h5ad_files = []
-for folder, dirs, files in os.walk("."):
+for folder, dirs, files in os.walk(".."):
     for file in files:
         if ".h5ad" in file:
             h5ad_files.append(folder+"/"+file)
@@ -25,6 +25,9 @@ except:
 
 if not adata.raw:
     adata.raw = adata
+
+if "Raw" not in adata.obsm.keys():
+    adata.obsm["Raw"] = adata.raw.X
 
 cache = False
 

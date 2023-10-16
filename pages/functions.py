@@ -54,7 +54,7 @@ def qualitative_colors(labels):
             True: "lightblue", False: "red"
         }
 
-        return [color_map[i] for i in labels]
+        return np.vectorize(color_map.get)(labels)
 
     elif type(labels[0]) in [str,object,int,bool,np.bool_,np.int_,"category"]:
 
@@ -66,7 +66,7 @@ def qualitative_colors(labels):
             for i, category in enumerate(np.unique(labels))
         }
 
-        return [color_map[i] for i in labels]
+        return np.vectorize(color_map.get)(labels)
     
 def get_batch_keys():
     return [i for i in config.adata.obs.columns.values if config.adata.obs.dtypes[i] in [str,object,int,"category"]]

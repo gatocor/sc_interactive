@@ -17,6 +17,46 @@ from .functions import *
 
 from app import app
 
+def plot_violin(x=None, y=None, bandwidth=1):
+
+    return go.Violin(
+                        x=x,
+                        y=y,
+            )
+
+def plot_scatter(x=None, y=None, hue=None):
+
+    return go.Scatter(
+                        x=x,
+                        y=y,
+                        mode="markers",
+                        marker={"color":qualitative_colors(hue)}
+            )
+
+def make_Graph(data=[],title="",x_label="",y_label="",style={"width": "50vw", "height": "50vh"}, center=True):
+     
+    graph =  dcc.Graph(
+        figure={
+                    "data":data,
+                    "layout":{
+                            "title": title,
+                            "xaxis": {"title": x_label},
+                            "yaxis": {"title": y_label},
+                    }
+        },
+        style=style
+    )
+
+    if center:
+
+        graph = [
+            dbc.Col(),
+            dbc.Col(graph),
+            dbc.Col()
+        ]
+
+    return graph
+
 def plot_dendogram(data_array, groups=None, orientation='bottom'):
 
     if orientation in ["bottom", "top"]:
