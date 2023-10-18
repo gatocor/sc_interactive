@@ -13,6 +13,7 @@ from plotly.subplots import make_subplots
 from time import time
 import json
 import dash_cytoscape as cyto
+from copy import deepcopy
 
 from app import app
 
@@ -209,7 +210,7 @@ def args2summary(data):
 methods_implemented = []
 for method in config.methods.keys():
 
-    for i in config.methods[method]["args"]["execution"].copy():
+    for i in deepcopy(config.methods[method]["args"]["execution"]):
 
         m_i = (i['name'],i['input'])
 
@@ -218,6 +219,7 @@ for method in config.methods.keys():
             methods_implemented.append(m_i)
 
             input = f"dash.Input('analysis_{i['name']}','value'),"
+            up = f"config.active_node_parameters['{i['name']}'] = data"
             if i['input'] == 'BooleanSwitch':
                 input = f"dash.Input('analysis_{i['name']}','on'),"
             elif i['input'] == 'AgTable':
@@ -231,7 +233,7 @@ for method in config.methods.keys():
 )
 def change_parameter_{i['name']}(data):
 
-    config.active_node_parameters['{i['name']}'] = data
+    {up}
 
     return ""
 """
@@ -273,8 +275,6 @@ def add_row_{i['name']}(n_clicks, c):
 
     if n_clicks:
 
-        print(c)
-
         c.append(
             {i['addRows']}
         )        
@@ -286,7 +286,7 @@ def add_row_{i['name']}(n_clicks, c):
 methods_implemented = []
 for method in config.methods.keys():
 
-    for i in config.methods[method]["args"]["postexecution"].copy():
+    for i in deepcopy(config.methods[method]["args"]["postexecution"]):
 
         m_i = (i['name'],i['input'])
 
@@ -319,7 +319,7 @@ def change_parameter_{i['name']}(data):
     set_parameters_node(dict({i['name']}=data))
 
     method = get_node(config.selected)["data"]["method"]
-    post_args = config.methods[method]["args"]["postexecution"].copy()
+    post_args = deepcopy(config.methods[method]["args"]["postexecution"])
     deactivate = False
     for i in post_args:
         config.block_callback[i['name']] = True
@@ -343,6 +343,9 @@ def set_parameters_adata(args):
     else:
         for i,j in args.items():
             config.adata.uns[config.selected]["parameters"][i] = j
+
+    config.adata.uns[config.selected]["scinteractive"] = True
+    config.adata.uns[config.selected]["method"] = get_node(config.selected)["data"]["method"]
 
 def set_parameters_node(args):
 
@@ -418,7 +421,7 @@ def graph_new_node(_, method, cytoscape):
         count += 1
         name = method + " " + str(count)
 
-    args = config.methods[method]["args"]["execution"].copy()
+    args = deepcopy(config.methods[method]["args"]["execution"])
     args = args_eval(args)
 
     node = {
@@ -535,7 +538,7 @@ def execute(n_clicks, warning_input, warning_computed, plot):
                 set_parameters_node(config.active_node_parameters)
 
                 #Add post arguments
-                post_args = config.methods[method]["args"]["postexecution"].copy()
+                post_args = deepcopy(config.methods[method]["args"]["postexecution"])
                 post_args = args_eval(post_args)
                 set_parameters_adata(post_args)
                 set_parameters_node(post_args)
@@ -548,10 +551,11 @@ def execute(n_clicks, warning_input, warning_computed, plot):
         plot = []
         node_data = get_node(config.selected)['data']
         if node_data['computed']:
-            post_args = config.methods[node_data['method']]["args"]["postexecution"].copy()
+            post_args = deepcopy(config.methods[node_data['method']]["args"]["postexecution"])
             config.block_callback = {}
             for i in post_args:
                 config.block_callback[i["name"]] = True
+
             post_args_object = make_arguments(node_data['method'], post_args, add_execution_button=False, add_header=False)
 
             args = get_args(config.selected)
@@ -793,25 +797,12 @@ def display_click_data(tap_node_data):
 )
 def save(n_clicks):
     if n_clicks != None:
-        # n = "config.graph = ["
-        # for i in [json_serializable(i) for i in config.graph]:
-        #     n += i+","
-        # n += "]"
-        # config.adata.uns["sc_interactive"]["__graph__"] = n
-
-        if "__graph__" not in os.listdir("."):
-
-            os.mkdir("__graph__")
 
         save_graph()
 
-        file = make_file_path(config.file_path)
-        # print(config.adata.uns)
-        # print(config.adata.uns["qc"])
-        # config.adata.uns["qc"]['parameters']['measure'] = pd.DataFrame(config.adata.uns["qc"]['parameters']['measure'])
-        # config.adata.uns["qc"]['parameters']['thresholds'] = pd.DataFrame(config.adata.uns["qc"]['parameters']['thresholds'])
-        
-        config.adata.write(file)
+        adapt_adata_saving()
+        save_adata()
+        adapt_adata_loaded()
 
     return ""
 
@@ -838,24 +829,3 @@ def savefigure(n_clicks,fig):
             fig.write_image(namefig)
 
     return ""
-
-def none2str(uns):
-
-    for i,j in uns.items():
-        if type(j) == dict:
-            none2str(uns[i])
-        elif type(j) == list:
-            for k,l in enumerate(j):
-                if type(l) == dict:
-                    j[k] = none2str(l)
-                elif l == None:
-                    j[k] = "__none__"
-        elif j == None:
-            uns[i] = "__none__"
-
-    return uns
-
-def adata_save_adapt(adata):
-
-    none2str(adata.uns)
-

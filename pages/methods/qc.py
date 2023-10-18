@@ -31,7 +31,7 @@ args = {
                 { "headerName": "Name", "field":"name", "editable": True },
                 { "headerName": ".var", "field":"var", "editable": True,
                   "cellEditor": "agSelectCellEditor",
-                  "cellEditorParams": {"values": {"function":"['']+list(config.adata.var.columns.values)"}},
+                  "cellEditorParams": {"values": {"function":"list(config.adata.var.columns.values)"}},
                 },
                 { "headerName": "Pattern", "field":"pattern", "editable": True },
                 { "headerName": "Style", "field":"style", "editable": True,
@@ -41,13 +41,13 @@ args = {
             ],
             "value":[
                 {
-                    "name":"counts", "var":"", "pattern":" ", "style":"counts",
+                    "name":"counts", "var":"", "pattern":"", "style":"counts",
                 },
                 {
-                    "name":"n_expressed_genes", "var":"", "pattern":" ", "style":"n_expressed_genes",
+                    "name":"n_expressed_genes", "var":"", "pattern":"", "style":"n_expressed_genes",
                 }
             ],
-            "addRows":{"name":"", "var":"", "pattern":" ", "style":"counts"}
+            "addRows":{"name":"", "var":"", "pattern":"", "style":"counts"}
             ,
             "deleteRows": True
         },
@@ -58,7 +58,7 @@ args = {
             "input":"Dropdown",
             "name":"batch",
             "description":"Observable to use",
-            "value":{"function":"qc_batch()"},
+            "value":None,
             "clearable":True,
             "options": {"function":"[i for i,j in zip(config.adata.obs.columns.values, config.adata.obs.dtypes) if j in ['str','object','category','int']]"}
         },
@@ -105,18 +105,14 @@ args = {
             "input":"Dropdown",
             "name":"plot_color",
             "description":"Genes to use to for the dimensionality reduction.",
-            "value":{"function": None},
+            "value":None,
             "clearable":True,
-            "options":{"function": "config.adata.obs.columns.values"},
+            "options":{"function": "list(config.adata.obs.columns.values)"},
             "visible":{"function": "config.adata.uns[config.selected]['parameters']['plot_style'] == 'scatter'"}
         },
     ]
 
 }
-
-def qc_batch():
-
-    return None
 
 def qc_measures():
 
@@ -144,12 +140,12 @@ def qc_data():
         genes = qc_get_genes(i.copy())
         if i["name"] in measures:
             j = f"{config.selected}--{i['name']}"
-            data.append({"metric":i["name"], "batch":None,"min":adata.obs[j].min(),"max":adata.obs[j].max(),"genes":genes})
+            data.append({"metric":i["name"], "batch":" ","min":adata.obs[j].min(),"max":adata.obs[j].max(),"genes":genes})
 
     return data
 
 def qc_get_genes(b):
-    if b["var"] not in  [""] and b["pattern"] != "":
+    if b["var"] not in  [''] and b["pattern"] != '':
         v =  [i for i in config.adata.var[b["var"]].values if i.startswith(b["pattern"])]
         if len(v) != config.adata.shape[1]:
             genes = v
@@ -204,7 +200,7 @@ def plot_qc():
 
     if params["plot_style"] == "violin":
 
-        if params['batch']:
+        if params['batch'] != None:
             x = config.adata.obs[params['batch']].values
         else:
             x = [0 for i in range(config.adata.shape[0])]
@@ -212,7 +208,7 @@ def plot_qc():
         y = config.adata.obs[params['plot_y']].values
 
         thresholds = get_from_table(params['thresholds'],filter={"metric":[params['plot_y'].split("--")[1]]},properties=["batch","min","max"])
-        if None in thresholds['batch']:
+        if " " in thresholds['batch']:
             thresholds['batch'] = [0 for i in thresholds['batch']]
 
         fig = px.violin(x=x,
@@ -243,7 +239,7 @@ def plot_qc():
         x = config.adata.obs[params['plot_x']].values
         y = config.adata.obs[params['plot_y']].values
 
-        if params['plot_color']:
+        if params['plot_color'] != None:
             color = config.adata.obs[params['plot_color']].values
 
             fig = px.scatter(x=x,y=y,color=color)

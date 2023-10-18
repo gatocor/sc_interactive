@@ -50,7 +50,7 @@ def make_folders_structure(name):
 def get_figures(fig):
     l = []
     try:
-        f = go.Figure(fig)
+        f = go.Figure(data=fig)
         l.append(f)
     except:
         if type(fig) == list:
@@ -62,11 +62,57 @@ def get_figures(fig):
 
     return l
 
-def make_graph_path(name):
-    return "./__graph__/"+name.split("/")[-1].split(".")[0]+".json"
+def deep_substitute(object, origin, target):
 
-def make_file_path(name):
-    return "./__graph__/"+name.split("/")[-1].split(".")[0]+"_qc"+".h5ad"
+    if object == origin:
+        return target
+    
+    elif type(object) == list:
+        for i,j in enumerate(object):
+            object[i] = deep_substitute(j, origin, target)
+
+    try:
+        for i,j in object.items():
+            object[i] = deep_substitute(j, origin, target)
+    except:
+        None
+
+    return object
+
+def adapt_adata_saving():
+
+    config.adata.uns = deep_substitute(config.adata.uns, origin = None, target = "__None__")
+
+    for i,j in config.adata.uns.items():
+        if "scinteractive" in j.keys():
+            for k in config.methods[j["method"]]["args"]["execution"]:
+                if k["input"] == "AgTable":
+                    config.adata.uns[i]["parameters"][k["name"]] = pd.DataFrame(config.adata.uns[i]["parameters"][k["name"]])
+
+            for k in config.methods[j["method"]]["args"]["postexecution"]:
+                if k["input"] == "AgTable":
+                    config.adata.uns[i]["parameters"][k["name"]] = pd.DataFrame(config.adata.uns[i]["parameters"][k["name"]])
+
+def adapt_adata_loaded():
+
+    for i,j in config.adata.uns.items():
+        if "scinteractive" in j.keys():
+            for k in config.methods[j["method"]]["args"]["execution"]:
+                if k["input"] == "AgTable":
+                    config.adata.uns[i]["parameters"][k["name"]] = config.adata.uns[i]["parameters"][k["name"]].to_dict("records")
+
+            for k in config.methods[j["method"]]["args"]["postexecution"]:
+                if k["input"] == "AgTable":
+                    config.adata.uns[i]["parameters"][k["name"]] = config.adata.uns[i]["parameters"][k["name"]].to_dict("records")
+
+    config.adata.uns = deep_substitute(config.adata.uns, origin = "__None__", target = None)
+
+def save_adata():
+
+    file = f"../{config.selected_file}/{config.selected_file}.h5ad"
+    config.adata.write(file)
+
+# def save_adata():
 
 def hist_vline(data,bins):
 

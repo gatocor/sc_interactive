@@ -82,16 +82,13 @@ def display_page(pathname):
     #     return quality_control.layout()
     elif pathname == '/graph':
 
-        graph_name = make_graph_path(config.file_path)
-        if "__graph__" in os.listdir("."): #If graph exists, load it
-            if graph_name.split("/")[-1] in os.listdir("./__graph__"):
-        
-                with open(graph_name, 'r') as openfile:
+        # graph_name = "../"
+        # with open(graph_name, 'r') as openfile:
                 
-                    # Reading from json file
-                    json_object = json.load(openfile)
+        #     # Reading from json file
+        #     json_object = json.load(openfile)
 
-                config.graph = json_object
+        # config.graph = json_object
 
         # if "sc_interactive" in config.adata.uns.keys():
         #     if "__graph__" in config.adata.uns["sc_interactive"]:
