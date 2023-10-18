@@ -205,10 +205,6 @@ def args2summary(data):
 
     return summary
 
-def make_interactive():
-    if 'sc_interactive' not in config.adata.uns.keys():
-        config.adata.uns['sc_interactive'] = {}
-
 #Add new parameter
 methods_implemented = []
 for method in config.methods.keys():
@@ -224,7 +220,7 @@ for method in config.methods.keys():
             input = f"dash.Input('analysis_{i['name']}','value'),"
             if i['input'] == 'BooleanSwitch':
                 input = f"dash.Input('analysis_{i['name']}','on'),"
-            elif i['input'] == 'QCTable':
+            elif i['input'] == 'AgTable':
                 input = f"dash.Input('analysis_{i['name']}','rowData'),"
 
             add_function = f"""
@@ -242,6 +238,51 @@ def change_parameter_{i['name']}(data):
 
             exec(add_function, globals(), locals())
 
+            if i['input'] == "AgTable" and 'deleteRows' in i.keys():
+
+                if i['deleteRows']:
+
+                    add_function = f"""
+@app.callback(
+    dash.Output('analysis_{i['name']}', "rowData", allow_duplicate=True),
+    dash.Input('analysis_{i['name']}', "virtualRowData"),
+    dash.State('analysis_{i['name']}', "rowData"),
+    prevent_initial_call=True,
+)
+def delete_rows_{i['name']}(row, row2):
+
+    if row != None:
+        
+        config.active_node_parameters["{i['name']}"] = row
+
+    return row
+"""
+            
+                    exec(add_function, globals(), locals())
+
+            if i['input'] == "AgTable" and 'addRows' in i.keys():
+
+                add_function = f"""
+@app.callback(
+    dash.Output("analysis_{i['name']}","rowData", allow_duplicate=True),
+    dash.Input("analysis_{i['name']}_button","n_clicks"),
+    dash.State("analysis_{i['name']}","rowData"),
+    prevent_initial_call = True
+)
+def add_row_{i['name']}(n_clicks, c):
+
+    if n_clicks:
+
+        print(c)
+
+        c.append(
+            {i['addRows']}
+        )        
+
+    return c
+"""
+                exec(add_function, globals(), locals())
+
 methods_implemented = []
 for method in config.methods.keys():
 
@@ -258,6 +299,8 @@ for method in config.methods.keys():
                 input = f"dash.Input('analysis_{i['name']}','on'),"
             elif i['input'] == 'QCTable':
                 input = f"dash.Input('analysis_{i['name']}','rowData'),"
+            elif i['input'] == 'AgTable':
+                input = f"dash.Input('analysis_{i['name']}','rowData'),"
 
             add_function = f"""
 @app.callback(
@@ -268,13 +311,19 @@ for method in config.methods.keys():
 )
 def change_parameter_{i['name']}(data):
 
-    if data == None:
+    if config.block_callback['{i['name']}']:
+        config.block_callback['{i['name']}'] = False
         raise PreventUpdate()
 
-    config.adata.uns[config.selected]['parameters']['{i['name']}'] = data
+    set_parameters_adata(dict({i['name']}=data))
+    set_parameters_node(dict({i['name']}=data))
 
     method = get_node(config.selected)["data"]["method"]
     post_args = config.methods[method]["args"]["postexecution"].copy()
+    deactivate = False
+    for i in post_args:
+        config.block_callback[i['name']] = True
+    config.block_callback['{i['name']}'] = False
     post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header=False)
 
     plot = config.methods[method]['plot']()
@@ -284,6 +333,23 @@ def change_parameter_{i['name']}(data):
 
             exec(add_function, globals(), locals())
 
+def set_parameters_adata(args):
+
+    if config.selected not in config.adata.uns.keys():
+        config.adata.uns[config.selected] = {"parameters":{}}
+
+    if "parameters" not in config.adata.uns[config.selected].keys():
+        config.adata.uns[config.selected]["parameters"] = args
+    else:
+        for i,j in args.items():
+            config.adata.uns[config.selected]["parameters"][i] = j
+
+def set_parameters_node(args):
+
+    pos = get_node_pos(config.selected)
+
+    for i,j in args.items():
+        config.graph[pos]["data"]["parameters"][i] = j
 
 ############################################################################################################################################
 ############################################################################################################################################
@@ -353,6 +419,7 @@ def graph_new_node(_, method, cytoscape):
         name = method + " " + str(count)
 
     args = config.methods[method]["args"]["execution"].copy()
+    args = args_eval(args)
 
     node = {
         'data': {
@@ -365,14 +432,14 @@ def graph_new_node(_, method, cytoscape):
             'computed':False,
             'opacity':.3,
             'summary':'', 
-            'parameters':args2params(args)
+            'parameters':args
         }, 
         'position':{'x':config.max_x + 30,'y':0},
     }
     #make active node that is the one that will be presented
     # nodes_update_pos(config.graph,cytoscape)
 
-    config.active_node_parameters = args2params(args).copy()
+    config.active_node_parameters = args.copy()
     config.graph.append(node)
 
     l = load_node(name)
@@ -447,51 +514,53 @@ def execute(n_clicks, warning_input, warning_computed, plot):
 
             else:
 
-                #Remove previous edge
-                make_interactive()
-                node = get_node(config.selected)
-                edge_rm(node['data']['parameters']['input'], config.selected)
+                #Get incoming input, old input and method
+                input = config.active_node_parameters["input"]
+                old_input = get_node(config.selected)["data"]["parameters"]["input"]
+                method = get_node(config.selected)["data"]["method"]
 
-                #Update node info
-                update_node(config.selected)
-                # make_node_summary(config.selected)
+                #Get erguments of incoming
+                inputArgs = get_args(input)
 
-                node = get_node(config.selected)
-                pos = get_node_pos(config.selected)
-                params = get_node_parameters(config.selected, str2list=True)
+                #Execute code
+                outputArgs = config.methods[method]["function"](config.adata, inputArgs, config.active_node_parameters)
 
-                edge_add(params['input'], config.selected)
+                # Remove old edge if any and add new
+                edge_rm(old_input, config.selected)
+                edge_add(input, config.selected)
 
-                inputArgs = get_args(params["input"], config.adata)
-
-                outputArgs = config.methods[node['data']['method']]["function"](config.adata, inputArgs, params)
-
-                if "uns" not in outputArgs.keys():
-                    outputArgs["uns"] = {}
-                outputArgs["uns"]["parameters"] = params
-
-                set_output(config.adata, config.selected, outputArgs)
+                #save parameters
+                set_output(outputArgs)
+                set_parameters_adata(config.active_node_parameters)
+                set_parameters_node(config.active_node_parameters)
 
                 #Add post arguments
-                args = get_args(config.selected, config.adata)
                 post_args = config.methods[method]["args"]["postexecution"].copy()
-                for i in post_args:
-                    val = fvalue(i["value"])
-                    config.adata.uns[config.selected]["parameters"][i["name"]] = val
+                post_args = args_eval(post_args)
+                set_parameters_adata(post_args)
+                set_parameters_node(post_args)
 
+                #Activate node
                 activate_node(config.selected)
                 deactivate_downstream(config.selected)
 
-    post_args_object = []
-    plot = []
-    if get_node(config.selected)['data']['computed']:
-        post_args = config.methods[method]["args"]["postexecution"].copy()
-        post_args_object = make_arguments(method, post_args, add_execution_button=False, add_header=False)
+        post_args_object = {}
+        plot = []
+        node_data = get_node(config.selected)['data']
+        if node_data['computed']:
+            post_args = config.methods[node_data['method']]["args"]["postexecution"].copy()
+            config.block_callback = {}
+            for i in post_args:
+                config.block_callback[i["name"]] = True
+            post_args_object = make_arguments(node_data['method'], post_args, add_execution_button=False, add_header=False)
 
-        args = get_args(config.selected, config.adata)
+            args = get_args(config.selected)
 
-        # print(args)
-        plot = config.methods[node['data']['method']]["plot"]()
+            plot = config.methods[node_data['method']]["plot"]()
+
+    else:
+
+        raise PreventUpdate()
 
     return config.graph, warning_input, warning_computed, post_args_object, plot
 
@@ -657,52 +726,64 @@ def graph_analysis(_, name, l):
 
     return l
 
-#Double click to load node
 @app.callback(
-    dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
-    dash.Output('graph_analysis', 'children', allow_duplicate=True),
+    dash.Output('graph_dropdown_load', 'value', allow_duplicate=True),
     dash.Input('graph_cytoscape', 'tapNode'),
-    dash.State('graph_analysis', 'children'),
     prevent_initial_call=True
 )
-def display_click_data(tap_node_data, l):
+def display_click_data(tap_node_data):
 
     if tap_node_data is not None:
+        return tap_node_data['data']['id']
+    
+    return None
 
-        t = time()
-        name = tap_node_data['data']['id']
+# #Double click to load node
+# @app.callback(
+#     dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
+#     dash.Output('graph_analysis', 'children', allow_duplicate=True),
+#     dash.Input('graph_cytoscape', 'tapNode'),
+#     dash.State('graph_analysis', 'children'),
+#     prevent_initial_call=True
+# )
+# def display_click_data(tap_node_data, l):
 
-        if abs(config.tclick-t) < 1: #Double click
+#     if tap_node_data is not None:
 
-            l = load_node(name)
+#         t = time()
+#         name = tap_node_data['data']['id']
+
+#         if abs(config.tclick-t) < 1: #Double click
+
+#             l = load_node(name)
         
-        else: # If not load, create again the buttons to avoid spurious reloadings
+#         else: # If not load, create again the buttons to avoid spurious reloadings
 
-            if len(l) > 0: #Otherwise is raw
-                l[0]["props"]["children"][0]["props"]["children"][0]["props"]["children"][1] = dbc.Col(
-                        dbc.Row(
-                            dbc.Button("Rename",id="analysis_rename_button", class_name="btn btn-primary btn-sm"),
-                        ),
-                        width={"offset":7},
-                        align="center"
-                    )
-                l[0]["props"]["children"][0]["props"]["children"][0]["props"]["children"][2] = dbc.Col(
-                        dbc.Row(
-                            dbc.Button("Delete",id="analysis_delete_button", style={"background-color":"red"}, class_name="btn btn-primary btn-sm"),
-                        ),
-                        width={"offset":1},
-                        align="center"
-                    )
-                l[0]["props"]["children"][-2]["props"]["children"][-1] = dbc.Button("Execute",id="analysis_execute_button")
+#             if len(l) > 0: #Otherwise is raw
+#                 l[0]["props"]["children"][0]["props"]["children"][0]["props"]["children"][1] = dbc.Col(
+#                         dbc.Row(
+#                             dbc.Button("Rename",id="analysis_rename_button", class_name="btn btn-primary btn-sm"),
+#                         ),
+#                         width={"offset":7},
+#                         align="center"
+#                     )
+#                 l[0]["props"]["children"][0]["props"]["children"][0]["props"]["children"][2] = dbc.Col(
+#                         dbc.Row(
+#                             dbc.Button("Delete",id="analysis_delete_button", style={"background-color":"red"}, class_name="btn btn-primary btn-sm"),
+#                         ),
+#                         width={"offset":1},
+#                         align="center"
+#                     )
+#                 l[0]["props"]["children"][-2]["props"]["children"][-1] = dbc.Button("Execute",id="analysis_execute_button")
 
-            else:
-                l = []
+#             else:
+#                 l = []
 
-        config.tclick = t
+#         config.tclick = t
 
-        return config.graph, l
+#         return config.graph, l
 
-    return config.graph, l
+#     return config.graph, l
 
 #Save analysis
 @app.callback(
@@ -722,14 +803,59 @@ def save(n_clicks):
 
             os.mkdir("__graph__")
 
-        image_unselected(config.selected)
-        file = make_graph_path(config.file_path)
-        with open(file,"w") as outfile:
-            json_object = json.dumps(config.graph, indent=4, cls=NpEncoder)
-            outfile.write(json_object)
-        image_selected(config.selected)
+        save_graph()
 
         file = make_file_path(config.file_path)
+        # print(config.adata.uns)
+        # print(config.adata.uns["qc"])
+        # config.adata.uns["qc"]['parameters']['measure'] = pd.DataFrame(config.adata.uns["qc"]['parameters']['measure'])
+        # config.adata.uns["qc"]['parameters']['thresholds'] = pd.DataFrame(config.adata.uns["qc"]['parameters']['thresholds'])
+        
         config.adata.write(file)
 
     return ""
+
+@app.callback(
+    dash.Output("dumb","children",allow_duplicate=True),
+    dash.Input("analysis_saveimage_button","n_clicks"),
+    dash.State("analysis_plot","children"),
+    prevent_initial_call=True
+)
+def savefigure(n_clicks,fig):
+
+    if n_clicks != None:
+
+        make_folders_structure(config.selected_file)
+
+        figs = get_figures(fig)
+
+        count = 0
+        for fig in figs:
+            namefig = f"../{config.selected_file}/report/figures/{config.selected}_{count}.png"
+            while os.path.isfile(namefig):
+                count += 1
+                namefig = f"../{config.selected_file}/report/figures/{config.selected}_{count}.png"
+            fig.write_image(namefig)
+
+    return ""
+
+def none2str(uns):
+
+    for i,j in uns.items():
+        if type(j) == dict:
+            none2str(uns[i])
+        elif type(j) == list:
+            for k,l in enumerate(j):
+                if type(l) == dict:
+                    j[k] = none2str(l)
+                elif l == None:
+                    j[k] = "__none__"
+        elif j == None:
+            uns[i] = "__none__"
+
+    return uns
+
+def adata_save_adapt(adata):
+
+    none2str(adata.uns)
+

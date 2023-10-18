@@ -8,6 +8,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import dash
 from scipy.stats import mode
+import plotly.express as px
 
 from ..arguments import *
 from ..functions import *
@@ -23,40 +24,54 @@ args = {
     "execution" : [
         ARGINPUT,
         {
-            "input":"QCTable",
+            "input":"AgTable",
             "name":"measure",
             "description":"Metrics of quality control to compute",
-            "value":[
-                {
-                    "name":"counts",
-                    "var":" ",
-                    "pattern":" ",
-                    "style":"counts",
-                    "genes":"all",
+            "header":[
+                { "headerName": "Name", "field":"name", "editable": True },
+                { "headerName": ".var", "field":"var", "editable": True,
+                  "cellEditor": "agSelectCellEditor",
+                  "cellEditorParams": {"values": {"function":"['']+list(config.adata.var.columns.values)"}},
                 },
-                {
-                    "name":"n_expressed_genes",
-                    "var":" ",
-                    "pattern":" ",
-                    "style":"n_expressed_genes",
-                    "genes":"all",
+                { "headerName": "Pattern", "field":"pattern", "editable": True },
+                { "headerName": "Style", "field":"style", "editable": True,
+                  "cellEditor": "agSelectCellEditor",
+                  "cellEditorParams": {"values": ['counts','n_expressed_genes','proportion']},
                 }
             ],
+            "value":[
+                {
+                    "name":"counts", "var":"", "pattern":" ", "style":"counts",
+                },
+                {
+                    "name":"n_expressed_genes", "var":"", "pattern":" ", "style":"n_expressed_genes",
+                }
+            ],
+            "addRows":{"name":"", "var":"", "pattern":" ", "style":"counts"}
+            ,
+            "deleteRows": True
         },
     ],
 
     "postexecution" : [
-        ARGBATCH,
+        {
+            "input":"Dropdown",
+            "name":"batch",
+            "description":"Observable to use",
+            "value":{"function":"qc_batch()"},
+            "clearable":True,
+            "options": {"function":"[i for i,j in zip(config.adata.obs.columns.values, config.adata.obs.dtypes) if j in ['str','object','category','int']]"}
+        },
         {
             "input":"AgTable",
             "name":"thresholds",
             "description":"Thresholds to apply to the data",
             "header":[
                 { "headerName": "Metric", "field":"metric", "editable": False },
-                { "headerName": "Cluster", "field":"cluster", "editable": False },
+                { "headerName": "Batch", "field":"batch", "editable": False },
                 { "headerName": "Min", "field":"min", "editable": True },
                 { "headerName": "Max", "field":"max", "editable": True },
-                { "headerName": "Plot resolution", "field":"resolution", "editable": True },
+                { "headerName": "Genes", "field":"genes", "editable": False },
             ],
             "value":{"function":"qc_data()"},
         },
@@ -90,8 +105,8 @@ args = {
             "input":"Dropdown",
             "name":"plot_color",
             "description":"Genes to use to for the dimensionality reduction.",
-            "value":{"function": "config.adata.obs.columns.values[0]"},
-            "clearable":False,
+            "value":{"function": None},
+            "clearable":True,
             "options":{"function": "config.adata.obs.columns.values"},
             "visible":{"function": "config.adata.uns[config.selected]['parameters']['plot_style'] == 'scatter'"}
         },
@@ -99,7 +114,12 @@ args = {
 
 }
 
+def qc_batch():
+
+    return None
+
 def qc_measures():
+
     selected = config.selected
     adata = config.adata
 
@@ -121,11 +141,24 @@ def qc_data():
 
     data = []
     for i in a["measure"]:
+        genes = qc_get_genes(i.copy())
         if i["name"] in measures:
             j = f"{config.selected}--{i['name']}"
-            data.append({"metric":i["name"], "cluster":None,"min":adata.obs[j].min(),"max":adata.obs[j].max(),"resolution":adata.obs[j].std()})
+            data.append({"metric":i["name"], "batch":None,"min":adata.obs[j].min(),"max":adata.obs[j].max(),"genes":genes})
 
     return data
+
+def qc_get_genes(b):
+    if b["var"] not in  [""] and b["pattern"] != "":
+        v =  [i for i in config.adata.var[b["var"]].values if i.startswith(b["pattern"])]
+        if len(v) != config.adata.shape[1]:
+            genes = v
+        else:
+            genes = "all"
+    else:
+        genes = "all"
+
+    return genes
 
 def f_qc(adata, inputArgs, kwargs):
         
@@ -133,10 +166,11 @@ def f_qc(adata, inputArgs, kwargs):
 
     d = {"obs":{}}
     for l in kwargs["measure"]:
-        if l["genes"] == "all":
+        genes = qc_get_genes(l)
+        if genes == "all":
             x = range(X.shape[0])
         else:
-            x = np.isin(adata.var[l["var"]].values, l["genes"])
+            x = np.isin(adata.var[l["var"]].values, genes)
 
         if "counts" == l["style"]:
             d["obs"][l["name"]] = np.array(X[:,x].sum(axis=1)).reshape(-1)
@@ -147,6 +181,22 @@ def f_qc(adata, inputArgs, kwargs):
             d["obs"][l["name"]] =  p
 
     return d
+
+def get_from_table(table, filter={}, properties=[]):
+    properties_dict = {i:[] for i in properties}
+    for i in table:
+        
+        add = True
+        for j,k in filter.items():
+
+            if i[j] not in k:
+                add = False            
+
+        if add:
+            for j in properties_dict.keys():
+                properties_dict[j].append(i[j])
+
+    return properties_dict
 
 def plot_qc():
 
@@ -161,19 +211,50 @@ def plot_qc():
 
         y = config.adata.obs[params['plot_y']].values
 
-        l = make_Graph([plot_violin(x,y)], x_label=params['batch'], y_label=params['plot_y'])
+        thresholds = get_from_table(params['thresholds'],filter={"metric":[params['plot_y'].split("--")[1]]},properties=["batch","min","max"])
+        if None in thresholds['batch']:
+            thresholds['batch'] = [0 for i in thresholds['batch']]
 
-        return l
+        fig = px.violin(x=x,
+                        y=y
+              )
+        fig.add_traces(list(
+            px.scatter(x=thresholds['batch'],
+                       y=thresholds['min'],
+                       color_discrete_sequence=["red"], 
+                       symbol_sequence=["triangle-up-dot"]
+            ).select_traces()
+        ))
+        fig.add_traces(list(
+            px.scatter(x=thresholds['batch'],
+                       y=thresholds['max'],
+                       color_discrete_sequence=["purple"], 
+                       symbol_sequence=["triangle-down-dot"]
+            ).select_traces()
+        ))
+
+        fig.layout["xaxis"]["title"] = params['batch']
+        fig.layout["yaxis"]["title"] = params['plot_y']
+
+        return dcc.Graph(figure=fig)
         
     else:
 
         x = config.adata.obs[params['plot_x']].values
         y = config.adata.obs[params['plot_y']].values
-        color = config.adata.obs[params['plot_color']].values
 
-        l = make_Graph([plot_scatter(x, y, color)], x_label=params['plot_x'], y_label=params['plot_y'])
+        if params['plot_color']:
+            color = config.adata.obs[params['plot_color']].values
 
-        return l
+            fig = px.scatter(x=x,y=y,color=color)
+            fig.layout["legend"]["title"]["text"] = params['plot_color']
+        else:
+            fig = px.scatter(x=x,y=y)
+
+        fig.layout["xaxis"]["title"] = params['plot_x']
+        fig.layout["yaxis"]["title"] = params['plot_y']
+
+        return plot_center(dcc.Graph(figure=fig, style={"width": "60vw", "height": "50vw"}))
 
 config.methods["qc"] = {
 
@@ -184,4 +265,5 @@ config.methods["qc"] = {
     "function":f_qc,
 
     "plot":plot_qc,
+
 }

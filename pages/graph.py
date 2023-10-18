@@ -26,7 +26,7 @@ def cytoscape_graph():
                     {
                         'selector': 'node',
                         'style': {
-                            'label': 'data(name)',  # Show the node labels
+                            'label': 'data(id)',  # Show the node labels
                             'text-wrap': 'wrap',
                             # 'text-max-width': 30,
                             # 'text-justification': 'left',
@@ -75,6 +75,15 @@ def cytoscape_graph():
                     },
                 ],
     )
+
+def save_graph():
+
+    image_unselected(config.selected)
+    file = f"../{config.selected_file}/graph.json"
+    with open(file,"w") as outfile:
+        json_object = json.dumps(config.graph, indent=4, cls=NpEncoder)
+        outfile.write(json_object)
+    image_selected(config.selected)
 
 def make_nodes_summaries(inplace=True):
 

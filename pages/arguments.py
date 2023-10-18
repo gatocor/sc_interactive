@@ -55,60 +55,94 @@ def fvisible(arg):
     else:
         return True
 
-def get_args(name, adata):
+def args_eval(args):
+    d = {}
+
+    for i in args:
+        val = fvalue(i["value"])
+        d[i["name"]] = val
+
+    return d
+
+def parameters_eval(args):
+    
+    if type(args) == list:
+        for i,j in enumerate(args):
+            args[i] = parameters_eval(j)
+    elif type(args) == dict:
+        if "function" in args.keys():
+            return fvalue(args)
+        else:
+            for i,j in args.items():
+                args[i] = parameters_eval(j)
+
+    return args
+
+def get_args(name):
 
     d = {}
     #obs
     obs_key = f"{name}--"
-    l = [i for i in adata.obs.columns.values if i.startswith(obs_key)]   
+    l = [i for i in config.adata.obs.columns.values if i.startswith(obs_key)]   
     if len(l) > 0:   
-        d["obs"] = adata.obs[l]
+        d["obs"] = config.adata.obs[l]
 
     #var
     var_key = f"{name}--"
-    l = [i for i in adata.var.columns.values if i.startswith(var_key)]            
+    l = [i for i in config.adata.var.columns.values if i.startswith(var_key)]            
     if len(l) > 0:   
-        d["var"] = adata.var[l]
+        d["var"] = config.adata.var[l]
 
     #obsm
     obsm_key = name
-    if obsm_key in adata.obsm.keys():
-            d["obsm"] = adata.obsm[obsm_key]
+    if obsm_key in config.adata.obsm.keys():
+            d["obsm"] = config.adata.obsm[obsm_key]
             
     #uns
     uns_key = name
-    if uns_key in adata.uns.keys():
-            d["uns"] = adata.uns[uns_key]
+    if uns_key in config.adata.uns.keys():
+            d["uns"] = config.adata.uns[uns_key]
 
     return d
 
-def set_output(adata, name, args):
+def set_output(args):
 
     #obs
-    obs_key = f"{name}--"
+    obs_key = f"{config.selected}--"
     if "obs" in args.keys():
         for i,j in args["obs"].items():
             i = f"{obs_key}{i}"
-            adata.obs[i] = j
+            config.adata.obs[i] = j
 
     #var
-    var_key = f"{name}--"
+    var_key = f"{config.selected}--"
     if "var" in args.keys():
         for i,j in args["var"].items():
             i = f"{var_key}{i}"
-            adata.var[i] = j
+            config.adata.var[i] = j
 
     #obsm
     if "obsm" in args.keys():
-        adata.obsm[name] = args["uns"]
+        config.adata.obsm[config.selected] = args["uns"]
             
     #uns
     if "uns" in args.keys():
-        adata.uns[name] = args["uns"]
+        config.adata.uns[config.selected] = args["uns"]
 
 def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_header=True):
 
-    l = [dbc.Row(html.H1("Additional arguments"))]
+    arglist = parameters_eval(arglist)
+
+    l = [
+        dbc.Col(
+            dbc.Row(html.H1("Additional arguments")),
+        ),
+        dbc.Col(
+            dbc.Row(
+                dbc.Button("Save Image",id="analysis_saveimage_button", class_name="btn btn-primary btn-sm"),
+            )
+        )
+    ]
     if add_header:
         l = [
             dbc.Row(
@@ -162,8 +196,11 @@ def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_h
             )
             lab = html.Label(arg["name"],id=id+str(i),style={'text-align': 'right'})
             if arg["input"] == "Input":
+
                 input = dbc.Input(id="analysis_"+str(arg["name"]),value=value,type=arg["type"])
+
             elif arg["input"] == "Dropdown":
+
                 input = dcc.Dropdown(
                             id="analysis_"+str(arg["name"]),
                             options=arg["options"],
@@ -171,31 +208,49 @@ def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_h
                             # placeholder="Select a column",
                             clearable=arg["clearable"]
                         )
+                
             elif arg["input"] == "BooleanSwitch":
+
                 input = daq.BooleanSwitch(id="analysis_"+str(arg["name"]), on=value)
-            elif arg["input"] == "QCTable":
-                input = [
-                    dbc.Row(
-                        html.Div(
-                                id="analysis_"+str(arg["name"]),
-                                children=qc_table(arg["value"]),
-                        ),
-                    ),
-                    dbc.Row(
-                        html.Div(
-                                children= dbc.Button(id="analysis_"+str(arg["name"])+"_button", children="Add"),
-                        ),
-                    ),
-                ]
+
+            # elif arg["input"] == "QCTable":
+
+            #     input = [
+            #         dbc.Row(
+            #             html.Div(
+            #                     id="analysis_"+str(arg["name"]),
+            #                     children=qc_table(arg["value"]),
+            #             ),
+            #         ),
+            #     ]
+
             elif arg["input"] == "AgTable":
+
+                if "deleteRows" in arg.keys():
+                    d = arg["deleteRows"]
+                else:
+                    d = False
+
                 input = [
                     dbc.Row(
                         html.Div(
-                                children= ag_table("analysis_"+str(arg["name"]), arg["header"], arg["value"]),
+                                children= ag_table("analysis_"+str(arg["name"]), arg["header"], value, deleteRows=d),
                         ),
                     ),
                 ]
+
+                if "addRows" in arg.keys():
+
+                    input += [
+                        dbc.Row(
+                            html.Div(
+                                    children= dbc.Button(id="analysis_"+str(arg["name"])+"_button", children="Add"),
+                            ),
+                        ),
+                    ]
+
             else:
+
                 print("ERROR: NO METHOD")
 
             l.append(
@@ -221,31 +276,44 @@ def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_h
 
     return l
 
-def args2params(data):
+# def args2params(data):
 
-    params = {}
-    for i in data:
-        if i["input"] == "QCTable":
-            l = []
-            for j in i["value"]:
-                if j["name"] != "":
-                    if "del" in j.keys():
-                        del j["del"]
-                    l.append(j)
-            params["name"] = l
-        else:
-            params["name"] = i["value"]
+#     params = {}
+#     for i in data:
+#         if i["input"] == "QCTable":
+#             l = []
+#             for j in i["value"]:
+#                 if j["name"] != "":
+#                     if "del" in j.keys():
+#                         del j["del"]
+#                     l.append(j)
+#             params["name"] = l
+#         else:
+#             params["name"] = i["value"]
 
-    return {i['name']:i['value'] for i in data}
+#     return {i['name']:i['value'] for i in data}
 
-def ag_table(id, columnDefs, rowData, suppressRowTransform=False, suppressRowClickSelection=False):
+def ag_table(id, columnDefs, rowData, deleteRows=False, suppressRowTransform=False, suppressRowClickSelection=False):
+
+    if deleteRows:
+        columnDefs = [
+        {
+                "headerName": "",
+                "cellRenderer": "DeleteButton",
+                "lockPosition":'left',
+                "maxWidth":35,
+                "filter": False,
+                'cellStyle': {'paddingRight': 0, 'paddingLeft': 0},
+                "editable":False
+            },
+        ] + columnDefs
 
     fig = dag.AgGrid(
         id=id,
         rowData=rowData,
         columnDefs=columnDefs,
         defaultColDef={"editable": True},
-        deleteSelectedRows=True,
+        deleteSelectedRows=deleteRows,
         dashGridOptions={"suppressRowTransform":suppressRowTransform, "suppressRowClickSelection":suppressRowClickSelection},
         columnSize="sizeToFit",
     )
@@ -253,130 +321,110 @@ def ag_table(id, columnDefs, rowData, suppressRowTransform=False, suppressRowCli
     return fig
 
 
-def qc_table(rowData):
+# def qc_table(rowData):
 
-    a = [" "]+list(config.adata.var.columns.values)
+#     a = [" "]+list(config.adata.var.columns.values)
 
-    columnDefs = [
-        {
-            "headerName": "",
-            "field":"del", 
-            "cellRenderer": "Button", 
-            "lockPosition":'left', 
-            "cellRendererParams": {"className": "btn btn-danger"},  
-            "editable": False
-        },
-        {
-            "headerName": "Name metric",
-            "field": "name",
-            "editable": True
-        },
-        {
-            "headerName": ".var",
-            "field": "var",
-            "cellEditor": {"function": "DCC_Dropdown"},
-            "cellEditorParams": {"function": f"dynamicOptions(params,{a})"},
-            "cellEditorPopup": True,
-            "cellEditorPopupPosition": 'under',
-        },
-        {
-            "headerName": "Pattern",
-            "field": "pattern",
-            "editable": True
-        },
-        {
-            "headerName": "Style",
-            "field": "style",
-            "cellEditor": {"function": "DCC_Dropdown"},
-            "cellEditorParams": {"function": f"dynamicOptions(params,['counts','n_expressed_genes','proportion'])"},
-            "cellEditorPopup": True,
-            "cellEditorPopupPosition": 'under',
-        },
-        {
-            "headerName": "Genes",
-            "field": "genes",
-            "editable": False
-        },
-    ]
+#     columnDefs = [
+#         {
+#             "headerName": "",
+#             "field":"del", 
+#             "cellRenderer": "Button", 
+#             "lockPosition":'left', 
+#             "cellRendererParams": {"className": "btn btn-danger"},  
+#             "editable": False
+#         },
+#         {
+#             "headerName": "Name metric",
+#             "field": "name",
+#             "editable": True
+#         },
+#         {
+#             "headerName": ".var",
+#             "field": "var",
+#             "cellEditor": {"function": "DCC_Dropdown"},
+#             "cellEditorParams": {"function": f"dynamicOptions(params,{a})"},
+#             "cellEditorPopup": True,
+#             "cellEditorPopupPosition": 'under',
+#         },
+#         {
+#             "headerName": "Pattern",
+#             "field": "pattern",
+#             "editable": True
+#         },
+#         {
+#             "headerName": "Style",
+#             "field": "style",
+#             "cellEditor": {"function": "DCC_Dropdown"},
+#             "cellEditorParams": {"function": f"dynamicOptions(params,['counts','n_expressed_genes','proportion'])"},
+#             "cellEditorPopup": True,
+#             "cellEditorPopupPosition": 'under',
+#         },
+#         {
+#             "headerName": "Genes",
+#             "field": "genes",
+#             "editable": False
+#         },
+#     ]
 
-    for i,d in enumerate(rowData):
-        if "del" not in d.keys():
-            rowData[i]["del"] = "Delete"
-        if "name" not in d.keys():
-            rowData[i]["name"] = ""
-        if "var" not in d.keys():
-            rowData[i]["del"] = a[0]
-        if "style" not in d.keys():
-            rowData[i]["pattern"] = "counts"
-        if "pattern" not in d.keys():
-            rowData[i]["pattern"] = ""
-        if "genes" not in d.keys():
-            rowData[i]["genes"] = "[]"
+#     for i,d in enumerate(rowData):
+#         if "del" not in d.keys():
+#             rowData[i]["del"] = "Delete"
+#         if "name" not in d.keys():
+#             rowData[i]["name"] = ""
+#         if "var" not in d.keys():
+#             rowData[i]["del"] = a[0]
+#         if "style" not in d.keys():
+#             rowData[i]["pattern"] = "counts"
+#         if "pattern" not in d.keys():
+#             rowData[i]["pattern"] = ""
+#         if "genes" not in d.keys():
+#             rowData[i]["genes"] = "[]"
 
-    d = rowData[-1]
+#     d = rowData[-1]
     
-    fig = dag.AgGrid(
-        id="analysis_measure",
-        rowData=rowData,
-        columnDefs=columnDefs,
-        defaultColDef={"editable": True},
-        deleteSelectedRows=True,
-        dashGridOptions={"suppressRowTransform":True, "suppressRowClickSelection":True},
-        columnSize="sizeToFit",
-    )
+#     fig = dag.AgGrid(
+#         id="analysis_measure",
+#         rowData=rowData,
+#         columnDefs=columnDefs,
+#         defaultColDef={"editable": True},
+#         deleteSelectedRows=True,
+#         dashGridOptions={"suppressRowTransform":True, "suppressRowClickSelection":True},
+#         columnSize="sizeToFit",
+#     )
 
-    return fig
+#     return fig
 
-@app.callback(
-    dash.Output("analysis_measure","rowData", allow_duplicate=True),
-    dash.Input("analysis_measure","cellValueChanged"),
-    dash.Input("analysis_measure","cellRendererData"),
-    dash.State("analysis_measure","rowData"),
-    prevent_initial_call = True
-)
-def f(b,click,c):
+# @app.callback(
+#     dash.Output("analysis_measure","rowData", allow_duplicate=True),
+#     dash.Input("analysis_measure","cellValueChanged"),
+#     dash.Input("analysis_measure","cellRendererData"),
+#     dash.State("analysis_measure","rowData"),
+#     prevent_initial_call = True
+# )
+# def f(b,click,c):
 
-    if b != None:
-        if b["data"]["var"] not in  [""," "] and b["data"]["pattern"] != "":
-            v =  [i for i in config.adata.var[b["data"]["var"]].values if i.startswith(b["data"]["pattern"])]
-            if len(v) != config.adata.shape[1]:
-                c[b["rowIndex"]]["genes"] = v
-            else:
-                c[b["rowIndex"]]["genes"] = "All"
-        else:
-            c[b["rowIndex"]]["genes"] = "All"
+#     if b != None:
+#         if b["data"]["var"] not in  [""," "] and b["data"]["pattern"] != "":
+#             v =  [i for i in config.adata.var[b["data"]["var"]].values if i.startswith(b["data"]["pattern"])]
+#             if len(v) != config.adata.shape[1]:
+#                 c[b["rowIndex"]]["genes"] = v
+#             else:
+#                 c[b["rowIndex"]]["genes"] = "All"
+#         else:
+#             c[b["rowIndex"]]["genes"] = "All"
 
-    if click:
-        if click["colId"] == "del":
-            c.pop(click["rowIndex"])   
+#     if click:
+#         if click["colId"] == "del":
+#             c.pop(click["rowIndex"])   
 
-    return c
-
-@app.callback(
-    dash.Output("analysis_measure","rowData", allow_duplicate=True),
-    dash.Input("analysis_measure_button","n_clicks"),
-    dash.State("analysis_measure","rowData"),
-    prevent_initial_call = True
-)
-def add_row(n_clicks, c):
-
-    if n_clicks:
-
-        c.append({
-            "del":"Delete",
-            "name":"",
-            "var":" ",
-            "pattern":"",
-            "style":"counts",
-            "genes":"all",
-        })        
-
-    return c
+#     return c
 
 def load_node(name):
 
-    node = get_node(name)
-    config.active_node_parameters = node['data']['parameters'].copy()
+    if name in config.adata.uns.keys():
+        config.active_node_parameters = get_node(config.selected)["data"]["parameters"].copy()
+
     change_node_selected(name)
 
     if name == "Raw":
@@ -399,14 +447,15 @@ def load_node(name):
 
 def layout(name_analysis):
 
-    node_pars = get_node(name_analysis)['data']['parameters']
+    # node_pars = get_node(name_analysis)['data']['parameters']
     method = get_node(name_analysis)['data']['method']
-    l = make_arguments(method, config.methods[method]["args"]["execution"].copy(), node_pars)
+    args = get_node(name_analysis)['data']['parameters']
+    l = make_arguments(method, config.methods[method]["args"]["execution"].copy(), args)
     l2 = []
     p = []
     if get_node(name_analysis)['data']['computed']:
-        l2 = make_arguments(method, config.methods[method]["args"]["postexecution"].copy(), node_pars, add_execution_button=False, add_header=False)
-        p = config.methods[method]["plot"](config.adata, node_pars)
+        l2 = make_arguments(method, config.methods[method]["args"]["postexecution"].copy(), args, add_execution_button=False, add_header=False)
+        p = config.methods[method]["plot"]()
         
     style = dict()
     style["background-color"]="lightgray"

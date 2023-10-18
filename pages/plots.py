@@ -17,6 +17,13 @@ from .functions import *
 
 from app import app
 
+def plot_center(fig):
+    return [
+        dbc.Col(),
+        dbc.Col(fig),
+        dbc.Col()
+    ]
+
 def plot_violin(x=None, y=None, bandwidth=1):
 
     return go.Violin(
@@ -24,13 +31,18 @@ def plot_violin(x=None, y=None, bandwidth=1):
                         y=y,
             )
 
-def plot_scatter(x=None, y=None, hue=None):
+def plot_scatter(x=None, y=None, color=None, marker_size=1):
+
+    if color == None:
+        marker = {}
+    else:
+        marker = {"color":qualitative_colors(color),"size":marker_size}
 
     return go.Scatter(
                         x=x,
                         y=y,
                         mode="markers",
-                        marker={"color":qualitative_colors(hue)}
+                        marker=marker
             )
 
 def make_Graph(data=[],title="",x_label="",y_label="",style={"width": "50vw", "height": "50vh"}, center=True):

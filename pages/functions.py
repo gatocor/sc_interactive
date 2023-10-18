@@ -11,6 +11,7 @@ import plotly.graph_objs as go
 import plotly.express as px
 from dash.exceptions import PreventUpdate
 import json
+import os
 
 from . import config
 class NpEncoder(json.JSONEncoder):
@@ -23,7 +24,43 @@ class NpEncoder(json.JSONEncoder):
             return obj.tolist()
         if isinstance(obj, pd.Categorical):
             return obj.tolist()
+        
         return super(NpEncoder, self).default(obj)
+
+def make_folders_structure(name):
+
+    basedir = f"../{name}"
+    if not os.path.isdir(basedir):
+        os.mkdir(basedir)
+
+    adatadir = f"../{name}/h5ad"
+    if not os.path.isdir(adatadir):
+        os.mkdir(adatadir)
+
+    reportdir = f"../{name}/report"
+    if not os.path.isdir(reportdir):
+        os.mkdir(reportdir)
+
+    reportimagesdir = f"../{name}/report/figures"
+    if not os.path.isdir(reportimagesdir):
+        os.mkdir(reportimagesdir)
+
+    return
+
+def get_figures(fig):
+    l = []
+    try:
+        f = go.Figure(fig)
+        l.append(f)
+    except:
+        if type(fig) == list:
+            for i in fig:
+                l += get_figures(i)
+        elif type(fig) == dict:
+            for j,k in fig.items():
+                l += get_figures(k)
+
+    return l
 
 def make_graph_path(name):
     return "./__graph__/"+name.split("/")[-1].split(".")[0]+".json"

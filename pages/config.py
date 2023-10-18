@@ -15,7 +15,7 @@ for folder, dirs, files in os.walk(".."):
     for file in files:
         if ".h5ad" in file:
             h5ad_files.append(folder+"/"+file)
-selected_file = None
+selected_file = h5ad_files[0].split("/")[-1].split(".")[0]
 file_path = h5ad_files[0] #None
 try: 
     f = make_file_path(file_path)
@@ -51,13 +51,8 @@ graph = [
 active_node_parameters = {}
 max_x = 0
 
-functions = {}
-functions_method = {}
-functions_method_rm = {}
-functions_method_rename = {}
-functions_plot = {}
-arguments = {}
 tclick = 0
 selected = 'Raw'
+block_callback = {}
 
 methods = {}
