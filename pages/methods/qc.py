@@ -31,7 +31,7 @@ args = {
                 { "headerName": "Name", "field":"name", "editable": True },
                 { "headerName": ".var", "field":"var", "editable": True,
                   "cellEditor": "agSelectCellEditor",
-                  "cellEditorParams": {"values": {"function":"list(config.adata.var.columns.values)"}},
+                  "cellEditorParams": {"values": {"function":"[None]+list(config.adata.var.columns.values)"}},
                 },
                 { "headerName": "Pattern", "field":"pattern", "editable": True },
                 { "headerName": "Style", "field":"style", "editable": True,
@@ -133,7 +133,6 @@ def qc_data():
     #     if "batch" in config.adata.uns[config.selected]["parameters"].keys():
     #         del config.adata.uns[config.selected]["parameters"]["batch"]
 
-    print(parameters["measure"])
     measures = [i["name"] for i in parameters["measure"]]
 
     data = []
@@ -141,7 +140,7 @@ def qc_data():
         genes = qc_get_genes(i.copy())
         if i["name"] in measures:
             j = f"{config.selected}--{i['name']}"
-            data.append({"metric":i["name"], "batch":" ","min":adata.obs[j].min(),"max":adata.obs[j].max(),"genes":genes})
+            data.append({"metric":i["name"], "batch":" ","min":adata.obs[j].min(),"max":adata.obs[j].max(),"genes":str(genes)})
 
     return data
 

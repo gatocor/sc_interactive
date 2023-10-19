@@ -470,7 +470,9 @@ def load_node(name):
     if name in config.adata.uns.keys():
         config.active_node_parameters = get_node(config.selected)["data"]["parameters"].copy()
 
-    change_node_selected(name)
+    unselect_node(config.selected)
+    config.selected = name
+    select_node(config.selected)
 
     if name == "Raw":
 
@@ -485,8 +487,6 @@ def load_node(name):
                         style={"margin-bottom":"1cm"}        
             ),
         ]
-
-    config.selected = name
 
     return l
 

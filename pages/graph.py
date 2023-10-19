@@ -78,12 +78,12 @@ def cytoscape_graph():
 
 def save_graph():
 
-    image_unselected(config.selected)
+    unselect_node(config.selected)
     file = f"{config.analysis_folder}/analysis.json"
     with open(file,"w") as outfile:
         json_object = json.dumps(config.graph, indent=4, cls=NpEncoder)
         outfile.write(json_object)
-    image_selected(config.selected)
+    select_node(config.selected)
 
 def save_adata():
 
@@ -240,13 +240,13 @@ def deactivate_downstream(name):
                     config.functions_method_rm[node['data']['method']](node['data']['id'])
                 deactivate_downstream(node['data']['id'])
 
-def image_unselected(name):
+def unselect_node(name):
     pos = get_node_pos(name)
     node = get_node(name)
 
     config.graph[pos]['data']['image'] = '../assets/'+node['data']['type']+'.png'
     
-def image_selected(name):
+def select_node(name):
     pos = get_node_pos(name)
     node = get_node(name)
 
@@ -278,11 +278,6 @@ def get_observable(obs):
                     return np.array(i["data"]["obs"][j])
 
     return None
-
-def change_node_selected(name):
-    image_unselected(config.selected)
-    config.selected = name
-    image_selected(config.selected)
 
 def prevent_race(name,computed=True,method=True):
 

@@ -603,8 +603,6 @@ def delete_confirmation(n_clicks, analysis):
     modal = True
     if n_clicks != None:
 
-        print("Holi")
-
         name = config.selected
         deactivate_downstream(name)
         node_rm(name)
@@ -712,6 +710,7 @@ def delete_cancel(n_clicks):
 
 #Load button
 @app.callback(
+    dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
     dash.Output('graph_analysis', 'children', allow_duplicate=True),
     [
         dash.Input('graph_load_button', 'n_clicks')
@@ -728,7 +727,7 @@ def graph_analysis(_, name, l):
 
         l = load_node(name)
 
-    return l
+    return config.graph, l
 
 @app.callback(
     dash.Output('graph_dropdown_load', 'value', allow_duplicate=True),
