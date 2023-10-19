@@ -13,7 +13,7 @@ from pages.functions import *
 from app import server
 from app import app
 # import all pages in the app
-from pages import config, home, page_analysis
+from pages import config, page_home, page_analysis, page_h5ad, page_report
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -27,13 +27,14 @@ navbar = dbc.Navbar(
                     ],
                     align="center",
                 ),
-                href="/home",
+                href="/h5ad",
             ),
             dbc.Nav([
                 dbc.DropdownMenu([
-                    dbc.DropdownMenuItem("Dataset", href="/home"),                     
-                    # dbc.DropdownMenuItem("Quality Control", href="/quality_control"),                  
-                    dbc.DropdownMenuItem("Graphical analysis", href="/graph"),                     
+                    dbc.DropdownMenuItem("Home", href="/home"),                     
+                    dbc.DropdownMenuItem("h5ad inspector", href="/h5ad"),                     
+                    dbc.DropdownMenuItem("Graphical Analysis", href="/analysis"),                     
+                    dbc.DropdownMenuItem("Report", href="/report"),                     
                 ],
                 in_navbar = True,
                 label = "Menu",
@@ -61,7 +62,7 @@ for i in [2]:
 
 # embedding the navigation bar
 app.layout = html.Div([
-    dcc.Location(id='url', refresh=False),
+    dcc.Location(id='url', pathname="/analysis", refresh=False),
     navbar,
     html.Div(id='page-content')
 ])
@@ -69,37 +70,23 @@ app.layout = html.Div([
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
+
     if pathname == '/home':
 
-        return home.layout()
+        return page_home.layout()
+
+    elif pathname == '/h5ad':
+
+        return page_h5ad.layout()
     
-    # elif pathname == '/quality_control':
-        
-    #     if config.CACHEFOLDER not in config.file_path:
-    #         config.file_path = config.file_path.split(config.CACHEFOLDER)[-1]
-    #         config.adata = sc.read(config.file_path)
-
-    #     return quality_control.layout()
-    elif pathname == '/graph':
-
-        # graph_name = "../"
-        # with open(graph_name, 'r') as openfile:
-                
-        #     # Reading from json file
-        #     json_object = json.load(openfile)
-
-        # config.graph = json_object
-
-        # if "sc_interactive" in config.adata.uns.keys():
-        #     if "__graph__" in config.adata.uns["sc_interactive"]:
-        #         #exec(config.adata.uns["sc_interactive"]["__graph__"], globals(), locals())
-        #         make_nodes_summaries()
-
-        # if config.CACHEFOLDER not in config.file_path:
-        #     config.file_path = config.CACHEFOLDER+config.file_path
-        #     config.adata = sc.read(config.file_path)
+    elif pathname == '/analysis':
 
         return page_analysis.layout()
+
+    elif pathname == '/report':
+
+        return page_report.layout()
+
 
 @app.callback(Output('nav_brand', 'children'),
               [Input('h5ad-load-button','n_clicks')],

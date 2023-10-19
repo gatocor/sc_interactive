@@ -2,17 +2,19 @@ import scanpy as sc
 import numpy as np
 import pandas as pd
 import dash_bootstrap_components as dbc
-from dash import dcc
 from dash import html
 import dash_daq as daq
 from dash import dash_table
 import dash_renderjson
 import plotly.graph_objs as go
 import plotly.express as px
-from dash.exceptions import PreventUpdate
 import json
 import os
+from shutil import rmtree, copyfile
+from dash.exceptions import PreventUpdate
+from copy import deepcopy
 
+from .constants import *
 from . import config
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -27,25 +29,60 @@ class NpEncoder(json.JSONEncoder):
         
         return super(NpEncoder, self).default(obj)
 
-def make_folders_structure(name):
+def name_analysis_folder(file):
+    
+    if file.endswith(ENDH5AD):
+        file = file[:-len(ENDH5AD)]
 
-    basedir = f"../{name}"
+    if file.endswith(ENDANALYSIS):
+        file = file[:-len(ENDANALYSIS)]
+
+    return file + ENDANALYSIS
+
+def create_analysis(basedir, raw):
+
     if not os.path.isdir(basedir):
         os.mkdir(basedir)
 
-    adatadir = f"../{name}/h5ad"
+    adatadir = f"{basedir}/h5ad"
     if not os.path.isdir(adatadir):
         os.mkdir(adatadir)
 
-    reportdir = f"../{name}/report"
+    reportdir = f"{basedir}/report"
     if not os.path.isdir(reportdir):
         os.mkdir(reportdir)
 
-    reportimagesdir = f"../{name}/report/figures"
+    reportimagesdir = f"{basedir}/report/figures"
     if not os.path.isdir(reportimagesdir):
         os.mkdir(reportimagesdir)
 
+    if raw:
+        dst = f"{basedir}/h5ad/Raw.h5ad"
+        copyfile(raw, dst)
+
+    file = f"{basedir}/analysis.json"
+    with open(file,"w") as outfile:
+        json_object = json.dumps([RAWNODE], indent=4, cls=NpEncoder)
+        outfile.write(json_object)
+
     return
+
+def load_analysis(folder):
+    h5adfile = f"{folder}/h5ad/Raw.h5ad"
+    config.adata = sc.read_h5ad(h5adfile)
+    graphfile = f"{folder}/analysis.json"
+    with open(graphfile,"r") as outfile:
+        config.graph = json.load(outfile)
+    config.analysis_folder = folder
+    config.selected = 'Raw'
+
+    if not config.adata.raw:
+        config.adata.raw = config.adata
+
+    if "Raw" not in config.adata.obsm.keys():
+        config.adata.obsm["Raw"] = config.adata.raw.X
+
+    adapt_adata_loaded()
 
 def get_figures(fig):
     l = []
@@ -106,13 +143,6 @@ def adapt_adata_loaded():
                     config.adata.uns[i]["parameters"][k["name"]] = config.adata.uns[i]["parameters"][k["name"]].to_dict("records")
 
     config.adata.uns = deep_substitute(config.adata.uns, origin = "__None__", target = None)
-
-def save_adata():
-
-    file = f"../{config.selected_file}/{config.selected_file}.h5ad"
-    config.adata.write(file)
-
-# def save_adata():
 
 def hist_vline(data,bins):
 

@@ -450,11 +450,11 @@ def layout(name_analysis):
     # node_pars = get_node(name_analysis)['data']['parameters']
     method = get_node(name_analysis)['data']['method']
     args = get_node(name_analysis)['data']['parameters']
-    l = make_arguments(method, config.methods[method]["args"]["execution"].copy(), args)
+    l = make_arguments(method, deepcopy(config.methods[method]["args"]["execution"]), args)
     l2 = []
     p = []
     if get_node(name_analysis)['data']['computed']:
-        l2 = make_arguments(method, config.methods[method]["args"]["postexecution"].copy(), args, add_execution_button=False, add_header=False)
+        l2 = make_arguments(method, deepcopy(config.methods[method]["args"]["postexecution"]), args, add_execution_button=False, add_header=False)
         p = config.methods[method]["plot"]()
         
     style = dict()

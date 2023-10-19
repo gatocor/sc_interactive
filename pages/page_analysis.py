@@ -13,7 +13,7 @@ from plotly.subplots import make_subplots
 from time import time
 import json
 import dash_cytoscape as cyto
-from copy import deepcopy
+from dash.exceptions import PreventUpdate
 
 from app import app
 
@@ -34,8 +34,10 @@ from .methods.louvain import *
 from .methods.differential_expression import *
 from .methods.marker_genes import *
 
-methods = {
-    "qc":{"method":"qc","type":"QC","recompute":False},
+load_analysis("../Raw_h5ad.sc")
+
+{
+    # "qc":{"method":"qc","type":"QC","recompute":False},
     # "scrublet":{"method":"scrublet","type":"QC","recompute":False},
     # "filtering":{"method":"filtering","type":"QC","recompute":True},
     # "log1p":{"method":"log1p","type":"Transformations","recompute":True},
@@ -164,8 +166,8 @@ def layout():
                     dbc.Col(
                         dcc.Dropdown(
                             id='graph_dropdown_analysis',
-                            value=get_method("method")[0],
-                            options=get_method("method"),
+                            value=[i for i in config.methods.keys()][0],
+                            options=[i for i in config.methods.keys()],
                             clearable=False,
                         )
                     ),
@@ -186,13 +188,6 @@ def layout():
         ],
         fluid=True
     )
-
-def get_method(name):
-    global methods
-    if name != "name":
-        return [i[name] for _,i in methods.items()]
-    else:
-        return list(methods.keys())
 
 def graph2table():
     return [{"Name":i['data']['id'],"Type":i['data']['type'],"Method":i['data']['method']} for i in get_nodes() if i['data']['id'] != 'Raw']
@@ -424,13 +419,16 @@ def graph_new_node(_, method, cytoscape):
     args = deepcopy(config.methods[method]["args"]["execution"])
     args = args_eval(args)
 
+    h5ad_file = get_node(config.selected)["data"]["h5ad_file"]
+
     node = {
         'data': {
             'id': name, 
             'name': method,
-            'method':methods[method]['method'], 
-            'type':methods[method]['type'], 
-            'color': graph_colormap[methods[method]['type']], 
+            'method':config.methods[method]["properties"]['method'], 
+            'type':config.methods[method]["properties"]['type'], 
+            'color': config.methods[method]["properties"]['color'],
+            'h5ad_file':h5ad_file,
             'image': '',
             'computed':False,
             'opacity':.3,
@@ -816,16 +814,14 @@ def savefigure(n_clicks,fig):
 
     if n_clicks != None:
 
-        make_folders_structure(config.selected_file)
-
         figs = get_figures(fig)
 
         count = 0
         for fig in figs:
-            namefig = f"../{config.selected_file}/report/figures/{config.selected}_{count}.png"
+            namefig = f"{config.analysis_folder}/report/figures/{config.selected}_{count}.png"
             while os.path.isfile(namefig):
                 count += 1
-                namefig = f"../{config.selected_file}/report/figures/{config.selected}_{count}.png"
+                namefig = f"{config.analysis_folder}/report/figures/{config.selected}_{count}.png"
             fig.write_image(namefig)
 
     return ""

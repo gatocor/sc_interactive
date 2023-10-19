@@ -79,11 +79,17 @@ def cytoscape_graph():
 def save_graph():
 
     image_unselected(config.selected)
-    file = f"../{config.selected_file}/graph.json"
+    file = f"{config.analysis_folder}/analysis.json"
     with open(file,"w") as outfile:
         json_object = json.dumps(config.graph, indent=4, cls=NpEncoder)
         outfile.write(json_object)
     image_selected(config.selected)
+
+def save_adata():
+
+    pos = get_node_pos(config.selected)
+    file = f"{config.analysis_folder}/h5ad/{config.graph[pos]['data']['h5ad_file']}"
+    config.adata.write(file)
 
 def make_nodes_summaries(inplace=True):
 

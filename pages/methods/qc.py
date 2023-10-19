@@ -126,17 +126,18 @@ def qc_data():
     selected = config.selected
     adata = config.adata
 
-    a = adata.uns[selected]["parameters"]
+    parameters = adata.uns[selected]["parameters"]
 
     # #Reset table
     # if "batch" in modified_arg.keys():
     #     if "batch" in config.adata.uns[config.selected]["parameters"].keys():
     #         del config.adata.uns[config.selected]["parameters"]["batch"]
 
-    measures = [i["name"] for i in adata.uns[selected]["parameters"]["measure"]]
+    print(parameters["measure"])
+    measures = [i["name"] for i in parameters["measure"]]
 
     data = []
-    for i in a["measure"]:
+    for i in parameters["measure"]:
         genes = qc_get_genes(i.copy())
         if i["name"] in measures:
             j = f"{config.selected}--{i['name']}"
@@ -254,7 +255,7 @@ def plot_qc():
 
 config.methods["qc"] = {
 
-    "properties":{"method":"qc","type":"QC","recompute":False},
+    "properties":{"method":"qc","type":"QC","recompute":False,"color":"blue"},
 
     "args": args,
 
