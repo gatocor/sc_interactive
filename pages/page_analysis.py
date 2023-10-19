@@ -99,21 +99,21 @@ def layout():
                 id="delete-modal",
                 size="sm",
             ),
-            dbc.Modal(
-                [
-                    dbc.ModalHeader("Rename analysis",close_button=False),
-                    dbc.ModalBody(id="rename-message",
-                                children=[]
-                    ),
-                    dbc.ModalFooter([
-                            dbc.Button("Rename", id="rename-proceed", className="ml-auto"),
-                            dbc.Button("Cancel", id="rename-cancel", className="ml-auto")
-                    ])
-                ],
-                backdrop=False,
-                id="rename-modal",
-                size="sm",
-            ),
+            # dbc.Modal(
+            #     [
+            #         dbc.ModalHeader("Rename analysis",close_button=False),
+            #         dbc.ModalBody(id="rename-message",
+            #                     children=[]
+            #         ),
+            #         dbc.ModalFooter([
+            #                 dbc.Button("Rename", id="rename-proceed", className="ml-auto"),
+            #                 dbc.Button("Cancel", id="rename-cancel", className="ml-auto")
+            #         ])
+            #     ],
+            #     backdrop=False,
+            #     id="rename-modal",
+            #     size="sm",
+            # ),
             dbc.Modal(
                 [
                     dbc.ModalHeader("Warning",close_button=False),
@@ -603,6 +603,8 @@ def delete_confirmation(n_clicks, analysis):
     modal = True
     if n_clicks != None:
 
+        print("Holi")
+
         name = config.selected
         deactivate_downstream(name)
         node_rm(name)
@@ -630,83 +632,83 @@ def delete_cancel(n_clicks):
     
     return modal
 
-#Rename analysis button
-@app.callback(
-    dash.Output('rename-modal', 'is_open'),
-    dash.Output('rename-message', 'children', allow_duplicate=True),
-    dash.Input('analysis_rename_button', 'n_clicks'),
-    prevent_initial_call=True
-)
-def rename(n_clicks):
+# #Rename analysis button
+# @app.callback(
+#     dash.Output('rename-modal', 'is_open'),
+#     dash.Output('rename-message', 'children', allow_duplicate=True),
+#     dash.Input('analysis_rename_button', 'n_clicks'),
+#     prevent_initial_call=True
+# )
+# def rename(n_clicks):
         
-    if n_clicks != None:
+#     if n_clicks != None:
 
-        l = [
-            html.Div(f"Current name of analysis:\n"),
-            html.Div(f"\t{config.selected}"),
-            html.Div(f"Change by:"),
-            dbc.Input(id="rename_name",value=config.selected,type="text")
-        ]
+#         l = [
+#             html.Div(f"Current name of analysis:\n"),
+#             html.Div(f"\t{config.selected}"),
+#             html.Div(f"Change by:"),
+#             dbc.Input(id="rename_name",value=config.selected,type="text")
+#         ]
 
-        return True, l
+#         return True, l
     
-    return False, []
+#     return False, []
 
-#Proceed modal rename
-@app.callback(
-    dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
-    dash.Output('rename-modal', 'is_open', allow_duplicate=True),
-    dash.Output('analysis_name', 'children', allow_duplicate=True),
-    dash.Output('rename-message', 'children', allow_duplicate=True),
-    [
-     dash.Input('rename-proceed', 'n_clicks'),
-    ],
-    dash.State('rename_name', 'value'),
-    dash.State('rename-message', 'children'),
-    prevent_initial_call=True
-)
-def rename_confirmation(n_clicks, name, l):
+# #Proceed modal rename
+# @app.callback(
+#     dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
+#     dash.Output('rename-modal', 'is_open', allow_duplicate=True),
+#     dash.Output('analysis_name', 'children', allow_duplicate=True),
+#     dash.Output('rename-message', 'children', allow_duplicate=True),
+#     [
+#      dash.Input('rename-proceed', 'n_clicks'),
+#     ],
+#     dash.State('rename_name', 'value'),
+#     dash.State('rename-message', 'children'),
+#     prevent_initial_call=True
+# )
+# def rename_confirmation(n_clicks, name, l):
     
-    modal = True
-    if n_clicks != None:
+#     modal = True
+#     if n_clicks != None:
 
-        n = node_names()
+#         n = node_names()
 
-        if name not in n:
+#         if name not in n:
 
-            node = get_node(config.selected)
-            config.functions_method_rename[node['data']['method']](config.selected, name)
-            node_rename(config.selected, name) #Rename graph
-            config.selected = name #Rename configuration
+#             node = get_node(config.selected)
+#             config.functions_method_rename[node['data']['method']](config.selected, name)
+#             node_rename(config.selected, name) #Rename graph
+#             config.selected = name #Rename configuration
 
-            modal = False        
-        else:
-            l = [
-                html.Div(f"THERE IS ALREADY AN ANALYSIS NODE WITH THIS NAME. CHOOSE OTHER NAME.\n", style={"background-color":"orange"}),
-                html.Div(f"Current name of analysis:\n"),
-                html.Div(f"\t{config.selected}"),
-                html.Div(f"Change by:"),
-                dbc.Input(id="rename_name",value=config.selected,type="text")
-            ]    
+#             modal = False        
+#         else:
+#             l = [
+#                 html.Div(f"THERE IS ALREADY AN ANALYSIS NODE WITH THIS NAME. CHOOSE OTHER NAME.\n", style={"background-color":"orange"}),
+#                 html.Div(f"Current name of analysis:\n"),
+#                 html.Div(f"\t{config.selected}"),
+#                 html.Div(f"Change by:"),
+#                 dbc.Input(id="rename_name",value=config.selected,type="text")
+#             ]    
 
-    return config.graph, modal, config.selected, l
+#     return config.graph, modal, config.selected, l
 
-#Cancel modal rename
-@app.callback(
-    dash.Output('rename-modal', 'is_open', allow_duplicate=True),
-    [
-     dash.Input('rename-cancel', 'n_clicks'),
-    ],
-    prevent_initial_call=True
-)
-def rename_cancel(n_clicks):
+# #Cancel modal rename
+# @app.callback(
+#     dash.Output('rename-modal', 'is_open', allow_duplicate=True),
+#     [
+#      dash.Input('rename-cancel', 'n_clicks'),
+#     ],
+#     prevent_initial_call=True
+# )
+# def rename_cancel(n_clicks):
     
-    modal = True
-    if n_clicks != None:
+#     modal = True
+#     if n_clicks != None:
 
-        modal = False
+#         modal = False
     
-    return modal
+#     return modal
 
 #Load button
 @app.callback(

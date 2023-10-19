@@ -105,6 +105,51 @@ def get_args(name):
 
     return d
 
+def del_adata_node(name):
+
+    #obs
+    obs_key = f"{name}--"
+    l = [i for i in config.adata.obs.columns.values if i.startswith(obs_key)]   
+    config.adata.obs.drop(l, axis=1, inplace=True)
+
+    #var
+    var_key = f"{name}--"
+    l = [i for i in config.adata.var.columns.values if i.startswith(var_key)]            
+    config.adata.var.drop(l, axis=1, inplace=True)
+
+    #obsm
+    obsm_key = name
+    if obsm_key in config.adata.obsm.keys():
+        del config.adata.obsm[obsm_key]
+            
+    #uns
+    uns_key = name
+    if uns_key in config.adata.uns.keys():
+        del config.adata.uns[uns_key]
+
+def node_rm(name):
+
+    l = []
+    for i,node in enumerate(config.graph):
+        if 'id' in node['data'].keys():
+            if node['data']['id'] != name:
+
+                if name == node['data']['parameters']['input']: #Remove input from cells that have this node as input
+                    node['data']['parameters']['input'] = None
+                    config.adata.uns[node['name']]['parameters']['input'] = None
+
+                l.append(node)
+        else:
+            if node['data']['target'] != name and node['data']['source'] != name:
+                l.append(node)
+
+    #Remove info from adata
+    del_adata_node(name)
+
+    config.graph = l
+
+    return
+
 def set_output(args):
 
     #obs
@@ -150,18 +195,18 @@ def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_h
                     dbc.Col(
                         html.H1(config.selected, id="analysis_name")
                     ),
-                    dbc.Col(
-                        dbc.Row(
-                            dbc.Button("Rename",id="analysis_rename_button", class_name="btn btn-primary btn-sm"),
-                        ),
-                        width={"offset":7},
-                        align="center"
-                    ),
+                    # dbc.Col(
+                    #     dbc.Row(
+                    #         dbc.Button("Rename",id="analysis_rename_button", class_name="btn btn-primary btn-sm"),
+                    #     ),
+                    #     width={"offset":7},
+                    #     align="center"
+                    # ),
                     dbc.Col(
                         dbc.Row(
                             dbc.Button("Delete",id="analysis_delete_button", style={"background-color":"red"}, class_name="btn btn-primary btn-sm"),
                         ),
-                        width={"offset":1},
+                        width={"offset":7},
                         align="center"
                     ),
                 ],

@@ -138,31 +138,6 @@ def get_ancestors(name):
 def get_edges():
     return [i for i in config.graph if 'target' in i['data'].keys()]
 
-def node_rm(name):
-
-    #Remove info from node
-    node = get_node(name)
-    if node['data']['computed']:
-        config.functions_method_rm[node['data']['method']](name)
-
-    l = []
-    for i,node in enumerate(config.graph):
-        if 'id' in node['data'].keys():
-            if node['data']['id'] != name:
-
-                if name == node['data']['parameters']['input']: #Remove input from cells that have this node as input
-                    node['data']['parameters']['input'] = None
-
-                l.append(node)
-
-        else:
-            if node['data']['target'] != name and node['data']['source'] != name:
-                l.append(node)
-
-    config.graph = l
-
-    return
-
 def node_rename(name_old, name_new):
 
     for pos,i in enumerate(config.graph):
