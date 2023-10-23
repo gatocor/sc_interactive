@@ -32,11 +32,14 @@ ARGBATCH = {
             "name":"batch",
             "description":"Observable to use",
             "value":None,
-            "clearable":False,
+            "clearable":True,
             "options": {"function":"[i for i,j in zip(config.adata.obs.columns.values, config.adata.obs.dtypes) if j in ['str','object','category','int']]"}
         }
 
-from .methods.qc import *
+for i in os.listdir("./pages/methods"):
+    if i.endswith(".py"):
+        f = f"from .methods.{i[:-3]} import *"
+        exec(f)
 
 def fvalue(value):
     val = {"val":value}
@@ -168,13 +171,13 @@ def set_output(args):
 
     #obsm
     if "obsm" in args.keys():
-        config.adata.obsm[config.selected] = args["uns"]
+        config.adata.obsm[config.selected] = args["obsm"]
             
     #uns
     if "uns" in args.keys():
         config.adata.uns[config.selected] = args["uns"]
 
-def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_header=True):
+def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_header="args"):
 
     arglist = parameters_eval(arglist)
 
@@ -182,13 +185,8 @@ def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_h
         dbc.Col(
             dbc.Row(html.H1("Additional arguments")),
         ),
-        dbc.Col(
-            dbc.Row(
-                dbc.Button("Save Image",id="analysis_saveimage_button", class_name="btn btn-primary btn-sm"),
-            )
-        )
     ]
-    if add_header:
+    if add_header == "args":
         l = [
             dbc.Row(
                 [
@@ -211,6 +209,17 @@ def make_arguments(id, arglist, loaded_args={}, add_execution_button=True, add_h
                     ),
                 ],
                 align="center"
+            )
+        ]
+    elif add_header == "plot":
+        l = [
+            dbc.Col(
+                dbc.Row(html.H1("Plot arguments")),
+            ),
+            dbc.Col(
+                dbc.Row(
+                    dbc.Button("Save Image",id="analysis_saveimage_button", class_name="btn btn-primary btn-sm"),
+                )
             )
         ]
 
@@ -495,11 +504,14 @@ def layout(name_analysis):
     # node_pars = get_node(name_analysis)['data']['parameters']
     method = get_node(name_analysis)['data']['method']
     args = get_node(name_analysis)['data']['parameters']
+    plot_args = get_node(name_analysis)['data']['plot']
     l = make_arguments(method, deepcopy(config.methods[method]["args"]["execution"]), args)
     l2 = []
+    l3 = []
     p = []
     if get_node(name_analysis)['data']['computed']:
-        l2 = make_arguments(method, deepcopy(config.methods[method]["args"]["postexecution"]), args, add_execution_button=False, add_header=False)
+        l2 = make_arguments(method, deepcopy(config.methods[method]["args"]["postexecution"]), args, add_execution_button=False, add_header="postargs")
+        l3 = make_arguments(method, deepcopy(config.methods[method]["args"]["plot"]), plot_args, add_execution_button=False, add_header="plot")
         p = config.methods[method]["plot"]()
         
     style = dict()
@@ -513,6 +525,11 @@ def layout(name_analysis):
                         ),
                 dbc.Row(id='analysis_postargs',
                         children=l2,  
+                        # width='50%',
+                        style=style
+                        ),
+                dbc.Row(id='analysis_plotargs',
+                        children=l3,  
                         # width='50%',
                         style=style
                         ),

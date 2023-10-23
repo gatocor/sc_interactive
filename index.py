@@ -60,6 +60,8 @@ for i in [2]:
         [State(f"navbar-collapse{i}", "is_open")],
     )(toggle_navbar_collapse)
 
+load_analysis("../Raw_h5ad.sc")
+
 # embedding the navigation bar
 app.layout = html.Div([
     # dcc.Location(id='url', pathname="/home", refresh=False),

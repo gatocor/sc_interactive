@@ -10,37 +10,19 @@ import dash
 import scrublet
 from scipy.stats import mode
 
+from ..arguments import *
 from ..functions import *
 from ..graph import *
 from ..plots import *
+from .. import config
 
 from app import app
 
-from .. import config
+args = {
 
-def args_scrublet():
-
-    options = node_names(exclude_downstream_from_node=config.selected) 
-    options_batch = get_batch_keys()
-
-    return [
-        {
-            "input":"Dropdown",
-            "name":"input",
-            "description":"Observable to use",
-            "value":None,
-            "clearable":False,
-            "options":options
-        },
-        {
-            "input":"Dropdown",
-            "name":"batch_key",
-            "description":"str, optional (default: None) Batch key to use. The Doublet metric will be computed independently in each set of cells separated by batch. If None, use the full dataset.",
-            "value":None,
-            "clearable":True,
-            "options":options_batch,
-            "summary":True
-        },
+    "execution":[
+        ARGINPUT,
+        ARGBATCH,
         {
             "input":"BooleanSwitch",
             "name":"qc_before_computation",
@@ -125,20 +107,49 @@ def args_scrublet():
             "clearable":False,
             "options": ["arpack"]
         }
+    ],
+
+    "postexecution" : [
+        {
+            "input":"AgTable",
+            "name":"thresholds",
+            "description":"Thresholds to apply to the data",
+            "header":[
+                { "headerName": "Batch", "field":"batch", "editable": False },
+                { "headerName": "Max", "field":"max", "editable": True },
+            ],
+            "value":{"function":"scrublet_data()"},
+        },
+    ],
+
+    "plot" : [
+        {
+            "input":"BooleanSwitch",
+            "name":"show_scores",
+            "description":"bool, optional (default: True) Pot scores of imputed cells.",
+            "value":True,
+        },
     ]
 
-@app.callback(
-    dash.Output("analysis_distance_metric","options", allow_duplicate = True),
-    dash.Output("analysis_distance_metric","value", allow_duplicate = True),
-    dash.Input("analysis_use_approx_neighbors","on"),
-    prevent_initial_call=True
-)
-def metric_options(approximate):
+}
 
-    if approximate:
-        return ["euclidean","manhattan","angular","hamming","dot"], "euclidean"
-    else:
-        return ["euclidean","cityblock","cosine","haversine","l1","l2","manhattan"], "euclidean"
+def scrublet_data():
+
+    selected = config.selected
+    adata = config.adata
+
+    parameters = adata.uns[selected]["parameters"]
+
+    batch = [""]
+    if parameters["batch"] != None:
+        batch = np.unique(config.adata.obs[parameters["batch"]].values)
+
+    data = []
+    j = f"{config.selected}--doublet_scores_obs"
+    for b in batch:
+        data.append({"batch":str(b),"max":str(adata.obs[j].max())})
+
+    return data
 
 def scrublet_(X, kwargs):
 
@@ -162,208 +173,109 @@ def scrublet_(X, kwargs):
 
     return X, scrub.doublet_scores_obs_, scrub.doublet_scores_sim_
 
-def f_scrublet(name_analysis, kwargs, sub_name, sub):
+def f_scrublet(adata, inputArgs, kwargs):
 
     pos = get_node_pos(config.selected)
 
-    if "obs" not in config.graph[pos]["data"].keys():
+    X = adata.X
 
-        config.graph[pos]["data"]["obs"] = {"doublet_score":-np.ones(config.adata.X.shape[0])}
-        config.graph[pos]["data"]["obsm"] = {"UMAP":np.zeros([config.adata.shape[0],2])}
-        config.graph[pos]["data"]["uns"] = {
-            "simulated_doublet_score" : {}
-        }
-
-    X, doublet_scores_obs_, doublet_scores_sim_ = scrublet_(config.adata.X[sub,:], kwargs)
-    config.graph[pos]["data"]["obs"]["doublet_score"][sub] = doublet_scores_obs_
-    config.graph[pos]["data"]["obsm"]["UMAP"][sub,:] = X
-    config.graph[pos]["data"]["uns"]["simulated_doublet_score"][sub_name] = doublet_scores_sim_
-
-    #Make empty table
-    add = ["max","nBins"]
-    if kwargs["batch_key"] == None:
-        rows = [None]
+    X_umap = np.zeros((X.shape[0],2))
+    doublet_scores_obs = np.zeros(X.shape[0])
+    simulated_doublet_score = {}
+    if kwargs["batch"] != None:
+        for batch in np.unique(config.adata.obs[kwargs["batch"]]):
+            sub = config.adata.obs[kwargs["batch"]].values == batch
+            subX, sub_doublet_scores_obs_, sub_doublet_scores_sim_ = scrublet_(X[sub,:], kwargs)
+            doublet_scores_obs[sub] = sub_doublet_scores_obs_
+            X_umap[sub,:] = subX
+            simulated_doublet_score[batch] = sub_doublet_scores_sim_
     else:
-        rows = np.sort(config.adata.obs[kwargs["batch_key"]].unique())
-    
-    columns, data = make_thresholds_table(["scrublet"], rows, add)
+        subX, sub_doublet_scores_obs_, sub_doublet_scores_sim_ = scrublet_(X, kwargs)
+        doublet_scores_obs = sub_doublet_scores_obs_
+        X_umap = subX
+        simulated_doublet_score[""] = sub_doublet_scores_sim_
 
-    #Fill table 
-    for i in rows:
-        set_table_value(data, i, "scrublet max", 1)
-        set_table_value(data, i, "scrublet nBins", 20)
+    d = {
+        "obsm" : X_umap,
+        "obs" : {"doublet_scores_obs": doublet_scores_obs},
+        "uns" : {"simulated_scores": simulated_doublet_score}
+    }
 
-    config.graph[pos]["data"]["threshold"] = {"columns":columns,"data":data}
-    config.graph[pos]["data"]["filter"] = np.ones_like(config.adata.X.shape[0])>0
+    return d
 
-    config.graph[pos]["data"]["plot"] = {"show_scores": True}
+def plot_scrublet():
 
-def rm_scrublet(name_analysis):
-
-    return
-
-def rename_scrublet(name_analysis, name_new_analysis):
-
-    return
-
-def plot_scrublet(name_analysis):
-
-    node = get_node(name_analysis)
+    pos = get_node_pos(config.selected)
+    node = get_node(config.selected)
     if not node["data"]["computed"]:
         return []
 
-    pos = get_node_pos(name_analysis)
+    l = []
 
-    columns = config.graph[pos]["data"]["threshold"]["columns"]
-    data = config.graph[pos]["data"]["threshold"]["data"]
-
-    l = [
-        html.H1("Scrublet analysis"),
-        dbc.Row(
-            dash_table.DataTable(
-                id="scrublet_threshold_table",
-                columns=columns,
-                data=data
-            )
-        ),
-        dbc.Row(
-            [
-                dbc.Col(),
-                dbc.Col(
-                    daq.BooleanSwitch(id="scrublet_toggle",label="Removed Cells/Scrublet Score",on=node["data"]["plot"]["show_scores"]),
-                )
-            ]
-        )
-    ]
-
-    for b,c_sim in config.graph[pos]["data"]["uns"]["simulated_doublet_score"].items():
-
-        if b == "null":
-            b = None
+    for b,c_sim in config.adata.uns[config.selected]["simulated_scores"].items():
 
         if b == None:
-            sub = np.ones(np.array(config.graph[pos]["data"]["obsm"]["UMAP"]).shape[0],dtype=bool)
+            sub = np.ones(config.adata.X.shape[0],dtype=bool)
         else:
-            sub = np.array(config.graph[pos]["data"]["batch"]) == b
+            sub = config.adata.obs[node["data"]["parameters"]["batch"]] == b
 
-        lims_max = float(get_table_value(data,b,"scrublet max"))
-        res = int(get_table_value(data,b,"scrublet nBins"))
-        X = np.array(config.graph[pos]["data"]["obsm"]["UMAP"])[sub,:]
-        c = np.array(config.graph[pos]["data"]["obs"]["doublet_score"])[sub]
+        lims_max = float([i for i in node["data"]["parameters"]["thresholds"] if i["batch"] == b][0]["max"])
+        # res = int(get_table_value(data,b,"scrublet nBins"))
+        X = config.adata.obsm[config.selected][sub,:]
+        c = np.array(config.adata.obs[f"{config.selected}--doublet_scores_obs"])[sub]
         if node["data"]["plot"]["show_scores"]:
             c = c
         else:
             c = c > lims_max
         order = np.argsort(c)
 
-        plot_max = hist_vline(c_sim, res)
-        l += [
-                dbc.Row([
-                    dbc.Col([
-                        dcc.Graph(
-                            figure={
-                                    "data":[
-                                        go.Histogram(
-                                            x=c_sim,
-                                            name="Simulated Doublets",
-                                            nbinsx=res
-                                        ),
-                                        go.Scatter(
-                                            x=[lims_max, lims_max],
-                                            y=[0,plot_max],
-                                            name="Max threshold",
-                                            marker=dict(color="red"),
-                                            opacity=0.7
-                                        ),
-                                    ],
-                                    "layout":{
-                                            "xlabel":"scrublet_score"
-                                            # "yaxis":{
-                                            #     "scaleanchor":"x",
-                                            #     "scaleratio":1,
-                                            # },
-                                    }
-                                },
-                            style={"width": "90vh", "height": "60vh"}
-                        ),
-                    ],
-                    align="center"
-                    ),
-                    dbc.Col([
-                        dcc.Graph(
-                            figure={
-                                    "data":[
-                                        go.Scatter(
-                                            x=X[order,0],
-                                            y=X[order,1],
-                                            marker={"color":qualitative_colors(c[order])},
-                                            mode="markers",
-                                        )
-                                    ],
-                                    "layout":{
-                                            "yaxis":{
-                                                "scaleanchor":"x",
-                                                "scaleratio":1,
-                                            },
-                                    }
-                                },
-                            style={"width": "60vh", "height": "60vh"}
-                        ),
-                    ],
+        fig = px.histogram(x=np.array(config.adata.obs[f"{config.selected}--doublet_scores_obs"])[sub],histnorm="probability",barmode="overlay")
+        fig.add_traces(list(
+            px.histogram(x=config.adata.uns[config.selected]["simulated_scores"][b],
+                         color_discrete_sequence=["red"],
+                         histnorm="probability",
+                         barmode="overlay"
+            ).select_traces()
+        ))
+        fig.add_traces(list(
+            px.line(x=[lims_max, lims_max],
+                       y=[0, .1],
+                       color_discrete_sequence=["black"],
+            ).select_traces()
+        ))
+
+        l += [dbc.Row([
+                dbc.Col([
+                    dcc.Graph(
+                        figure= fig,
+                        style={"width": "80vh", "height": "60vh"}
                     ),
                 ],
-                justify="center"
-                )
-            ]
+                ),
+                dbc.Col([
+                    dcc.Graph(
+                        figure= px.scatter(
+                                        x=X[order,0],
+                                        y=X[order,1],
+                                        color=c[order],
+                                    ),
+                        style={"width": "60vh", "height": "60vh"}
+                    ),
+                ],
+                ),
+            ])
+        ]
 
     return l
 
-@app.callback(
-    dash.Output("analysis_plot","children",allow_duplicate=True),
-    dash.Input("scrublet_threshold_table","data"),
-    prevent_initial_call=True
-)
-def update_table(data):
+config.methods["scrublet"] = {
 
-    prevent_race("scrublet")
+    "properties":{"method":"scrublet","type":"QC","recompute":False,"color":"blue"},
 
-    pos = get_node_pos(config.selected)
-    config.graph[pos]["data"]["threshold"]["data"] = data
-    batch = get_node_parameters(config.selected)["batch_key"]
+    "args": args,
 
-    if batch == None:
+    "function":f_scrublet,
 
-        col = np.array([float(i) for i in get_table_column(data,"scrublet max")])
-        s = np.array(config.graph[pos]["data"]["obs"]["doublet_score"]) > float(get_table_value(data,batch,"scrublet max"))
-        s <= 1
+    "plot":plot_scrublet,
 
-        config.graph[pos]["data"]["filter"] = s
-
-    elif batch != None:
-
-        col = np.array([float(i) for i in get_table_column(data,"scrublet max")])
-        s = np.ones_like(config.graph[pos]["data"]["obs"]["doublet_score"])
-        for b in np.unique(config.graph[pos]["data"]["batch"]):    
-            sub = np.array(config.graph[pos]["data"]["batch"]) == b
-            s[sub] = np.array(config.graph[pos]["data"]["obs"]["doublet_score"])[sub] <= float(get_table_value(data,b,"scrublet max"))
-            s <= 1
-
-        config.graph[pos]["data"]["filter"] = s
-
-    return plot_scrublet(config.selected)
-
-
-@app.callback(
-    dash.Output("analysis_plot","children",allow_duplicate=True),
-    dash.Output("scrublet_toggle","on",allow_duplicate=True),
-    dash.Input("scrublet_toggle","on"),
-    prevent_initial_call=True
-)
-def update_table(data):
-    
-    prevent_race("scrublet")
-
-    pos = get_node_pos(config.selected)
-    config.graph[pos]["data"]["plot"]["show_scores"] = data
-
-    return plot_scrublet(config.selected), data
+}

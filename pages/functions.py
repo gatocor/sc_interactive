@@ -232,6 +232,22 @@ def get_table_value(data, row_name, col_name):
 def get_table_column(data, col_name):
     return [i[col_name] for i in data]
 
+def get_from_table(table, filter={}, properties={}):
+    properties_dict = {i:[] for i in properties.keys()}
+    for i in table:
+        
+        add = True
+        for j,k in filter.items():
+
+            if i[j] not in k:
+                add = False            
+
+        if add:
+            for j in properties_dict.keys():
+                properties_dict[j].append(properties[j](i[j]))
+
+    return properties_dict
+
 def json_serializable(uns):
 
     d = "{"

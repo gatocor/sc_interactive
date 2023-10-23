@@ -14,15 +14,15 @@ from ..arguments import *
 from ..functions import *
 from ..graph import *
 from ..plots import *
+from .. import config
 
 from app import app
-
-from .. import config
 
 args = {
 
     "execution" : [
         ARGINPUT,
+        ARGBATCH,
         {
             "input":"AgTable",
             "name":"measure",
@@ -55,14 +55,6 @@ args = {
 
     "postexecution" : [
         {
-            "input":"Dropdown",
-            "name":"batch",
-            "description":"Observable to use",
-            "value":None,
-            "clearable":True,
-            "options": {"function":"[i for i,j in zip(config.adata.obs.columns.values, config.adata.obs.dtypes) if j in ['str','object','category','int']]"}
-        },
-        {
             "input":"AgTable",
             "name":"thresholds",
             "description":"Thresholds to apply to the data",
@@ -75,6 +67,9 @@ args = {
             ],
             "value":{"function":"qc_data()"},
         },
+    ],
+
+    "plot" : [
         {
             "input":"Dropdown",
             "name":"plot_style",
@@ -90,7 +85,7 @@ args = {
             "value":{"function": "qc_measures()[0]"},
             "clearable":False,
             "options":{"function": "qc_measures()"},
-            "visible":{"function": "config.adata.uns[config.selected]['parameters']['plot_style'] == 'scatter'"}
+            "visible":{"function": "config.adata.uns[config.selected]['plot']['plot_style'] == 'scatter'"}
         },
         {
             "input":"Dropdown",
@@ -99,7 +94,7 @@ args = {
             "value":{"function": "qc_measures()[0]"},
             "clearable":False,
             "options":{"function": "qc_measures()"},
-            # "visible":{"function": "config.adata.uns[config.selected]['parameters']['plot_style'] == 'scatter'"}
+            # "visible":{"function": "config.adata.uns[config.selected]['plot']['plot_style'] == 'scatter'"}
         },
         {
             "input":"Dropdown",
@@ -108,7 +103,7 @@ args = {
             "value":None,
             "clearable":True,
             "options":{"function": "list(config.adata.obs.columns.values)"},
-            "visible":{"function": "config.adata.uns[config.selected]['parameters']['plot_style'] == 'scatter'"}
+            "visible":{"function": "config.adata.uns[config.selected]['plot']['plot_style'] == 'scatter'"}
         },
     ]
 
@@ -128,19 +123,19 @@ def qc_data():
 
     parameters = adata.uns[selected]["parameters"]
 
-    # #Reset table
-    # if "batch" in modified_arg.keys():
-    #     if "batch" in config.adata.uns[config.selected]["parameters"].keys():
-    #         del config.adata.uns[config.selected]["parameters"]["batch"]
-
     measures = [i["name"] for i in parameters["measure"]]
+
+    batch = [""]
+    if parameters["batch"] != None:
+        batch = np.unique(config.adata.obs[parameters["batch"]].values)
 
     data = []
     for i in parameters["measure"]:
         genes = qc_get_genes(i.copy())
         if i["name"] in measures:
             j = f"{config.selected}--{i['name']}"
-            data.append({"metric":i["name"], "batch":" ","min":adata.obs[j].min(),"max":adata.obs[j].max(),"genes":str(genes)})
+            for b in batch:
+                data.append({"metric":i["name"], "batch":str(b),"min":str(adata.obs[j].min()),"max":str(adata.obs[j].max()),"genes":str(genes)})
 
     return data
 
@@ -178,37 +173,22 @@ def f_qc(adata, inputArgs, kwargs):
 
     return d
 
-def get_from_table(table, filter={}, properties=[]):
-    properties_dict = {i:[] for i in properties}
-    for i in table:
-        
-        add = True
-        for j,k in filter.items():
-
-            if i[j] not in k:
-                add = False            
-
-        if add:
-            for j in properties_dict.keys():
-                properties_dict[j].append(i[j])
-
-    return properties_dict
-
 def plot_qc():
 
     params = config.adata.uns[config.selected]["parameters"]
+    plot_params = config.adata.uns[config.selected]["plot"]
 
-    if params["plot_style"] == "violin":
+    if plot_params["plot_style"] == "violin":
 
         if params['batch'] != None:
             x = config.adata.obs[params['batch']].values
         else:
             x = [0 for i in range(config.adata.shape[0])]
 
-        y = config.adata.obs[params['plot_y']].values
+        y = config.adata.obs[plot_params['plot_y']].values
 
-        thresholds = get_from_table(params['thresholds'],filter={"metric":[params['plot_y'].split("--")[1]]},properties=["batch","min","max"])
-        if " " in thresholds['batch']:
+        thresholds = get_from_table(params['thresholds'],filter={"metric":[plot_params['plot_y'].split("--")[1]]},properties={"batch":str,"min":float,"max":float})
+        if "" in thresholds['batch']:
             thresholds['batch'] = [0 for i in thresholds['batch']]
 
         fig = px.violin(x=x,
@@ -230,25 +210,25 @@ def plot_qc():
         ))
 
         fig.layout["xaxis"]["title"] = params['batch']
-        fig.layout["yaxis"]["title"] = params['plot_y']
+        fig.layout["yaxis"]["title"] = plot_params['plot_y']
 
         return dcc.Graph(figure=fig)
         
     else:
 
-        x = config.adata.obs[params['plot_x']].values
-        y = config.adata.obs[params['plot_y']].values
+        x = config.adata.obs[plot_params['plot_x']].values
+        y = config.adata.obs[plot_params['plot_y']].values
 
-        if params['plot_color'] != None:
-            color = config.adata.obs[params['plot_color']].values
+        if plot_params['plot_color'] != None:
+            color = config.adata.obs[plot_params['plot_color']].values
 
             fig = px.scatter(x=x,y=y,color=color)
-            fig.layout["legend"]["title"]["text"] = params['plot_color']
+            fig.layout["legend"]["title"]["text"] = plot_params['plot_color']
         else:
             fig = px.scatter(x=x,y=y)
 
-        fig.layout["xaxis"]["title"] = params['plot_x']
-        fig.layout["yaxis"]["title"] = params['plot_y']
+        fig.layout["xaxis"]["title"] = plot_params['plot_x']
+        fig.layout["yaxis"]["title"] = plot_params['plot_y']
 
         return plot_center(dcc.Graph(figure=fig, style={"width": "60vw", "height": "50vw"}))
 

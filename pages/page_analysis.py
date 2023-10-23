@@ -20,46 +20,10 @@ from app import app
 from .graph import *
 from .arguments import *
 
-from .methods.qc import *
-from .methods.scrublet import *
-from .methods.filtering import *
-from .methods.log1p import *
-from .methods.normalize import *
-from .methods.feature_selection import *
-from .methods.pca import *
-from .methods.neighbors import *
-from .methods.umap import *
-from .methods.leiden import *
-from .methods.louvain import *
-from .methods.differential_expression import *
-from .methods.marker_genes import *
-
-load_analysis("../Raw_h5ad.sc")
-
-{
-    # "qc":{"method":"qc","type":"QC","recompute":False},
-    # "scrublet":{"method":"scrublet","type":"QC","recompute":False},
-    # "filtering":{"method":"filtering","type":"QC","recompute":True},
-    # "log1p":{"method":"log1p","type":"Transformations","recompute":True},
-    # "normalize":{"method":"normalize","type":"Transformations","recompute":True},
-    # "feature_selection":{"method":"feature_selection","type":"DR","recompute":False},
-    # "pca":{"method":"pca","type":"DR","recompute":False},
-    # "neighbors":{"method":"neighbors","type":"Graph","recompute":False},
-    # "umap":{"method":"umap","type":"Visualization","recompute":False},
-    # "leiden":{"method":"leiden","type":"Clustering","recompute":False},
-    # "louvain":{"method":"louvain","type":"Clustering","recompute":False},
-    # "differential_expression":{"method":"differential_expression","type":"Clustering","recompute":False},
-    # "marker_genes":{"method":"marker_genes","type":"Clustering","recompute":False},
-}
-
-graph_colormap={
-    'QC':'yellow',
-    # 'Transformations':'yellow',
-    # 'DR':'yellow',
-    # 'Graph':'yellow',
-    # 'Visualization':'yellow',
-    # 'Clustering':'yellow',
-}
+for i in os.listdir("./pages/methods"):
+    if i.endswith(".py"):
+        f = f"from .methods.{i[:-3]} import *"
+        exec(f)
 
 #Lists
 def layout():
@@ -290,13 +254,6 @@ for method in config.methods.keys():
             methods_implemented.append(m_i)
 
             input = f"dash.Input('analysis_{i['name']}','value'),"
-            if i['input'] == 'BooleanSwitch':
-                input = f"dash.Input('analysis_{i['name']}','on'),"
-            elif i['input'] == 'QCTable':
-                input = f"dash.Input('analysis_{i['name']}','rowData'),"
-            elif i['input'] == 'AgTable':
-                input = f"dash.Input('analysis_{i['name']}','rowData'),"
-
             add_function = f"""
 @app.callback(
     dash.Output("analysis_postargs","children", allow_duplicate=True),
@@ -314,16 +271,128 @@ def change_parameter_{i['name']}(data):
     set_parameters_node(dict({i['name']}=data))
 
     method = get_node(config.selected)["data"]["method"]
+    post_args = deepcopy(config.methods[method]["args"]["arguments"])
+    deactivate = False
+    for i in post_args:
+        config.block_callback[i['name']] = True
+    config.block_callback['{i['name']}'] = False
+    post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header="postargs")
+
+    plot = config.methods[method]['plot']()
+
+    return post_args_object, plot
+"""
+            if i['input'] == 'BooleanSwitch':
+                input = f"dash.Input('analysis_{i['name']}','on'),"
+
+                add_function = f"""
+@app.callback(
+    dash.Output("analysis_postargs","children", allow_duplicate=True),
+    dash.Output("analysis_plot","children", allow_duplicate=True),
+    {input}
+    prevent_initial_call=True
+)
+def change_parameter_{i['name']}(data):
+
+    if config.block_callback['{i['name']}']:
+        config.block_callback['{i['name']}'] = False
+        raise PreventUpdate()
+
+    print(data)
+    set_parameters_adata(dict({i['name']}=data))
+    set_parameters_node(dict({i['name']}=data))
+
+    method = get_node(config.selected)["data"]["method"]
     post_args = deepcopy(config.methods[method]["args"]["postexecution"])
     deactivate = False
     for i in post_args:
         config.block_callback[i['name']] = True
     config.block_callback['{i['name']}'] = False
-    post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header=False)
+    post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header="postargs")
 
     plot = config.methods[method]['plot']()
 
     return post_args_object, plot
+"""
+            elif i['input'] == 'AgTable':
+                input = f"dash.Input('analysis_{i['name']}','cellValueChanged'),"
+
+                add_function = f"""
+@app.callback(
+    dash.Output("analysis_postargs","children", allow_duplicate=True),
+    dash.Output("analysis_plot","children", allow_duplicate=True),
+    dash.Input('analysis_{i['name']}','cellValueChanged'),
+    dash.State('analysis_{i['name']}','rowData'),
+    prevent_initial_call=True
+)
+def change_parameter_{i['name']}(cell,data):
+
+    if config.block_callback['{i['name']}']:
+        config.block_callback['{i['name']}'] = False
+        raise PreventUpdate()
+
+    data[cell["rowIndex"]] = cell["data"]
+    set_parameters_adata(dict({i['name']}=data))
+    set_parameters_node(dict({i['name']}=data))
+
+    method = get_node(config.selected)["data"]["method"]
+    post_args = deepcopy(config.methods[method]["args"]["postexecution"])
+    deactivate = False
+    for i in post_args:
+        config.block_callback[i['name']] = True
+    config.block_callback['{i['name']}'] = False
+    post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header="postargs")
+
+    plot = config.methods[method]['plot']()
+
+    return post_args_object, plot
+"""
+
+            exec(add_function, globals(), locals())
+
+    for i in deepcopy(config.methods[method]["args"]["plot"]):
+
+        m_i = (i['name'],i['input'])
+
+        if m_i not in methods_implemented:
+
+            methods_implemented.append(m_i)
+
+            input = f"dash.Input('analysis_{i['name']}','value'),"
+            if i['input'] == 'BooleanSwitch':
+                input = f"dash.Input('analysis_{i['name']}','on'),"
+            elif i['input'] == 'QCTable':
+                input = f"dash.Input('analysis_{i['name']}','rowData'),"
+            elif i['input'] == 'AgTable':
+                input = f"dash.Input('analysis_{i['name']}','rowData'),"
+
+            add_function = f"""
+@app.callback(
+    dash.Output("analysis_plotargs","children", allow_duplicate=True),
+    dash.Output("analysis_plot","children", allow_duplicate=True),
+    {input}
+    prevent_initial_call=True
+)
+def change_parameter_{i['name']}(data):
+
+    if config.block_callback['{i['name']}']:
+        config.block_callback['{i['name']}'] = False
+        raise PreventUpdate()
+
+    set_plot_parameters_adata(dict({i['name']}=data))
+    set_plot_parameters_node(dict({i['name']}=data))
+
+    method = get_node(config.selected)["data"]["method"]
+    plot_args = deepcopy(config.methods[method]["args"]["plot"])
+    deactivate = False
+    for i in plot_args:
+        config.block_callback[i['name']] = True
+    config.block_callback['{i['name']}'] = False
+    plot_args_object = make_arguments(method, plot_args, loaded_args=config.adata.uns[config.selected]['plot'], add_execution_button=False, add_header="plot")
+
+    plot = config.methods[method]['plot']()
+
+    return plot_args_object, plot
 """
 
             exec(add_function, globals(), locals())
@@ -342,12 +411,33 @@ def set_parameters_adata(args):
     config.adata.uns[config.selected]["scinteractive"] = True
     config.adata.uns[config.selected]["method"] = get_node(config.selected)["data"]["method"]
 
+def set_plot_parameters_adata(args):
+
+    if config.selected not in config.adata.uns.keys():
+        config.adata.uns[config.selected] = {"plot":{}}
+
+    if "plot" not in config.adata.uns[config.selected].keys():
+        config.adata.uns[config.selected]["plot"] = args
+    else:
+        for i,j in args.items():
+            config.adata.uns[config.selected]["plot"][i] = j
+
+    config.adata.uns[config.selected]["scinteractive"] = True
+    config.adata.uns[config.selected]["method"] = get_node(config.selected)["data"]["method"]
+
 def set_parameters_node(args):
 
     pos = get_node_pos(config.selected)
 
     for i,j in args.items():
         config.graph[pos]["data"]["parameters"][i] = j
+
+def set_plot_parameters_node(args):
+
+    pos = get_node_pos(config.selected)
+
+    for i,j in args.items():
+        config.graph[pos]["data"]["plot"][i] = j
 
 ############################################################################################################################################
 ############################################################################################################################################
@@ -433,7 +523,8 @@ def graph_new_node(_, method, cytoscape):
             'computed':False,
             'opacity':.3,
             'summary':'', 
-            'parameters':args
+            'parameters':args,
+            'plot':{}
         }, 
         'position':{'x':config.max_x + 30,'y':0},
     }
@@ -490,6 +581,7 @@ def graph_new_node(_, method, cytoscape):
     dash.Output('execute-input-modal', 'is_open', allow_duplicate=True),
     dash.Output('execute-computed-modal', 'is_open', allow_duplicate=True),
     dash.Output('analysis_postargs', 'children', allow_duplicate=True),
+    dash.Output('analysis_plotargs', 'children', allow_duplicate=True),
     dash.Output('analysis_plot', 'children', allow_duplicate=True),
     [
         dash.Input('analysis_execute_button', 'n_clicks')
@@ -541,6 +633,12 @@ def execute(n_clicks, warning_input, warning_computed, plot):
                 set_parameters_adata(post_args)
                 set_parameters_node(post_args)
 
+                #Add plot arguments
+                plot_args = deepcopy(config.methods[method]["args"]["plot"])
+                plot_args = args_eval(plot_args)
+                set_plot_parameters_adata(plot_args)
+                set_plot_parameters_node(plot_args)
+
                 #Activate node
                 activate_node(config.selected)
                 deactivate_downstream(config.selected)
@@ -550,13 +648,15 @@ def execute(n_clicks, warning_input, warning_computed, plot):
         node_data = get_node(config.selected)['data']
         if node_data['computed']:
             post_args = deepcopy(config.methods[node_data['method']]["args"]["postexecution"])
+            plot_args = deepcopy(config.methods[node_data['method']]["args"]["plot"])
             config.block_callback = {}
             for i in post_args:
                 config.block_callback[i["name"]] = True
+            for i in plot_args:
+                config.block_callback[i["name"]] = True
 
-            post_args_object = make_arguments(node_data['method'], post_args, add_execution_button=False, add_header=False)
-
-            args = get_args(config.selected)
+            post_args_object = make_arguments(node_data['method'], post_args, add_execution_button=False, add_header="postargs")
+            plot_args_object = make_arguments(node_data['method'], plot_args, add_execution_button=False, add_header="plot")
 
             plot = config.methods[node_data['method']]["plot"]()
 
@@ -564,7 +664,7 @@ def execute(n_clicks, warning_input, warning_computed, plot):
 
         raise PreventUpdate()
 
-    return config.graph, warning_input, warning_computed, post_args_object, plot
+    return config.graph, warning_input, warning_computed, post_args_object, plot_args_object, plot
 
 #Delete analysis button
 @app.callback(
@@ -727,6 +827,16 @@ def graph_analysis(_, name, l):
 
         l = load_node(name)
 
+        node_data = get_node(config.selected)['data']
+        if node_data['computed']:
+            post_args = deepcopy(config.methods[node_data['method']]["args"]["postexecution"])
+            plot_args = deepcopy(config.methods[node_data['method']]["args"]["plot"])
+            config.block_callback = {}
+            for i in post_args:
+                config.block_callback[i["name"]] = False
+            for i in plot_args:
+                config.block_callback[i["name"]] = False
+
     return config.graph, l
 
 @app.callback(
@@ -825,6 +935,6 @@ def savefigure(n_clicks,fig):
                 namefig = f"{config.analysis_folder}/report/figures/{config.selected}_{count}.png"
             fig.write_image(namefig)
 
-            config.report.append({"figure":namefig,"comments":""})
+            config.report += f"![](./figures/{config.selected}_{count}.png)\n"
 
     return ""
