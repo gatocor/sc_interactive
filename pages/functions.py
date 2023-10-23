@@ -68,11 +68,18 @@ def create_analysis(basedir, raw):
     return
 
 def load_analysis(folder):
+    
     h5adfile = f"{folder}/h5ad/Raw.h5ad"
     config.adata = sc.read_h5ad(h5adfile)
+
     graphfile = f"{folder}/analysis.json"
     with open(graphfile,"r") as outfile:
         config.graph = json.load(outfile)
+
+    file = f"{folder}/report/report.md"
+    with open(file,"r") as outfile:
+        config.report = outfile.read()
+
     config.analysis_folder = folder
     config.selected = 'Raw'
 

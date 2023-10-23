@@ -11,6 +11,7 @@ def make_file_path(name):
 analysis_folder = None
 adata = None
 graph = [RAWNODE]
+report = None
 
 active_node_parameters = {}
 max_x = 0

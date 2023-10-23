@@ -825,4 +825,6 @@ def savefigure(n_clicks,fig):
                 namefig = f"{config.analysis_folder}/report/figures/{config.selected}_{count}.png"
             fig.write_image(namefig)
 
+            config.report.append({"figure":namefig,"comments":""})
+
     return ""

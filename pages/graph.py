@@ -91,6 +91,12 @@ def save_adata():
     file = f"{config.analysis_folder}/h5ad/{config.graph[pos]['data']['h5ad_file']}"
     config.adata.write(file)
 
+def save_report():
+    
+    file = f"{config.analysis_folder}/report/report.md"
+    with open(file,"w") as outfile:
+        outfile.write(config.report)
+
 def make_nodes_summaries(inplace=True):
 
     for node in node_names():

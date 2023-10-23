@@ -27,7 +27,7 @@ navbar = dbc.Navbar(
                     ],
                     align="center",
                 ),
-                href="/h5ad",
+                href="/home",
             ),
             dbc.Nav([
                 dbc.DropdownMenu([
@@ -62,7 +62,7 @@ for i in [2]:
 
 # embedding the navigation bar
 app.layout = html.Div([
-    dcc.Location(id='url', pathname="/analysis", refresh=False),
+    dcc.Location(id='url', pathname="/report", refresh=False),
     navbar,
     html.Div(id='page-content')
 ])
