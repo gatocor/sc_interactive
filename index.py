@@ -62,7 +62,8 @@ for i in [2]:
 
 # embedding the navigation bar
 app.layout = html.Div([
-    dcc.Location(id='url', pathname="/report", refresh=False),
+    # dcc.Location(id='url', pathname="/home", refresh=False),
+    dcc.Location(id='url', pathname="/analysis", refresh=False),
     navbar,
     html.Div(id='page-content')
 ])

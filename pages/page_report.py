@@ -15,7 +15,7 @@ from app import app
 
 from PIL import Image
 
-load_analysis("../Raw_h5ad.sc")
+# load_analysis("../Raw_h5ad.sc")
 
 # change to app.layout if running as single page app instead
 def layout():

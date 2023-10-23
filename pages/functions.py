@@ -65,6 +65,10 @@ def create_analysis(basedir, raw):
         json_object = json.dumps([RAWNODE], indent=4, cls=NpEncoder)
         outfile.write(json_object)
 
+    file = f"{basedir}/report/report.md"
+    with open(file,"w") as outfile:
+        outfile.write("")
+
     return
 
 def load_analysis(folder):
