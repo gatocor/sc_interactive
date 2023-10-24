@@ -7,10 +7,20 @@ Welcome to sc_interactive's documentation!
 ==========================================
 
 .. toctree::
-   :maxdepth: 2
+   :glob:
+   :maxdepth: 1
    :caption: Contents:
+      
+   pages/app_structure
+   pages/analysis_structure
+   pages/nodes
 
-
+.. toctree::
+   :glob:
+   :maxdepth: 1
+   :caption: API Developer:
+      
+   pages/add_nodes
 
 Indices and tables
 ==================
