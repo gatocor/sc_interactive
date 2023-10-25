@@ -471,42 +471,6 @@ def graph_new_node(_, method, cytoscape):
 
     return config.graph, graph2table(), l
 
-# #Show edge when activate
-# @app.callback(
-#     dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
-#     [
-#         dash.Input('analysis_input', 'value')
-#     ],
-#     prevent_initial_call=True
-# )
-# def graph_edge(value):
-
-#     for i,val in enumerate(config.graph):
-#         #Change node input
-#         if 'id' in val['data'].keys(): #Check is a node
-#             if val['data']['id'] == config.selected:
-#                 if val['data']['parameters']['input'] != value:
-#                     config.graph[i]['data']['computed'] = False
-#                     config.graph[i]['data']['opacity'] = .3
-#                     config.graph[i]['data']['parameters']['input'] = value
-
-#     for i,val in enumerate(config.graph):
-#         #Change edge input
-#         if 'target' in val['data'].keys(): #Check is an edge
-#             if val['data']['target'] == config.selected: #there only one output to each node
-#                 val['data']['source'] = value
-
-#                 return config.graph
-
-#     if value != None:
-#         config.graph.append(
-#             {
-#                 'data':{'source':value,'target':config.selected},
-#              }
-#             )
-
-#     return config.graph
-
 #Execute analysis button
 @app.callback(
     dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
@@ -662,84 +626,6 @@ def delete_cancel(n_clicks):
     
     return modal
 
-# #Rename analysis button
-# @app.callback(
-#     dash.Output('rename-modal', 'is_open'),
-#     dash.Output('rename-message', 'children', allow_duplicate=True),
-#     dash.Input('analysis_rename_button', 'n_clicks'),
-#     prevent_initial_call=True
-# )
-# def rename(n_clicks):
-        
-#     if n_clicks != None:
-
-#         l = [
-#             html.Div(f"Current name of analysis:\n"),
-#             html.Div(f"\t{config.selected}"),
-#             html.Div(f"Change by:"),
-#             dbc.Input(id="rename_name",value=config.selected,type="text")
-#         ]
-
-#         return True, l
-    
-#     return False, []
-
-# #Proceed modal rename
-# @app.callback(
-#     dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
-#     dash.Output('rename-modal', 'is_open', allow_duplicate=True),
-#     dash.Output('analysis_name', 'children', allow_duplicate=True),
-#     dash.Output('rename-message', 'children', allow_duplicate=True),
-#     [
-#      dash.Input('rename-proceed', 'n_clicks'),
-#     ],
-#     dash.State('rename_name', 'value'),
-#     dash.State('rename-message', 'children'),
-#     prevent_initial_call=True
-# )
-# def rename_confirmation(n_clicks, name, l):
-    
-#     modal = True
-#     if n_clicks != None:
-
-#         n = node_names()
-
-#         if name not in n:
-
-#             node = get_node(config.selected)
-#             config.functions_method_rename[node['data']['method']](config.selected, name)
-#             node_rename(config.selected, name) #Rename graph
-#             config.selected = name #Rename configuration
-
-#             modal = False        
-#         else:
-#             l = [
-#                 html.Div(f"THERE IS ALREADY AN ANALYSIS NODE WITH THIS NAME. CHOOSE OTHER NAME.\n", style={"background-color":"orange"}),
-#                 html.Div(f"Current name of analysis:\n"),
-#                 html.Div(f"\t{config.selected}"),
-#                 html.Div(f"Change by:"),
-#                 dbc.Input(id="rename_name",value=config.selected,type="text")
-#             ]    
-
-#     return config.graph, modal, config.selected, l
-
-# #Cancel modal rename
-# @app.callback(
-#     dash.Output('rename-modal', 'is_open', allow_duplicate=True),
-#     [
-#      dash.Input('rename-cancel', 'n_clicks'),
-#     ],
-#     prevent_initial_call=True
-# )
-# def rename_cancel(n_clicks):
-    
-#     modal = True
-#     if n_clicks != None:
-
-#         modal = False
-    
-#     return modal
-
 #Load button
 @app.callback(
     dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
@@ -782,53 +668,6 @@ def display_click_data(tap_node_data):
         return tap_node_data['data']['id']
     
     return None
-
-# #Double click to load node
-# @app.callback(
-#     dash.Output('graph_cytoscape', 'elements', allow_duplicate=True),
-#     dash.Output('graph_analysis', 'children', allow_duplicate=True),
-#     dash.Input('graph_cytoscape', 'tapNode'),
-#     dash.State('graph_analysis', 'children'),
-#     prevent_initial_call=True
-# )
-# def display_click_data(tap_node_data, l):
-
-#     if tap_node_data is not None:
-
-#         t = time()
-#         name = tap_node_data['data']['id']
-
-#         if abs(config.tclick-t) < 1: #Double click
-
-#             l = load_node(name)
-        
-#         else: # If not load, create again the buttons to avoid spurious reloadings
-
-#             if len(l) > 0: #Otherwise is raw
-#                 l[0]["props"]["children"][0]["props"]["children"][0]["props"]["children"][1] = dbc.Col(
-#                         dbc.Row(
-#                             dbc.Button("Rename",id="analysis_rename_button", class_name="btn btn-primary btn-sm"),
-#                         ),
-#                         width={"offset":7},
-#                         align="center"
-#                     )
-#                 l[0]["props"]["children"][0]["props"]["children"][0]["props"]["children"][2] = dbc.Col(
-#                         dbc.Row(
-#                             dbc.Button("Delete",id="analysis_delete_button", style={"background-color":"red"}, class_name="btn btn-primary btn-sm"),
-#                         ),
-#                         width={"offset":1},
-#                         align="center"
-#                     )
-#                 l[0]["props"]["children"][-2]["props"]["children"][-1] = dbc.Button("Execute",id="analysis_execute_button")
-
-#             else:
-#                 l = []
-
-#         config.tclick = t
-
-#         return config.graph, l
-
-#     return config.graph, l
 
 #Save analysis
 @app.callback(
