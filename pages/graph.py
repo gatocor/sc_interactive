@@ -264,7 +264,7 @@ def list_observables():
     for i in ancestors:
         if "obs" in i["data"].keys():
             for j in i["data"]["obs"].keys():
-                l += [f"{i['data']['name']}---{j}"]
+                l += [f"{i['data']['name']}--{j}"]
 
     return l
 
@@ -279,7 +279,7 @@ def get_observable(obs):
     for i in ancestors:
         if "obs" in i["data"].keys():
             for j in i["data"]["obs"].keys():
-                l = f"{i['data']['name']}---{j}"
+                l = f"{i['data']['name']}--{j}"
                 if obs == l:
                     return np.array(i["data"]["obs"][j])
 

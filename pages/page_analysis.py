@@ -169,7 +169,9 @@ def args2summary(data):
 methods_implemented = []
 for method in config.methods.keys():
 
-    for i in deepcopy(config.methods[method]["args"]["execution"]):
+    for i in deepcopy(config.methods[method]["args"]["execution"])+\
+                deepcopy(config.methods[method]["args"]["postexecution"])+\
+                deepcopy(config.methods[method]["args"]["plot"]):
 
         m_i = (i['name'],i['input'])
 
@@ -177,28 +179,112 @@ for method in config.methods.keys():
 
             methods_implemented.append(m_i)
 
-            input = f"dash.Input('analysis_{i['name']}','value'),"
-            up = f"config.active_node_parameters['{i['name']}'] = data"
-            if i['input'] == 'BooleanSwitch':
+            if i['input'] == 'Input':
+                input = f"dash.Input('analysis_{i['name']}','value'),"
+                up = f"config.active_node_parameters['{i['name']}'] = data"
+                up_post = ""
+                up_plot = ""
+                args = "data"
+            elif i['input'] == 'Dropdown':
+                input = f"dash.Input('analysis_{i['name']}','value'),"
+                up = f"config.active_node_parameters['{i['name']}'] = data"
+                up_post = ""
+                up_plot = ""
+                args = "data"
+            elif i['input'] == 'BooleanSwitch':
                 input = f"dash.Input('analysis_{i['name']}','on'),"
+                up = f"config.active_node_parameters['{i['name']}'] = data"
+                up_post = ""
+                up_plot = ""
+                args = "data"
             elif i['input'] == 'AgTable':
-                input = f"dash.Input('analysis_{i['name']}','rowData'),"
+                input = f"dash.Input('analysis_{i['name']}','cellValueChanged'), dash.State('analysis_{i['name']}','rowData'),"
+                up = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.active_node_parameters['{i['name']}'] = data"
+                # up = "print(cell,data)"
+                up_post = "if cell != None: data[cell['rowIndex']] = cell['data']"
+                up_plot = up_post
+                args = "cell, data"
 
+#Execution
             add_function = f"""
 @app.callback(
     dash.Output("dumb","children", allow_duplicate=True),
     {input}
     prevent_initial_call=True
 )
-def change_parameter_{i['name']}(data):
+def change_parameter_{i['name']}({args}):
+
+    method = get_node(config.selected)["data"]["method"]
+    if '{i['name']}' not in [i['name'] for i in config.methods[method]["args"]["execution"]]:
+        raise PreventUpdate()
 
     {up}
+    # recomputeWhenUpdate({i['name']},"execution")
 
     return ""
 """
 
             exec(add_function, globals(), locals())
 
+#Postexecution and Plot
+            add_function = f"""
+@app.callback(
+    dash.Output("analysis_postargs","children", allow_duplicate=True),
+    dash.Output("analysis_plotargs","children", allow_duplicate=True),
+    dash.Output("analysis_plot","children", allow_duplicate=True),
+    {input}
+    prevent_initial_call=True
+)
+def change_postparameter_{i['name']}({args}):
+
+    if '{i['name']}' in config.block_callback.keys():
+        if config.block_callback['{i['name']}']:
+            config.block_callback['{i['name']}'] = False
+            raise PreventUpdate()
+
+    method = get_node(config.selected)["data"]["method"]
+    if '{i['name']}' in [i['name'] for i in config.methods[method]["args"]["postexecution"]]:
+
+        {up_post}
+        set_parameters_adata(dict({i['name']}=data))
+        set_parameters_node(dict({i['name']}=data))
+    
+    elif '{i['name']}' in [i['name'] for i in config.methods[method]["args"]["plot"]]:
+    
+        {up_plot}
+        set_plot_parameters_adata(dict({i['name']}=data))
+        set_plot_parameters_node(dict({i['name']}=data))
+
+    else:
+    
+        raise PreventUpdate()
+
+    method = get_node(config.selected)["data"]["method"]
+
+    post_args = deepcopy(config.methods[method]["args"]["postexecution"])
+    deactivate = False
+    for i in post_args:
+        config.block_callback[i['name']] = True
+    config.block_callback['{i['name']}'] = False
+    # recomputeWhenUpdate({i['name']},"postexecution")
+    post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header="postargs")
+
+    plot_args = deepcopy(config.methods[method]["args"]["plot"])
+    deactivate = False
+    for i in plot_args:
+        config.block_callback[i['name']] = True
+    config.block_callback['{i['name']}'] = False
+    # recomputeWhenUpdate({i['name']},"plot")
+    plot_args_object = make_arguments(method, plot_args, loaded_args=config.adata.uns[config.selected]['plot'], add_execution_button=False, add_header="plot")
+
+    plot = config.methods[method]['plot']()
+
+    return post_args_object, plot_args_object, plot
+"""
+
+            exec(add_function, globals(), locals())
+
+#Delete row ag
             if i['input'] == "AgTable" and 'deleteRows' in i.keys():
 
                 if i['deleteRows']:
@@ -221,6 +307,7 @@ def delete_rows_{i['name']}(row, row2):
             
                     exec(add_function, globals(), locals())
 
+#Add row ag
             if i['input'] == "AgTable" and 'addRows' in i.keys():
 
                 add_function = f"""
@@ -241,161 +328,6 @@ def add_row_{i['name']}(n_clicks, c):
     return c
 """
                 exec(add_function, globals(), locals())
-
-methods_implemented = []
-for method in config.methods.keys():
-
-    for i in deepcopy(config.methods[method]["args"]["postexecution"]):
-
-        m_i = (i['name'],i['input'])
-
-        if m_i not in methods_implemented:
-
-            methods_implemented.append(m_i)
-
-            input = f"dash.Input('analysis_{i['name']}','value'),"
-            add_function = f"""
-@app.callback(
-    dash.Output("analysis_postargs","children", allow_duplicate=True),
-    dash.Output("analysis_plot","children", allow_duplicate=True),
-    {input}
-    prevent_initial_call=True
-)
-def change_parameter_{i['name']}(data):
-
-    if config.block_callback['{i['name']}']:
-        config.block_callback['{i['name']}'] = False
-        raise PreventUpdate()
-
-    set_parameters_adata(dict({i['name']}=data))
-    set_parameters_node(dict({i['name']}=data))
-
-    method = get_node(config.selected)["data"]["method"]
-    post_args = deepcopy(config.methods[method]["args"]["arguments"])
-    deactivate = False
-    for i in post_args:
-        config.block_callback[i['name']] = True
-    config.block_callback['{i['name']}'] = False
-    post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header="postargs")
-
-    plot = config.methods[method]['plot']()
-
-    return post_args_object, plot
-"""
-            if i['input'] == 'BooleanSwitch':
-                input = f"dash.Input('analysis_{i['name']}','on'),"
-
-                add_function = f"""
-@app.callback(
-    dash.Output("analysis_postargs","children", allow_duplicate=True),
-    dash.Output("analysis_plot","children", allow_duplicate=True),
-    {input}
-    prevent_initial_call=True
-)
-def change_parameter_{i['name']}(data):
-
-    if config.block_callback['{i['name']}']:
-        config.block_callback['{i['name']}'] = False
-        raise PreventUpdate()
-
-    print(data)
-    set_parameters_adata(dict({i['name']}=data))
-    set_parameters_node(dict({i['name']}=data))
-
-    method = get_node(config.selected)["data"]["method"]
-    post_args = deepcopy(config.methods[method]["args"]["postexecution"])
-    deactivate = False
-    for i in post_args:
-        config.block_callback[i['name']] = True
-    config.block_callback['{i['name']}'] = False
-    post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header="postargs")
-
-    plot = config.methods[method]['plot']()
-
-    return post_args_object, plot
-"""
-            elif i['input'] == 'AgTable':
-                input = f"dash.Input('analysis_{i['name']}','cellValueChanged'),"
-
-                add_function = f"""
-@app.callback(
-    dash.Output("analysis_postargs","children", allow_duplicate=True),
-    dash.Output("analysis_plot","children", allow_duplicate=True),
-    dash.Input('analysis_{i['name']}','cellValueChanged'),
-    dash.State('analysis_{i['name']}','rowData'),
-    prevent_initial_call=True
-)
-def change_parameter_{i['name']}(cell,data):
-
-    if config.block_callback['{i['name']}']:
-        config.block_callback['{i['name']}'] = False
-        raise PreventUpdate()
-
-    data[cell["rowIndex"]] = cell["data"]
-    set_parameters_adata(dict({i['name']}=data))
-    set_parameters_node(dict({i['name']}=data))
-
-    method = get_node(config.selected)["data"]["method"]
-    post_args = deepcopy(config.methods[method]["args"]["postexecution"])
-    deactivate = False
-    for i in post_args:
-        config.block_callback[i['name']] = True
-    config.block_callback['{i['name']}'] = False
-    post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header="postargs")
-
-    plot = config.methods[method]['plot']()
-
-    return post_args_object, plot
-"""
-
-            exec(add_function, globals(), locals())
-
-    for i in deepcopy(config.methods[method]["args"]["plot"]):
-
-        m_i = (i['name'],i['input'])
-
-        if m_i not in methods_implemented:
-
-            methods_implemented.append(m_i)
-
-            input = f"dash.Input('analysis_{i['name']}','value'),"
-            if i['input'] == 'BooleanSwitch':
-                input = f"dash.Input('analysis_{i['name']}','on'),"
-            elif i['input'] == 'QCTable':
-                input = f"dash.Input('analysis_{i['name']}','rowData'),"
-            elif i['input'] == 'AgTable':
-                input = f"dash.Input('analysis_{i['name']}','rowData'),"
-
-            add_function = f"""
-@app.callback(
-    dash.Output("analysis_plotargs","children", allow_duplicate=True),
-    dash.Output("analysis_plot","children", allow_duplicate=True),
-    {input}
-    prevent_initial_call=True
-)
-def change_parameter_{i['name']}(data):
-
-    if config.block_callback['{i['name']}']:
-        config.block_callback['{i['name']}'] = False
-        raise PreventUpdate()
-
-    set_plot_parameters_adata(dict({i['name']}=data))
-    set_plot_parameters_node(dict({i['name']}=data))
-
-    method = get_node(config.selected)["data"]["method"]
-    plot_args = deepcopy(config.methods[method]["args"]["plot"])
-    deactivate = False
-    for i in plot_args:
-        config.block_callback[i['name']] = True
-    config.block_callback['{i['name']}'] = False
-    plot_args_object = make_arguments(method, plot_args, loaded_args=config.adata.uns[config.selected]['plot'], add_execution_button=False, add_header="plot")
-
-    plot = config.methods[method]['plot']()
-
-    return plot_args_object, plot
-"""
-
-            exec(add_function, globals(), locals())
 
 def set_parameters_adata(args):
 
@@ -515,9 +447,9 @@ def graph_new_node(_, method, cytoscape):
         'data': {
             'id': name, 
             'name': method,
-            'method':config.methods[method]["properties"]['method'], 
+            'method':method, 
             'type':config.methods[method]["properties"]['type'], 
-            'color': config.methods[method]["properties"]['color'],
+            'color': "blue",
             'h5ad_file':h5ad_file,
             'image': '',
             'computed':False,
