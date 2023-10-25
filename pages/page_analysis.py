@@ -63,21 +63,6 @@ def layout():
                 id="delete-modal",
                 size="sm",
             ),
-            # dbc.Modal(
-            #     [
-            #         dbc.ModalHeader("Rename analysis",close_button=False),
-            #         dbc.ModalBody(id="rename-message",
-            #                     children=[]
-            #         ),
-            #         dbc.ModalFooter([
-            #                 dbc.Button("Rename", id="rename-proceed", className="ml-auto"),
-            #                 dbc.Button("Cancel", id="rename-cancel", className="ml-auto")
-            #         ])
-            #     ],
-            #     backdrop=False,
-            #     id="rename-modal",
-            #     size="sm",
-            # ),
             dbc.Modal(
                 [
                     dbc.ModalHeader("Warning",close_button=False),
