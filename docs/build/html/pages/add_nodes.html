@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Creating New Nodes &#8212; sc_interactive  documentation</title>
+    <title>Adding New Methods &#8212; sc_interactive  documentation</title>
   
   
   
@@ -133,12 +133,12 @@
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="app_structure.html">App Structure</a></li>
-<li class="toctree-l1"><a class="reference internal" href="analysis_structure.html">The Analysis Folder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analysis_structure.html">Analysis Folder Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="nodes.html">Analysis Nodes</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API Developer:</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Creating New Nodes</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Adding New Methods</a></li>
 </ul>
 
     </div>
@@ -275,7 +275,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Creating New Nodes</h1>
+    <h1>Adding New Methods</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -285,7 +285,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#structure-of-the-method-file">Structure of the method file</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#structure-of-the-new-method-file">Structure of the new method file</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#properties">Properties</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#arguments">Arguments</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#types-of-arguments">Types of arguments</a><ul class="nav section-nav flex-column">
@@ -295,7 +295,7 @@ document.write(`
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#agtable">AgTable</a></li>
 </ul>
 </li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#updating-arguments">Updating arguments</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dynamic-arguments">Dynamic arguments</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#function">Function</a></li>
@@ -311,12 +311,16 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="creating-new-nodes">
-<h1>Creating New Nodes<a class="headerlink" href="#creating-new-nodes" title="Permalink to this heading">#</a></h1>
-<section id="structure-of-the-method-file">
-<h2>Structure of the method file<a class="headerlink" href="#structure-of-the-method-file" title="Permalink to this heading">#</a></h2>
+  <section id="adding-new-methods">
+<h1>Adding New Methods<a class="headerlink" href="#adding-new-methods" title="Permalink to this heading">#</a></h1>
+<p>To add new methods to the interactive app, we just have to add to add a new file in the folder <code class="docutils literal notranslate"><span class="pre">pages/methods</span></code>.</p>
+<section id="structure-of-the-new-method-file">
+<h2>Structure of the new method file<a class="headerlink" href="#structure-of-the-new-method-file" title="Permalink to this heading">#</a></h2>
+<p>The template structure of the file is the following. You can copy it and fill it with the specifics of your code.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># new_method.py</span>
-<span class="kn">from</span> <span class="nn">sc_interative</span> <span class="kn">import</span> <span class="n">config</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">config</span>
+<span class="c1"># any additional libraries you may need</span>
+<span class="c1">#...</span>
 
 <span class="k">def</span> <span class="nf">method_function</span><span class="p">():</span>
     <span class="o">...</span>
@@ -357,6 +361,14 @@ document.write(`
 <span class="p">}</span>
 </pre></div>
 </div>
+<p>The key element in this package is the key added to the methods dictionary in the config file <code class="docutils literal notranslate"><span class="pre">config.methods['new_method']</span> <span class="pre">=</span> <span class="pre">{...}</span></code> that will add the method to the list with its properties. To the new_method key we have to provide a dictionary with the following keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">properties</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">args</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">function</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot</span></code></p></li>
+</ul>
+<p>This properties will be described in detail in the following sections.</p>
 </section>
 <section id="properties">
 <h2>Properties<a class="headerlink" href="#properties" title="Permalink to this heading">#</a></h2>
@@ -463,12 +475,62 @@ document.write(`
 <p><strong>Example appearance</strong></p>
 </section>
 </section>
-<section id="updating-arguments">
-<h3>Updating arguments<a class="headerlink" href="#updating-arguments" title="Permalink to this heading">#</a></h3>
+<section id="dynamic-arguments">
+<h3>Dynamic arguments<a class="headerlink" href="#dynamic-arguments" title="Permalink to this heading">#</a></h3>
+<p>In general, the arguments that you provide to the analysis may depend on the properties and the information contained in the <code class="docutils literal notranslate"><span class="pre">AnnData</span></code>, the previous analysis steps in general or even the choice of the value of some other parameters. To provide a dynamic update of the parameters given to a specific algument, we can provide the structure <code class="docutils literal notranslate"><span class="pre">{'function'</span> <span class="pre">:</span> <span class="pre">'dynamic_argument_function()'}</span></code> toany of the keys and subkeys appearng in a parameter dictionary.</p>
+<p><strong>Example 1</strong>, consider we have a method with two execution arguments. The second argument value and options depend on the choice of the first argument.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># new_method.py</span>
+
+<span class="c1"># other code...</span>
+
+<span class="k">def</span> <span class="nf">new_method_choose_list_value</span><span class="p">():</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">active_node_parameters</span><span class="p">[</span><span class="s2">&quot;choose_list&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;list_1&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;a&quot;</span>
+    <span class="k">else</span><span class="p">:</span> <span class="c1">#list_2</span>
+        <span class="k">return</span> <span class="s2">&quot;D&quot;</span>
+
+<span class="k">def</span> <span class="nf">new_method_choose_list_options</span><span class="p">():</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">active_node_parameters</span><span class="p">[</span><span class="s2">&quot;choose_list&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;list_1&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span><span class="s2">&quot;b&quot;</span><span class="p">,</span><span class="s2">&quot;c&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span> <span class="c1">#list_2</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;D&quot;</span><span class="p">,</span><span class="s2">&quot;E&quot;</span><span class="p">,</span><span class="s2">&quot;F&quot;</span><span class="p">]</span>
+
+<span class="n">config</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="s2">&quot;new_method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;args&quot;</span> <span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;input&quot;</span><span class="p">:</span>        <span class="s2">&quot;Dropdown&quot;</span><span class="p">,</span>                                       
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span>         <span class="s2">&quot;choose_list&quot;</span><span class="p">,</span>                                    
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span>  <span class="s2">&quot;Argument to choose between the two possible lists.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span>        <span class="s2">&quot;list_1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;clearable&quot;</span><span class="p">:</span>    <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;options&quot;</span><span class="p">:</span>      <span class="p">[</span><span class="s2">&quot;list_1&quot;</span><span class="p">,</span><span class="s2">&quot;list_2&quot;</span><span class="p">]</span>
+            <span class="s2">&quot;visible&quot;</span><span class="p">:</span>      <span class="kc">True</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;input&quot;</span><span class="p">:</span>        <span class="s2">&quot;Dropdown&quot;</span><span class="p">,</span>        
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span>         <span class="s2">&quot;choose_element&quot;</span><span class="p">,</span>                              
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span>  <span class="s2">&quot;Choose between an element of the list.&quot;</span><span class="p">,</span>       
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span>        <span class="p">{</span><span class="s2">&quot;function&quot;</span><span class="p">:</span><span class="s2">&quot;new_method_choose_list_value()&quot;</span><span class="p">},</span>    <span class="c1">#Dynamic key</span>
+            <span class="s2">&quot;clearable&quot;</span><span class="p">:</span>    <span class="kc">False</span><span class="p">,</span>                                            
+            <span class="s2">&quot;options&quot;</span><span class="p">:</span>      <span class="p">{</span><span class="s2">&quot;function&quot;</span><span class="p">:</span><span class="s2">&quot;new_method_choose_list_options()&quot;</span><span class="p">},</span>  <span class="c1">#Dynamic key</span>
+            <span class="s2">&quot;visible&quot;</span><span class="p">:</span>      <span class="kc">True</span>                                              
+        <span class="p">},</span>
+    <span class="p">]</span>
+
+    <span class="c1"># rest of the keys...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p><strong>NOTE</strong> To avoid infinite loops in dynamic argument calls, a good practice will be to order the arguments in such a way that an argument will not have any dependency to the arguments below it.</p>
+</div></blockquote>
 </section>
 </section>
 <section id="function">
 <h2>Function<a class="headerlink" href="#function" title="Permalink to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">function</span></code> key must contain the function of the method itself. The structure of this function must be the following.</p>
 </section>
 <section id="plot">
 <h2>Plot<a class="headerlink" href="#plot" title="Permalink to this heading">#</a></h2>
@@ -510,7 +572,7 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#structure-of-the-method-file">Structure of the method file</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#structure-of-the-new-method-file">Structure of the new method file</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#properties">Properties</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#arguments">Arguments</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#types-of-arguments">Types of arguments</a><ul class="nav section-nav flex-column">
@@ -520,7 +582,7 @@ document.write(`
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#agtable">AgTable</a></li>
 </ul>
 </li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#updating-arguments">Updating arguments</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dynamic-arguments">Dynamic arguments</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#function">Function</a></li>

@@ -1,10 +1,14 @@
-# Creating New Nodes
+# Adding New Methods
 
-## Structure of the method file
+To add new methods to the interactive app, we just have to add to add a new file in the folder `pages/methods`.
+
+## Structure of the new method file
+
+The template structure of the file is the following. You can copy it and fill it with the specifics of your code.
 
 ```python
 # new_method.py
-from sc_interative import config
+from . import config
 # any additional libraries you may need
 #...
 
@@ -46,6 +50,15 @@ config.methods["method_name"] = {
     "plot": plot_function,
 }
 ```
+
+The key element in this package is the key added to the methods dictionary in the config file `config.methods['new_method'] = {...}` that will add the method to the list with its properties. To the new_method key we have to provide a dictionary with the following keys:
+
+ - `properties`
+ - `args`
+ - `function`
+ - `plot`
+
+This properties will be described in detail in the following sections.
 
 ## Properties
 
@@ -161,8 +174,61 @@ In each of this keys should contain a `list` with add several types of arguments
 
 **Example appearance**
 
-### Updating arguments
+### Dynamic arguments
+
+In general, the arguments that you provide to the analysis may depend on the properties and the information contained in the `AnnData`, the previous analysis steps in general or even the choice of the value of some other parameters. To provide a dynamic update of the parameters given to a specific algument, we can provide the structure `{'function' : 'dynamic_argument_function()'}` toany of the keys and subkeys appearng in a parameter dictionary.
+
+**Example 1**, consider we have a method with two execution arguments. The second argument value and options depend on the choice of the first argument.
+
+```python
+# new_method.py
+
+# other code...
+
+def new_method_choose_list_value():
+
+    if config.active_node_parameters["choose_list"] == "list_1":
+        return "a"
+    else: #list_2
+        return "D"
+
+def new_method_choose_list_options():
+
+    if config.active_node_parameters["choose_list"] == "list_1":
+        return ["a","b","c"]
+    else: #list_2
+        return ["D","E","F"]
+
+config.methods["new_method"] = {
+    "args" : [
+        {
+            "input":        "Dropdown",                                       
+            "name":         "choose_list",                                    
+            "description":  "Argument to choose between the two possible lists.",
+            "value":        "list_1",
+            "clearable":    False,
+            "options":      ["list_1","list_2"]
+            "visible":      True
+        },
+        {
+            "input":        "Dropdown",        
+            "name":         "choose_element",                              
+            "description":  "Choose between an element of the list.",       
+            "value":        {"function":"new_method_choose_list_value()"},    #Dynamic key
+            "clearable":    False,                                            
+            "options":      {"function":"new_method_choose_list_options()"},  #Dynamic key
+            "visible":      True                                              
+        },
+    ]
+
+    # rest of the keys...
+}
+```
+
+ > **NOTE** To avoid infinite loops in dynamic argument calls, a good practice will be to order the arguments in such a way that an argument will not have any dependency to the arguments below it.
 
 ## Function
+
+The `function` key must contain the function of the method itself. The structure of this function must be the following.
 
 ## Plot

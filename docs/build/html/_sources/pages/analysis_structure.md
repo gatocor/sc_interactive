@@ -1,2 +1,2 @@
-# The Analysis Folder
+# Analysis Folder Structure
 
