@@ -155,6 +155,9 @@ def adapt_adata_loaded():
 
     config.adata.uns = deep_substitute(config.adata.uns, origin = "__None__", target = None)
 
+def get_name(name):
+    return config.selected+"--"+name
+
 def hist_vline(data,bins):
 
     hist_values, hist_bins = np.histogram(data, bins=bins)
@@ -279,6 +282,12 @@ def json_serializable(uns):
     d = d[:-1]+"}"
 
     return d
+
+def clean_arguments(name, args, d):
+    for i in args:
+        if "recomputeAfter" in i.keys():
+            if name in i["recomputeAfter"]:
+                del d[i['name']]
 
 def f_qc_table_pattern(adata):
 

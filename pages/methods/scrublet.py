@@ -10,10 +10,8 @@ import dash
 import scrublet
 from scipy.stats import mode
 
-from ..arguments import *
+from ..constants import *
 from ..functions import *
-from ..graph import *
-from ..plots import *
 from .. import config
 
 from app import app
@@ -173,7 +171,7 @@ def scrublet_(X, kwargs):
 
     return X, scrub.doublet_scores_obs_, scrub.doublet_scores_sim_
 
-def f_scrublet(adata, inputArgs, kwargs):
+def scrublet_f(adata, inputArgs, kwargs):
 
     pos = get_node_pos(config.selected)
 
@@ -193,17 +191,35 @@ def f_scrublet(adata, inputArgs, kwargs):
         subX, sub_doublet_scores_obs_, sub_doublet_scores_sim_ = scrublet_(X, kwargs)
         doublet_scores_obs = sub_doublet_scores_obs_
         X_umap = subX
-        simulated_doublet_score[""] = sub_doublet_scores_sim_
+        simulated_doublet_score[" "] = sub_doublet_scores_sim_
 
     d = {
         "obsm" : X_umap,
-        "obs" : {"doublet_scores_obs": doublet_scores_obs},
+        "obs" : {
+            "doublet_scores_obs": doublet_scores_obs,
+            "doublet_scores_obs--keep": np.ones(X.shape[0], bool)
+        },
         "uns" : {"simulated_scores": simulated_doublet_score}
     }
 
     return d
 
-def plot_scrublet():
+def scrublet_reset_lims():
+
+    batch = config.adata.uns[config.selected]["parameters"]["batch"]
+    thresholds = config.adata.uns[config.selected]["parameters"]["thresholds"]
+    for l in config.adata.uns[config.selected]["parameters"]["thresholds"]:
+        name = get_name("doublet_scores_obs")
+        name_keep = get_name("doublet_scores_obs")+"--keep"
+        if batch != None:
+            sub = config.adata.obs[batch] == l["batch"]
+            config.adata.obs[name_keep].values[sub]  = config.adata.obs[name].values[sub] <= float(l["max"])
+        else:
+            config.adata.obs[name_keep]  = config.adata.obs[name].values <= float(l["max"])
+
+def scrublet_plot():
+
+    scrublet_reset_lims()
 
     pos = get_node_pos(config.selected)
     node = get_node(config.selected)
@@ -214,12 +230,15 @@ def plot_scrublet():
 
     for b,c_sim in config.adata.uns[config.selected]["simulated_scores"].items():
 
-        if b == None:
+        if b == " ":
             sub = np.ones(config.adata.X.shape[0],dtype=bool)
+            lims_max = float([i for i in node["data"]["parameters"]["thresholds"]][0]["max"])
+            x = config.adata.uns[config.selected]["simulated_scores"][" "]
         else:
             sub = config.adata.obs[node["data"]["parameters"]["batch"]] == b
+            lims_max = float([i for i in node["data"]["parameters"]["thresholds"] if i["batch"] == b][0]["max"])
+            x = config.adata.uns[config.selected]["simulated_scores"][b]
 
-        lims_max = float([i for i in node["data"]["parameters"]["thresholds"] if i["batch"] == b][0]["max"])
         # res = int(get_table_value(data,b,"scrublet nBins"))
         X = config.adata.obsm[config.selected][sub,:]
         c = np.array(config.adata.obs[f"{config.selected}--doublet_scores_obs"])[sub]
@@ -231,7 +250,7 @@ def plot_scrublet():
 
         fig = px.histogram(x=np.array(config.adata.obs[f"{config.selected}--doublet_scores_obs"])[sub],histnorm="probability",barmode="overlay")
         fig.add_traces(list(
-            px.histogram(x=config.adata.uns[config.selected]["simulated_scores"][b],
+            px.histogram(x=x,
                          color_discrete_sequence=["red"],
                          histnorm="probability",
                          barmode="overlay"
@@ -270,12 +289,15 @@ def plot_scrublet():
 
 config.methods["scrublet"] = {
 
-    "properties":{"method":"scrublet","type":"QC","recompute":False,"color":"blue"},
+    "properties":{
+        "type":"QC",
+        "make_new_h5ad":False,
+    },
 
     "args": args,
 
-    "function":f_scrublet,
+    "function":scrublet_f,
 
-    "plot":plot_scrublet,
+    "plot":scrublet_plot,
 
 }

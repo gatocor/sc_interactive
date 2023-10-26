@@ -12,7 +12,6 @@ import scrublet
 import dash_ag_grid as dag
 
 from ..functions import *
-from ..graph import *
 from ..plots import *
 
 from app import app

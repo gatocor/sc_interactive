@@ -9,6 +9,7 @@ def make_file_path(name):
 
 # Initialize the global variable
 analysis_folder = None
+h5ad_file = "Raw.h5ad"
 adata = None
 graph = [RAWNODE]
 report = None
@@ -17,4 +18,17 @@ active_node_parameters = {}
 max_x = 0
 selected = 'Raw'
 
-methods = {}
+methods = {
+    "Raw" : {
+        "properties" : {
+            "type" : "Raw",
+            "make_new_h5ad" : True
+        },
+
+        "args": {
+            "execution" : [],
+            "postexecution" : [],
+            "plot" : []
+        } 
+    }
+}

@@ -4,7 +4,6 @@ from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import os
 import scanpy as sc
-from pages.graph import make_nodes_summaries
 import json
 
 from pages.functions import *
@@ -60,12 +59,15 @@ for i in [2]:
         [State(f"navbar-collapse{i}", "is_open")],
     )(toggle_navbar_collapse)
 
-load_analysis("../Raw_h5ad.sc")
+if os.path.exists("../Raw_h5ad.sc"):
+    load_analysis("../Raw_h5ad.sc")
+    pathname = "/analysis"
+else:
+    pathname = "/home"
 
 # embedding the navigation bar
 app.layout = html.Div([
-    # dcc.Location(id='url', pathname="/home", refresh=False),
-    dcc.Location(id='url', pathname="/analysis", refresh=False),
+    dcc.Location(id='url', pathname=pathname, refresh=False),
     navbar,
     html.Div(id='page-content')
 ])

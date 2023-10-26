@@ -10,10 +10,8 @@ import dash
 from scipy.stats import mode
 import plotly.express as px
 
-from ..arguments import *
+from ..constants import *
 from ..functions import *
-from ..graph import *
-from ..plots import *
 from .. import config
 
 from app import app
@@ -47,8 +45,7 @@ args = {
                     "name":"n_expressed_genes", "var":"", "pattern":"", "style":"n_expressed_genes",
                 }
             ],
-            "addRows":{"name":"", "var":"", "pattern":"", "style":"counts"}
-            ,
+            "addRows":{"name":"", "var":"", "pattern":"", "style":"counts"},
             "deleteRows": True
         },
     ],
@@ -151,9 +148,9 @@ def qc_get_genes(b):
 
     return genes
 
-def f_qc(adata, inputArgs, kwargs):
+def qc_f(adata, inputArgs, kwargs):
         
-    X = inputArgs["obsm"]
+    X = config.adata.X
 
     d = {"obs":{}}
     for l in kwargs["measure"]:
@@ -170,10 +167,30 @@ def f_qc(adata, inputArgs, kwargs):
         elif "proportion" == l["style"]:
             p = np.array(config.adata.X[:,x].sum(axis=1)).reshape(-1)/np.array(config.adata.X.sum(axis=1)).reshape(-1)
             d["obs"][l["name"]] =  p
+            
+        d["obs"][l["name"]+"--keep"] = np.ones(X.shape[0], bool)
 
     return d
 
-def plot_qc():
+def qc_reset_lims():
+
+    batch = config.adata.uns[config.selected]["parameters"]["batch"]
+    thresholds = config.adata.uns[config.selected]["parameters"]["thresholds"]
+    for l in config.adata.uns[config.selected]["parameters"]["thresholds"]:
+        name = get_name(l["metric"])
+        name_keep = get_name(l["metric"])+"--keep"
+        if batch != None:
+            sub = config.adata.obs[batch] == l["batch"]
+            config.adata.obs[name_keep].values[sub]  = config.adata.obs[name].values[sub] >= float(l["min"])
+            config.adata.obs[name_keep].values[sub]  = config.adata.obs[name].values[sub] <= float(l["max"])
+        else:
+            config.adata.obs[name_keep]  = config.adata.obs[name].values >= float(l["min"])
+            config.adata.obs[name_keep]  = config.adata.obs[name].values <= float(l["max"])
+
+def qc_plot():
+
+    #Reset threshold lims
+    qc_reset_lims()
 
     params = config.adata.uns[config.selected]["parameters"]
     plot_params = config.adata.uns[config.selected]["plot"]
@@ -234,12 +251,15 @@ def plot_qc():
 
 config.methods["qc"] = {
 
-    "properties":{"method":"qc","type":"QC","recompute":False,"color":"blue"},
+    "properties":{
+        "type":"QC",
+        "make_new_h5ad":False,
+    },
 
     "args": args,
 
-    "function":f_qc,
+    "function":qc_f,
 
-    "plot":plot_qc,
+    "plot":qc_plot,
 
 }

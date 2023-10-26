@@ -6,46 +6,86 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import dash
 
+from ..constants import *
 from ..functions import *
-from ..graph import *
 from ..plots import *
+from .. import config
 
 from app import app
 
-from .. import config
+args = {
+    "execution" : [
+            ARGINPUT,
+            {
+                "input":"AgTable",
+                "name":"filtering_thresholds",
+                "description":"Metrics of quality control to compute",
+                "header":[
+                    { "headerName": ".obs", "field":"obs", "editable": True,
+                    "cellEditor": "agSelectCellEditor",
+                    "cellEditorParams": {"values": {"function":"filtering_names()"}},
+                    },
+                ],
+                "value":{"function":"filtering_dict()"},
+                "addRows":{"name":""},
+                "deleteRows": True,
+                "recomputeAfter": ["input"] 
+            },
+    ],
 
-def args_filtering():
+    "postexecution" : [],
 
-    options = node_names(exclude_downstream_from_node=config.selected) 
-    
+    "plot" : []
+}
+
+def filtering_names():
+
+    if config.active_node_parameters["input"] == None:
+        return []
+    else:
+        return [i for i in config.adata.obs.columns.values if config.adata.obs.dtypes[i] in [bool]]
+
+def filtering_dict():
+
+    if config.active_node_parameters["input"] == None:
+        return []
+    else:
+        return [{"obs":i} for i in config.adata.obs.columns.values if config.adata.obs.dtypes[i] in [bool] and i.endswith("--keep")]
+
+def filtering_f(adata, inputArgs, kwargs):
+
+    keep = np.ones(adata.X.shape[0], bool)
+    for i in kwargs["filtering_thresholds"]:
+        name = i["obs"]
+        keep = adata.obs[name].values and keep
+
+    d = {
+        "keep_cells" : keep
+    }
+
+    return d
+
+def plot_filtering():
+
+    l = []
+    keep = np.ones(config.adata.X.shape[0], bool)
+    for i in config.adata.uns[config.selected]["parameters"]["filtering_thresholds"]:
+        name = i["obs"]
+        keep = config.adata.obs[name].values and keep
+        l.append({"obs":name,"retained":np.mean(config.adata.obs[name].values)})
+
+    l.append({"obs":"TOTAL","retained":np.mean(keep)})
+
     return [
-        {
-            "input":"Dropdown",
-            "name":"input",
-            "description":"Observable to use",
-            "value":None,
-            "clearable":False,
-            "options":options
-        },
+        ag_table(
+            id="filtering_ag_table",
+            columnDefs=[
+                {"name":"obs","field":"obs"},
+                {"name":"retained","field":"retained"}
+            ],
+            rowData=l
+        )
     ]
-
-def f_filtering(name_analysis, kwargs):
-        
-    pos = get_node_pos(name_analysis)
-    keep = config.graph[pos]["data"]["retained"]
-    config.adata = config.adata[keep,:]
-
-    return
-
-def rm_filtering(name_analysis):
-        
-    return
-
-def rename_filtering(name_analysis):
-        
-    return
-
-def plot_filtering(name_analysis):
 
     name = config.active_node_parameters["input"]
 
@@ -98,3 +138,18 @@ def plot_filtering(name_analysis):
             data=removed
         )
     ]
+
+config.methods["filtering"] = {
+    
+    "properties":{
+        "type":"QC",
+        "make_new_h5ad":True,
+    },
+
+    "args": args,
+
+    "function": filtering_f,
+
+    "plot": plot_filtering,
+
+}
