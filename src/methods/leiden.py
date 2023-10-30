@@ -10,20 +10,15 @@ import dash
 import scrublet
 from scipy.stats import mode
 
-from ..functions import *
-from ..plots import *
+from general import *
 
-from app import app
-
-from .. import config
-
-def args_louvain():
+def args_leiden():
 
     options = node_names(exclude_downstream_from_node=config.selected) 
     options_batch = get_batch_keys()
     
     return [
-            {
+        {
             "input":"Dropdown",
             "name":"input",
             "description":"Neighbor representation to use for clustering.",
@@ -48,15 +43,6 @@ def args_louvain():
             "type":"number"
         },
         {
-            "input":"Dropdown",
-            "name":"flavor",
-            "description":"Choose between to packages for computing the clustering.",
-            "value":"vtraag",
-            "clearable":False,
-            "options":["vtraag","igraph","rapids"],
-            "summary":True
-        },
-        {
             "input":"Input",
             "name":"random_state",
             "description":"Change the initialization of the optimization.",
@@ -75,10 +61,17 @@ def args_louvain():
             "description":"If True, edge weights from the graph are used in the computation (placing more emphasis on stronger edges).",
             "value":True,
         },
+        {
+            "input":"Input",
+            "name":"n_iterations",
+            "description":"How many iterations of the Leiden clustering algorithm to perform. Positive values above 2 define the total number of iterations to perform, -1 has the algorithm run until it reaches its optimal clustering.",
+            "value":-1,
+            "type":"number"
+        },
         # partition_type=None
     ]
 
-def f_louvain(name_analysis, kwargs, sub_name, sub):
+def f_leiden(name_analysis, kwargs, sub_name, sub):
 
     node = get_node(kwargs["input"])
     x = config.adata.uns[kwargs["input"]+"_"+str(sub_name)]["connectivities"]
@@ -86,33 +79,36 @@ def f_louvain(name_analysis, kwargs, sub_name, sub):
     adata_copy.uns["neighbors"] = {"connectivities_key":"connectivities","params":{"method":node["data"]["parameters"]["method"]}}
     adata_copy.obsp["connectivities"] = x
 
-    sc.tl.louvain(
+    sc.tl.leiden(
         adata_copy,
         neighbors_key=kwargs["input"],
         resolution=kwargs["resolution"],
         random_state=kwargs["random_state"], 
         directed=kwargs["directed"], 
         use_weights=kwargs["use_weights"], 
-        flavor=kwargs["flavor"], 
+        n_iterations=kwargs["n_iterations"], 
+        key_added=name_analysis
     )
+
+    config.adata.obs[name_analysis] = adata_copy.obs["leiden"].values
 
     pos = get_node_pos(name_analysis)
     if "obs" not in config.graph[pos]["data"]:
-        config.graph[pos]["data"]["obs"] = {"louvain":np.zeros([config.adata.shape[0]])}
-    elif type(config.graph[pos]["data"]["obs"]["louvain"]) == list:
-        config.graph[pos]["data"]["obs"] = {"louvain":np.zeros([config.adata.shape[0]])}
+        config.graph[pos]["data"]["obs"] = {"leiden":np.zeros([config.adata.shape[0]])}
+    elif type(config.graph[pos]["data"]["obs"]["leiden"]) == list:
+        config.graph[pos]["data"]["obs"] = {"leiden":np.zeros([config.adata.shape[0]])}
 
-    config.graph[pos]["data"]["obs"]["louvain"][sub] = adata_copy.obs["louvain"].values
+    config.graph[pos]["data"]["obs"]["leiden"][sub] = adata_copy.obs["leiden"].values
 
-def rm_louvain(name_analysis):
-
-    return
-
-def rename_louvain(name_analysis, name_new_analysis):
+def rm_leiden(name_analysis):
 
     return
 
-def plot_louvain(name_analysis):
+def rename_leiden(name_analysis, name_new_analysis):
+
+    return
+
+def plot_leiden(name_analysis):
 
     return []
 

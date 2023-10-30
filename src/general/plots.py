@@ -13,8 +13,6 @@ from scipy.stats import mode
 from scipy.spatial.distance import pdist, squareform
 import dash_ag_grid as dag
 
-from .functions import *
-
 from app import app
 
 def plot_center(fig):

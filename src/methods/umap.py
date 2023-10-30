@@ -10,12 +10,7 @@ import dash
 import scrublet
 from scipy.stats import mode
 
-from ..functions import *
-from ..plots import *
-
-from app import app
-
-from .. import config
+from general import *
 
 def args_umap():
 
@@ -257,16 +252,16 @@ def plot_umap(name_analysis):
     
     return l
 
-@app.callback(
-    dash.Output("analysis_plot", "children", allow_duplicate=True),
-    dash.Input("umap_color", "value"),
-    prevent_initial_call=True
-)
-def umap_threshold(pca_color):
+# @app.callback(
+#     dash.Output("analysis_plot", "children", allow_duplicate=True),
+#     dash.Input("umap_color", "value"),
+#     prevent_initial_call=True
+# )
+# def umap_threshold(pca_color):
 
-    prevent_race("umap")
+#     prevent_race("umap")
 
-    pos = get_node_pos(config.selected)
-    config.graph[pos]["data"]["plot"]["color"] = pca_color
+#     pos = get_node_pos(config.selected)
+#     config.graph[pos]["data"]["plot"]["color"] = pca_color
 
-    return  plot_umap(config.selected)
+#     return  plot_umap(config.selected)

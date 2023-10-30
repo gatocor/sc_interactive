@@ -6,12 +6,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import dash
 
-from ..functions import *
-from ..plots import *
-
-from app import app
-
-from .. import config
+from general import *
 
 def args_log1p():
 

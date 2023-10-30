@@ -6,13 +6,13 @@ import os
 import scanpy as sc
 import json
 
-from pages.functions import *
+from general import *
 
 # must add this line in order for the app to be deployed successfully on Heroku
 from app import server
 from app import app
 # import all pages in the app
-from pages import config, page_home, page_analysis, page_h5ad, page_report
+from pages import page_home, page_analysis, page_h5ad, page_report
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -59,8 +59,8 @@ for i in [2]:
         [State(f"navbar-collapse{i}", "is_open")],
     )(toggle_navbar_collapse)
 
-if os.path.exists("../Raw_h5ad.sc"):
-    load_analysis("../Raw_h5ad.sc")
+if os.path.exists(STARTPATH+"Raw_h5ad.sc"):
+    load_analysis(STARTPATH+"Raw_h5ad.sc")
     pathname = "/analysis"
 else:
     pathname = "/home"

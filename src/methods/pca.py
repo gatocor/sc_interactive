@@ -6,12 +6,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import dash
 
-from ..functions import *
-from ..plots import *
-
-from app import app
-
-from .. import config
+from general import *
 
 def args_pca():
 
@@ -234,33 +229,33 @@ def plot_pca(name_analysis):
 
     return l
 
-@app.callback(
-    dash.Output("analysis_plot", "children", allow_duplicate=True),
-    dash.Input("pca_threshold", "data"),
-    dash.Input("pca_color", "value"),
-    prevent_initial_call=True
-)
-def pca_threshold(pca_threshold, pca_color):
+# @app.callback(
+#     dash.Output("analysis_plot", "children", allow_duplicate=True),
+#     dash.Input("pca_threshold", "data"),
+#     dash.Input("pca_color", "value"),
+#     prevent_initial_call=True
+# )
+# def pca_threshold(pca_threshold, pca_color):
 
-    prevent_race("pca")
+#     prevent_race("pca")
 
-    pos = get_node_pos(config.selected)
-    config.graph[pos]["data"]["threshold"]["data"] = pca_threshold
-    config.graph[pos]["data"]["plot"]["color"] = pca_color
+#     pos = get_node_pos(config.selected)
+#     config.graph[pos]["data"]["threshold"]["data"] = pca_threshold
+#     config.graph[pos]["data"]["plot"]["color"] = pca_color
 
-    return  plot_pca(config.selected)
+#     return  plot_pca(config.selected)
 
-@app.callback(
-    dash.Output("analysis_batch_key", "value", allow_duplicate=True),
-    dash.Input("analysis_use_highly_varying", "value"),
-    dash.Input("analysis_batch_key", "value"),
-    prevent_initial_call=True
-)
-def match_highly_varying(hvgs, bk):
+# @app.callback(
+#     dash.Output("analysis_batch_key", "value", allow_duplicate=True),
+#     dash.Input("analysis_use_highly_varying", "value"),
+#     dash.Input("analysis_batch_key", "value"),
+#     prevent_initial_call=True
+# )
+# def match_highly_varying(hvgs, bk):
 
-    prevent_race("pca")
+#     prevent_race("pca")
 
-    if hvgs == None:
-        return bk
-    else:
-        return get_node(hvgs)["data"]["parameters"]["batch_key"]
+#     if hvgs == None:
+#         return bk
+#     else:
+#         return get_node(hvgs)["data"]["parameters"]["batch_key"]

@@ -10,12 +10,7 @@ import dash
 import scrublet
 from scipy.stats import mode
 
-from ..functions import *
-from ..plots import *
-
-from app import app
-
-from .. import config
+from general import *
 
 def args_neighbors():
 

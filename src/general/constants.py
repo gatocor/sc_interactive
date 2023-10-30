@@ -18,7 +18,7 @@ RAWNODE = {
         'position':{'x':0,'y':0},
     }
 
-STARTPATH = '../'  # Replace with the actual path to the folder containing .h5ad files
+STARTPATH = '../../'  # Replace with the actual path to the folder containing .h5ad files
 
 ARGINPUT = {
             "input":"Dropdown",

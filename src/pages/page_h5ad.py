@@ -4,9 +4,9 @@ from dash import dcc
 import dash_bootstrap_components as dbc
 import os
 import scanpy as sc
-from . import config
 import pandas as pd
-from .functions import *
+
+from general import *
 
 from app import app
 

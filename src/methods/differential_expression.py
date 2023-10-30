@@ -8,15 +8,9 @@ import plotly.graph_objs as go
 import plotly.figure_factory as ff
 from plotly.subplots import make_subplots
 import dash
-import scrublet
 import dash_ag_grid as dag
 
-from ..functions import *
-from ..plots import *
-
-from app import app
-
-from .. import config
+from general import *
 
 def args_differential_expression():
 
@@ -188,56 +182,56 @@ def plot_differential_expression(name_analysis):
 
     return l
 
-@app.callback(
-    dash.Output("analysis_use_raw","on", allow_duplicate=True),
-    dash.Input("analysis_input","value"),
-    prevent_initial_call=True
-)
-def change_raw(v):
+# @app.callback(
+#     dash.Output("analysis_use_raw","on", allow_duplicate=True),
+#     dash.Input("analysis_input","value"),
+#     prevent_initial_call=True
+# )
+# def change_raw(v):
 
-    if config.adata.raw:
-        return True
-    else:
-        return False
+#     if config.adata.raw:
+#         return True
+#     else:
+#         return False
 
-@app.callback(
-    dash.Output("analysis_plot","children", allow_duplicate=True),
-    dash.Input("differential_expression_plot_style", "value"),
-    prevent_initial_call = True
-)
-def change_style(val):
+# @app.callback(
+#     dash.Output("analysis_plot","children", allow_duplicate=True),
+#     dash.Input("differential_expression_plot_style", "value"),
+#     prevent_initial_call = True
+# )
+# def change_style(val):
 
-    prevent_race("differential_expression")
+#     prevent_race("differential_expression")
 
-    pos = get_node_pos(config.selected)
-    config.graph[pos]["data"]["plotting"]["style"] = val
+#     pos = get_node_pos(config.selected)
+#     config.graph[pos]["data"]["plotting"]["style"] = val
 
-    return plot_differential_expression(config.selected)
+#     return plot_differential_expression(config.selected)
 
-@app.callback(
-    dash.Output("analysis_plot","children", allow_duplicate=True),
-    dash.Input("differential_expression_plot_n_genes", "value"),
-    prevent_initial_call = True
-)
-def change_style(val):
+# @app.callback(
+#     dash.Output("analysis_plot","children", allow_duplicate=True),
+#     dash.Input("differential_expression_plot_n_genes", "value"),
+#     prevent_initial_call = True
+# )
+# def change_style(val):
 
-    prevent_race("differential_expression")
+#     prevent_race("differential_expression")
 
-    pos = get_node_pos(config.selected)
-    config.graph[pos]["data"]["plotting"]["n_genes"] = val
+#     pos = get_node_pos(config.selected)
+#     config.graph[pos]["data"]["plotting"]["n_genes"] = val
 
-    return plot_differential_expression(config.selected)
+#     return plot_differential_expression(config.selected)
 
-@app.callback(
-    dash.Output("analysis_plot","children", allow_duplicate=True),
-    dash.Input("differential_expression_cluster", "value"),
-    prevent_initial_call = True
-)
-def change_style(val):
+# @app.callback(
+#     dash.Output("analysis_plot","children", allow_duplicate=True),
+#     dash.Input("differential_expression_cluster", "value"),
+#     prevent_initial_call = True
+# )
+# def change_style(val):
 
-    prevent_race("differential_expression")
+#     prevent_race("differential_expression")
 
-    pos = get_node_pos(config.selected)
-    config.graph[pos]["data"]["plotting"]["cluster"] = val
+#     pos = get_node_pos(config.selected)
+#     config.graph[pos]["data"]["plotting"]["cluster"] = val
 
-    return plot_differential_expression(config.selected)
+#     return plot_differential_expression(config.selected)

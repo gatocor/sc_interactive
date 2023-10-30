@@ -1,21 +1,26 @@
 import scanpy as sc
 import numpy as np
 import pandas as pd
-import dash_bootstrap_components as dbc
-from dash import html
-import dash_daq as daq
-from dash import dash_table
-import dash_renderjson
-import plotly.graph_objs as go
-import plotly.express as px
 import json
 import os
 from shutil import rmtree, copyfile
-from dash.exceptions import PreventUpdate
 from copy import deepcopy
 
-from .constants import *
+from dash import dash_table
+from dash import dcc
+from dash import html
+from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
+import dash_daq as daq
+import dash_ag_grid as dag
+import dash_renderjson
+
+import plotly.graph_objs as go
+import plotly.express as px
+
 from . import config
+from .constants import *
+
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -488,3 +493,372 @@ def de_markers2array(de, genes, var):
                 None
 
     return data_array, genes, clusters
+
+############################################################################################################################################
+############################################################################################################################################
+# Functions
+############################################################################################################################################
+############################################################################################################################################
+def save_graph():
+
+    unselect_node(config.selected)
+    file = f"{config.analysis_folder}/analysis.json"
+    with open(file,"w") as outfile:
+        json_object = json.dumps(config.graph, indent=4, cls=NpEncoder)
+        outfile.write(json_object)
+    select_node(config.selected)
+
+def save_adata():
+
+    pos = get_node_pos(config.selected)
+    file = f"{config.analysis_folder}/h5ad/{config.graph[pos]['data']['h5ad_file']}"
+    config.adata.write(file)
+
+def save_report():
+    
+    file = f"{config.analysis_folder}/report/report.md"
+    with open(file,"w") as outfile:
+        outfile.write(config.report)
+
+def make_nodes_summaries(inplace=True):
+
+    for node in node_names():
+        if "Raw" != node:
+            make_node_summary(node, inplace=True)
+
+def make_node_summary(name, inplace=True):
+
+    node = get_node(name)
+
+    summary = f"{node['data']['id']}\nMethod:{node['data']['method']}\n\n"
+    for prop in config.methods[node['data']['method']]["args"]():   
+        if type(prop) != str:
+            if "summary" in prop.keys():
+                m = str(node['data']['parameters'][prop['name']])
+                summary += f"{prop['name']}:\n "+str(m.replace(',','\n '))+"\n"
+
+    if inplace:
+        pos = get_node_pos(name)
+        config.graph[pos]['data']['summary'] = summary
+        return
+    else:
+        return summary
+
+def get_node_pos(name):
+    for j,i in enumerate(config.graph):
+        if 'id' in i['data'].keys():
+            if i['data']['id'] == name:
+                return j
+        
+    return None
+
+def get_nodes():
+    return [i for i in config.graph if 'id' in i['data'].keys()]
+
+def get_ancestors(name):
+    l = []
+    node = get_node(name)
+    while node['data']['parameters']['input'] not in [None]:
+        node = get_node(node['data']['parameters']['input'])
+        l.insert(0,node)
+
+    return l
+
+def get_edges():
+    return [i for i in config.graph if 'target' in i['data'].keys()]
+
+def node_rename(name_old, name_new):
+
+    for pos,i in enumerate(config.graph):
+        if 'id' in i['data'].keys():
+            if i['data']['id'] == name_old:
+                config.graph[pos]['data']['id'] = name_new
+                config.graph[pos]['data']['summary'] = make_node_summary(name_new, inplace=False)
+        else:
+            if i['data']['target'] == name_old:
+                config.graph[pos]['data']['target'] = name_new
+
+            if i['data']['source'] == name_old:
+                config.graph[pos]['data']['source'] = name_new
+
+def node_names(exclude_downstream_from_node=None):
+
+    exclude = []
+    if exclude_downstream_from_node != None:
+        exclude.append(exclude_downstream_from_node)
+        for edge in get_edges():
+            None
+            # if edge['data']['parameters']['input'] in exclude:
+            #     exclude.append(node['data']['id'])
+
+    d = [i['data']['id'] for i in config.graph if 'id' in i['data'].keys()]
+    d = [i for i in d if i not in exclude] #exclude
+
+    return d
+
+def node_update_pos(graph, id, pos_new):
+    
+    for pos,i in enumerate(graph):
+        if 'id' in i['data'].keys():
+            if i['data']['id'] == id:
+                config.graph[pos]['position'] = pos_new
+
+def get_node(name):
+    for i in get_nodes():
+        if i['data']['id'] == name:
+            return i
+        
+    return None
+
+def get_node_parameters(name, str2list=False):
+
+    for i in get_nodes():
+        if i['data']['id'] == name:
+            params = i['data']['parameters'].copy()
+
+            return params
+        
+    return None
+
+def edge_add(source,target):
+
+    if source != None and target != None:
+        for i,val in enumerate(config.graph):
+            #Change edge input
+            if 'target' in val['data'].keys(): #Check is an edge
+                if val['data']['source'] == source and val['data']['target'] == target : #there already an edge
+                    config.graph.pop(i)
+        
+        config.graph.append(
+            {
+                'data':{'source':source,'target':target},
+            }
+            )
+
+def edge_rm(source,target):
+
+    if source != None and target != None:
+        for i,val in enumerate(config.graph):
+            #Change edge input
+            if 'target' in val['data'].keys(): #Check is an edge
+                if val['data']['source'] == source and val['data']['target'] == target : #there already an edge
+                    config.graph.pop(i)
+
+def update_node(name):
+    pos = get_node_pos(name)
+    config.graph[pos]['data']['parameters'] = deepcopy(config.active_node_parameters)
+
+def deactivate_node(name):
+    pos = get_node_pos(name)
+    config.graph[pos]['data']['opacity'] = .3
+    config.graph[pos]['data']['computed'] = False
+
+def activate_node(name):
+    pos = get_node_pos(name)
+    config.graph[pos]['data']['opacity'] = 1
+    config.graph[pos]['data']['computed'] = True
+
+def deactivate_downstream(name):
+
+    for node in get_nodes():
+        if "input" in node['data']['parameters'].keys():
+            if name == node['data']['parameters']['input']:
+                deactivate_node(node['data']['id'])
+                node = get_node(node['data']['id'])
+                if node['data']['computed']:
+                    config.functions_method_rm[node['data']['method']](node['data']['id'])
+                deactivate_downstream(node['data']['id'])
+
+def unselect_node(name):
+    pos = get_node_pos(name)
+    node = get_node(name)
+
+    config.graph[pos]['data']['image'] = '../assets/'+node['data']['type']+'.png'
+    
+def select_node(name):
+    pos = get_node_pos(name)
+    node = get_node(name)
+
+    config.graph[pos]['data']['image'] = '../assets/'+node['data']['type']+'_selected.png'
+
+def list_observables():
+    l = list(config.adata.obs.columns.values)
+    ancestors = get_nodes()
+    for i in ancestors:
+        if "obs" in i["data"].keys():
+            for j in i["data"]["obs"].keys():
+                l += [f"{i['data']['name']}--{j}"]
+
+    return l
+
+def prevent_race(name,computed=True,method=True):
+
+    node = get_node(config.selected)
+    if not node['data']['computed'] and computed:
+        raise PreventUpdate()
+
+    if node['data']['method'] != name and method:
+        raise PreventUpdate()
+    
+def is_computed():
+
+    return get_node(config.selected)["data"]["computed"]
+
+def graph2table():
+    return [{"Name":i['data']['id'],"Type":i['data']['type'],"Method":i['data']['method']} for i in get_nodes() if i['data']['id'] != 'Raw']
+
+# def set_active_node_parameters(args):
+#     config.active_node_parameters = args
+
+def set_parameters(args, arg_type):
+
+    pos = get_node_pos(config.selected)
+    for i,j in args.items():
+        config.graph[pos]["data"][arg_type][i] = j
+
+    for i,j in args.items():
+        config.adata.uns[config.selected][arg_type][i] = j
+    config.adata.uns[config.selected]["scinteractive"] = True
+    config.adata.uns[config.selected]["method"] = get_node(config.selected)["data"]["method"]
+
+def get_args(name):
+
+    d = {}
+    #obs
+    obs_key = f"{name}--"
+    l = [i for i in config.adata.obs.columns.values if i.startswith(obs_key)]   
+    if len(l) > 0:   
+        d["obs"] = config.adata.obs[l]
+
+    #var
+    var_key = f"{name}--"
+    l = [i for i in config.adata.var.columns.values if i.startswith(var_key)]            
+    if len(l) > 0:   
+        d["var"] = config.adata.var[l]
+
+    #obsm
+    obsm_key = name
+    if obsm_key in config.adata.obsm.keys():
+            d["obsm"] = config.adata.obsm[obsm_key]
+            
+    #uns
+    uns_key = name
+    if uns_key in config.adata.uns.keys():
+            d["uns"] = config.adata.uns[uns_key]
+
+    return d
+
+def del_adata_node(name):
+
+    #obs
+    obs_key = f"{name}--"
+    l = [i for i in config.adata.obs.columns.values if i.startswith(obs_key)]   
+    config.adata.obs.drop(l, axis=1, inplace=True)
+
+    #var
+    var_key = f"{name}--"
+    l = [i for i in config.adata.var.columns.values if i.startswith(var_key)]            
+    config.adata.var.drop(l, axis=1, inplace=True)
+
+    #obsm
+    obsm_key = name
+    if obsm_key in config.adata.obsm.keys():
+        del config.adata.obsm[obsm_key]
+            
+    #uns
+    uns_key = name
+    if uns_key in config.adata.uns.keys():
+        del config.adata.uns[uns_key]
+
+def node_rm(name):
+
+    l = []
+    for i,node in enumerate(config.graph):
+        if 'id' in node['data'].keys():
+            if node['data']['id'] != name:
+
+                if name == node['data']['parameters']['input']: #Remove input from cells that have this node as input
+                    node['data']['parameters']['input'] = None
+                    config.adata.uns[node['name']]['parameters']['input'] = None
+
+                l.append(node)
+        else:
+            if node['data']['target'] != name and node['data']['source'] != name:
+                l.append(node)
+
+    #Remove info from adata
+    del_adata_node(name)
+
+    config.graph = l
+
+    return
+
+def set_output(args):
+
+    #obs
+    obs_key = f"{config.selected}--"
+    if "obs" in args.keys():
+        for i,j in args["obs"].items():
+            i = f"{obs_key}{i}"
+            config.adata.obs[i] = j
+
+    #var
+    var_key = f"{config.selected}--"
+    if "var" in args.keys():
+        for i,j in args["var"].items():
+            i = f"{var_key}{i}"
+            config.adata.var[i] = j
+
+    #obsm
+    if "obsm" in args.keys():
+        config.adata.obsm[config.selected] = args["obsm"]
+            
+    #uns
+    if "uns" in args.keys():
+        config.adata.uns[config.selected] = args["uns"]
+
+def ag_table(id, columnDefs, rowData, deleteRows=False, suppressRowTransform=False, suppressRowClickSelection=False):
+
+    if deleteRows:
+        columnDefs = [
+        {
+                "headerName": "",
+                "cellRenderer": "DeleteButton",
+                "lockPosition":'left',
+                "maxWidth":35,
+                "filter": False,
+                'cellStyle': {'paddingRight': 0, 'paddingLeft': 0},
+                "editable":False
+            },
+        ] + columnDefs
+
+    fig = dag.AgGrid(
+        id=id,
+        rowData=rowData,
+        columnDefs=columnDefs,
+        defaultColDef={"editable": True},
+        deleteSelectedRows=deleteRows,
+        dashGridOptions={"suppressRowTransform":suppressRowTransform, "suppressRowClickSelection":suppressRowClickSelection},
+        columnSize="sizeToFit",
+    )
+
+    return fig
+
+def new_h5ad_file():
+
+    count = 1
+    file_name = f"Analysis_{count}.h5ad"
+    while os.path.exists(f"{config.analysis_folder}/h5ad/{file_name}"):
+        count += 1
+        file_name = f"Analysis_{count}.h5ad"
+
+    return file_name
+
+def clean_h5ad():
+
+    l = os.listdir(f"{config.analysis_folder}/h5ad")
+    f = [i["data"]["h5ad_file"] for i in get_nodes()]
+    for file in l:
+        if file not in f:
+            os.remove(f"{config.analysis_folder}/h5ad/{file}")
+        

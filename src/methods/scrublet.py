@@ -10,11 +10,7 @@ import dash
 import scrublet
 from scipy.stats import mode
 
-from ..constants import *
-from ..functions import *
-from .. import config
-
-from app import app
+from general import *
 
 args = {
 
