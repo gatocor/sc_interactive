@@ -830,10 +830,16 @@ def del_adata_node(name):
     if uns_key in config.adata.uns.keys():
         del config.adata.uns[uns_key]
 
+def is_node(node):
+    return 'id' in node['data'].keys()
+
+def is_edge(node):
+    return 'source' in node['data'].keys()
+
 def node_reassign_input(name,new_input):
 
     for i,node in enumerate(config.graph):
-        if 'id' in node['data'].keys():
+        if is_node(node):
             if name == node['data']['id']: #Remove input from cells that have this node as input
                 edge_rm(config.graph[i]["data"]['parameters']['input'],name)
                 edge_add(new_input,name)
@@ -842,10 +848,11 @@ def node_reassign_input(name,new_input):
 def nodes_reassign_input(old_input,new_input):
 
     for i,node in enumerate(config.graph):
-        if old_input == node['data']['parameters']['input']: #Remove input from cells that have this node as input
-            config.graph[i]["data"]['parameters']['input'] = new_input
-            edge_rm(old_input,node["data"]["id"])
-            edge_add(new_input,node["data"]["id"])
+        if is_node(node):
+            if old_input == node['data']['parameters']['input']: #Remove input from cells that have this node as input
+                config.graph[i]["data"]['parameters']['input'] = new_input
+                edge_rm(old_input,node["data"]["id"])
+                edge_add(new_input,node["data"]["id"])
 
 def node_rm(name):
 

@@ -6,6 +6,7 @@ import dash_cytoscape as cyto
 import os
 
 from app import app
+from app import *
 
 from general import *
 
@@ -142,7 +143,8 @@ def layout():
             dbc.Row(
                 cyto.Cytoscape(
                     id='graph_cytoscape',
-                    layout={'name': 'preset'},
+                    # layout={'name':'breadthfirst','roots':'[id="Raw"]'},#{'name': 'preset'},
+                    layout={'name':'dagre','roots':'[id="Raw"]','rankDir': "LR"},#{'name': 'preset'},
                     style={'width': '100%', 'height': '500px'},
                     elements=config.graph,
                     userZoomingEnabled=True,  # Disable zooming
@@ -814,16 +816,17 @@ def execute(n_clicks, warning_computed, plot):
     Output('delete-modal', 'is_open'),
     Output('delete-message', 'children'),
     Input('analysis_delete_button', 'n_clicks'),
+    State('graph_dropdown_load', 'value'),
     prevent_initial_call=True
 )
-def delete(n_clicks):
+def delete(n_clicks, value):
         
     if n_clicks != None:
 
         l = [
                 html.Div("You are about to remove an analysis node. This will remove all the computations performed over this node and descending nodes of the analysis. Are you sure that you want to proceed?"),
                 html.Div(),
-                html.Div(f"Analysis to be removed: {config.selected}")
+                html.Div(f"Analysis to be removed: {value}")
             ]
 
         return True, l
@@ -838,16 +841,18 @@ def delete(n_clicks):
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
     Output('delete-modal', 'is_open', allow_duplicate=True),
+    Output('graph_dropdown_load', 'value', allow_duplicate=True),
     Input('delete-proceed', 'n_clicks'),
     State('graph_dropdown_load', 'value'),
     prevent_initial_call=True
 )
 def delete_confirmation(n_clicks, val):
     
-    modal = True
-    if n_clicks != None or  val != None:
+    if n_clicks != None:
 
-        if val != "Raw":
+        if val not in  ["Raw", None]:
+
+            print(val)
 
             deactivate_downstream(val)
             node_rm(val)
@@ -859,14 +864,14 @@ def delete_confirmation(n_clicks, val):
 
             l, l2, l3, p = load_node(config.selected)
 
-            return config.graph, l, l2, l3, p, modal
+            return config.graph, l, l2, l3, p, modal, None
         
         else:
 
             l, l2, l3, p = load_node(config.selected)
             modal = False
 
-            return config.graph, l, l2, l3, p, modal
+            return config.graph, l, l2, l3, p, modal, val
     
     else:
 
