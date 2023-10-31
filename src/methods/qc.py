@@ -16,33 +16,37 @@ args = {
 
     "execution" : [
         ARGINPUT,
+        ARGMATRIX,
+        ARGMATRIX_KEY,
         ARGBATCH,
         {
             "input":"AgTable",
             "name":"measure",
             "description":"Metrics of quality control to compute",
-            "header":[
-                { "headerName": "Name", "field":"name", "editable": True },
-                { "headerName": ".var", "field":"var", "editable": True,
-                  "cellEditor": "agSelectCellEditor",
-                  "cellEditorParams": {"values": {"function":"[None]+list(config.adata.var.columns.values)"}},
-                },
-                { "headerName": "Pattern", "field":"pattern", "editable": True },
-                { "headerName": "Style", "field":"style", "editable": True,
-                  "cellEditor": "agSelectCellEditor",
-                  "cellEditorParams": {"values": ['counts','n_expressed_genes','proportion']},
-                }
-            ],
-            "value":[
-                {
-                    "name":"counts", "var":"", "pattern":"", "style":"counts",
-                },
-                {
-                    "name":"n_expressed_genes", "var":"", "pattern":"", "style":"n_expressed_genes",
-                }
-            ],
+            "properties":{
+                "header":[
+                    { "headerName": "Name", "field":"name", "editable": True },
+                    { "headerName": ".var", "field":"var", "editable": True,
+                    "cellEditor": "agSelectCellEditor",
+                    "cellEditorParams": {"values": {"function":"[None]+list(config.adata.var.columns.values)"}},
+                    },
+                    { "headerName": "Pattern", "field":"pattern", "editable": True },
+                    { "headerName": "Style", "field":"style", "editable": True,
+                    "cellEditor": "agSelectCellEditor",
+                    "cellEditorParams": {"values": ['counts','n_expressed_genes','proportion']},
+                    }
+                ],
+                "data":[
+                    {
+                        "name":"counts", "var":"", "pattern":"", "style":"counts",
+                    },
+                    {
+                        "name":"n_expressed_genes", "var":"", "pattern":"", "style":"n_expressed_genes",
+                    }
+                ],
+            },
             "addRows":{"name":"", "var":"", "pattern":"", "style":"counts"},
-            "deleteRows": True
+            "deleteRows": True                
         },
     ],
 
@@ -51,14 +55,16 @@ args = {
             "input":"AgTable",
             "name":"thresholds",
             "description":"Thresholds to apply to the data",
-            "header":[
-                { "headerName": "Metric", "field":"metric", "editable": False },
-                { "headerName": "Batch", "field":"batch", "editable": False },
-                { "headerName": "Min", "field":"min", "editable": True },
-                { "headerName": "Max", "field":"max", "editable": True },
-                { "headerName": "Genes", "field":"genes", "editable": False },
-            ],
-            "value":{"function":"qc_data()"},
+            "properties":{
+                "header":[
+                    { "headerName": "Metric", "field":"metric", "editable": False },
+                    { "headerName": "Batch", "field":"batch", "editable": False },
+                    { "headerName": "Min", "field":"min", "editable": True },
+                    { "headerName": "Max", "field":"max", "editable": True },
+                    { "headerName": "Genes", "field":"genes", "editable": False },
+                ],
+                "data":{"function":"qc_data()"},
+            }
         },
     ],
 
@@ -67,36 +73,44 @@ args = {
             "input":"Dropdown",
             "name":"plot_style",
             "description":"Chose between violin or 2D scatterplot.",
-            "value":"violin",
-            "clearable":False,
-            "options":["violin","scatter"],
+            "properties" : {
+                "value":"violin",
+                "clearable":False,
+                "options":["violin","scatter"],
+            },
         },
         {
             "input":"Dropdown",
             "name":"plot_x",
             "description":"Genes to use to for the dimensionality reduction.",
-            "value":{"function": "qc_measures()[0]"},
-            "clearable":False,
-            "options":{"function": "qc_measures()"},
-            "visible":{"function": "config.adata.uns[config.selected]['plot']['plot_style'] == 'scatter'"}
+            "properties":{
+                "value":{"function": "qc_measures()[0]"},
+                "clearable":False,
+                "options":{"function": "qc_measures()"},
+            },
+            "visible":{"function": "get_node(config.selected)['data']['plot']['plot_style'] == 'scatter'"}
         },
         {
             "input":"Dropdown",
             "name":"plot_y",
             "description":"Genes to use to for the dimensionality reduction.",
-            "value":{"function": "qc_measures()[0]"},
-            "clearable":False,
-            "options":{"function": "qc_measures()"},
-            # "visible":{"function": "config.adata.uns[config.selected]['plot']['plot_style'] == 'scatter'"}
+            "properties":{
+                "value":{"function": "qc_measures()[0]"},
+                "clearable":False,
+                "options":{"function": "qc_measures()"},
+            },
+            # "visible":{"function": "get_node(config.selected)['data']['plot']['plot_style'] == 'scatter'"}
         },
         {
             "input":"Dropdown",
             "name":"plot_color",
             "description":"Genes to use to for the dimensionality reduction.",
-            "value":None,
-            "clearable":True,
-            "options":{"function": "list(config.adata.obs.columns.values)"},
-            "visible":{"function": "config.adata.uns[config.selected]['plot']['plot_style'] == 'scatter'"}
+            "properties":{
+                "value":None,
+                "clearable":True,
+                "options":{"function": "list(config.adata.obs.columns.values)"},
+            },
+            "visible":{"function": "get_node(config.selected)['data']['plot']['plot_style'] == 'scatter'"}
         },
     ]
 
@@ -105,22 +119,21 @@ args = {
 def qc_measures():
 
     selected = config.selected
-    adata = config.adata
+    node = get_node(selected)["data"]["parameters"]
 
-    return [f"{selected}--{i['name']}" for i in adata.uns[selected]["parameters"]["measure"]]
+    return [f"{selected}--{i['name']}" for i in node["measure"]]
 
 def qc_data():
 
-    selected = config.selected
     adata = config.adata
 
-    parameters = adata.uns[selected]["parameters"]
+    parameters = get_node(config.selected)["data"]["parameters"]
 
     measures = [i["name"] for i in parameters["measure"]]
 
     batch = [""]
     if parameters["batch"] != None:
-        batch = np.unique(config.adata.obs[parameters["batch"]].values)
+        batch = np.unique(adata.obs[parameters["batch"]].values)
 
     data = []
     for i in parameters["measure"]:
@@ -144,9 +157,9 @@ def qc_get_genes(b):
 
     return genes
 
-def qc_f(adata, inputArgs, kwargs):
+def qc_f(adata, kwargs):
         
-    X = config.adata.X
+    X = get_matrix(kwargs["matrix"], kwargs["matrix_key"])
 
     d = {"obs":{}}
     for l in kwargs["measure"]:
@@ -156,23 +169,23 @@ def qc_f(adata, inputArgs, kwargs):
         else:
             x = np.isin(adata.var[l["var"]].values, genes)
 
+        name = f"{config.selected}--{l['name']}"
         if "counts" == l["style"]:
-            d["obs"][l["name"]] = np.array(X[:,x].sum(axis=1)).reshape(-1)
+            config.adata.obs[name] = np.array(X[:,x].sum(axis=1)).reshape(-1)
         elif "n_expressed_genes" == l["style"]:
-            d["obs"][l["name"]] = np.array((X[:,x] > 0).sum(axis=1)).reshape(-1)
+            config.adata.obs[name] = np.array((X[:,x] > 0).sum(axis=1)).reshape(-1)
         elif "proportion" == l["style"]:
             p = np.array(config.adata.X[:,x].sum(axis=1)).reshape(-1)/np.array(config.adata.X.sum(axis=1)).reshape(-1)
-            d["obs"][l["name"]] =  p
+            config.adata.obs[name] = p
             
-        d["obs"][l["name"]+"--keep"] = np.ones(X.shape[0], bool)
+        config.adata.obs[name+"--keep"] = np.ones(X.shape[0], bool)
 
-    return d
+    return
 
 def qc_reset_lims():
 
-    batch = config.adata.uns[config.selected]["parameters"]["batch"]
-    thresholds = config.adata.uns[config.selected]["parameters"]["thresholds"]
-    for l in config.adata.uns[config.selected]["parameters"]["thresholds"]:
+    batch = get_node(config.selected)["data"]["parameters"]["batch"]
+    for l in get_node(config.selected)["data"]["parameters"]["thresholds"]:
         name = get_name(l["metric"])
         name_keep = get_name(l["metric"])+"--keep"
         if batch != None:
@@ -188,8 +201,8 @@ def qc_plot():
     #Reset threshold lims
     qc_reset_lims()
 
-    params = config.adata.uns[config.selected]["parameters"]
-    plot_params = config.adata.uns[config.selected]["plot"]
+    params = get_node(config.selected)["data"]["parameters"]
+    plot_params = get_node(config.selected)["data"]["plot"]
 
     if plot_params["plot_style"] == "violin":
 

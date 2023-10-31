@@ -16,90 +16,113 @@ args = {
 
     "execution":[
         ARGINPUT,
+        ARGMATRIX,
+        ARGMATRIX_KEY,
         ARGBATCH,
         {
             "input":"BooleanSwitch",
             "name":"qc_before_computation",
             "description":"bool, optional (default: True) Remove cells from other quality control measures before computing the metrics.",
-            "value":True,
+            "properties":{
+                "on":True,
+            }
         },
         {
             "input":"Input",
             "name":"synthetic_doublet_umi_subsampling",
             "description":"float, optional (default: 1.0) Rate for sampling UMIs when creating synthetic doublets. If 1.0, each doublet is created by simply adding the UMIs from two randomly sampled observed transcriptomes. For values less than 1, the UMI counts are added and then randomly sampled at the specified rate.",
-            "value":1.0,
-            "type":"number"
+            "properties":{
+                "value":1.0,
+                "type":"number"
+            }
         },
         {
             "input":"BooleanSwitch",
             "name":"use_approx_neighbors",
             "description":"bool, optional (default: True) Use approximate nearest neighbor method (annoy) for the KNN classifier.",
-            "value":True,
+            "properties":{
+                "on":True,
+            }
         },
         {
             "input":"Dropdown",
             "name":"distance_metric",
             "description":"str, optional (default: 'euclidean') Distance metric used when finding nearest neighbors. For list of valid values, see the documentation for annoy (if 'use_approx_neighbors' is True) or sklearn.neighbors.NearestNeighbors (if 'use_approx_neighbors' is False).",
-            "value":"euclidean",
-            "clearable":False,
-            "options":["euclidean","manhattan","angular","hamming","dot"],
-            "summary":True
+            "properties":{
+                "value":"euclidean",
+                "clearable":False,
+                "options":["euclidean","manhattan","angular","hamming","dot"],
+            }
         },
         {
             "input":"Input",
             "name":"min_counts",
             "description":"float, optional (default: 3) Used for gene filtering prior to PCA. Genes expressed at fewer than  'min_counts' in fewer than 'min_cells' (see below) are excluded.",
-            "value":3,
-            "type":"number"
+            "properties":{
+                "value":3,
+                "type":"number"
+            }
         },
         {
             "input":"Input",
             "name":"min_cells",
             "description":"int, optional (default: 3) Used for gene filtering prior to PCA. Genes expressed at fewer than  'min_counts' (see above) in fewer than 'min_cells' are excluded.",
-            "value":3,
-            "type":"number"
+            "properties":{
+                "value":3,
+                "type":"number"
+            }
         },
         {
             "input":"Input",
             "name":"min_gene_variability_pctl",
             "description":"float, optional (default: 85.0) Used for gene filtering prior to PCA. Keep the most highly variable genes (in the top min_gene_variability_pctl percentile), as measured by  the v-statistic [Klein et al., Cell 2015].",
-            "value":85.0,
-            "type":"number"
+            "properties":{
+                "value":85.0,
+                "type":"number"
+            }
         },
         {
             "input":"BooleanSwitch",
             "name":"log_transform",
             "description":"bool, optional (default: False) If True, log-transform the counts matrix (log10(1+TPM)).  'sklearn.decomposition.TruncatedSVD' will be used for dimensionality reduction, unless 'mean_center' is True.",
-            "value":False,
-            "summary":True
+            "properties":{
+                "on":False,
+            }
         },
         {
             "input":"BooleanSwitch",
             "name":"mean_center",
             "description":"bool, optional (default: True) If True, center the data such that each gene has a mean of 0. 'sklearn.decomposition.PCA' will be used for dimensionality reduction.",
-            "value":True,
+            "properties":{
+                "on":True,
+            }
         },
         {
             "input":"BooleanSwitch",
             "name":"normalize_variance",
             "description":"bool, optional (default: True) If True, normalize the data such that each gene has a variance of 1. 'sklearn.decomposition.TruncatedSVD' will be used for dimensionality reduction, unless 'mean_center' is True.",
-            "value":True,
+            "properties":{
+                "on":True,
+            }
         },
         {
             "input":"Input",
             "name":"n_prin_comps",
             "description":"int, optional (default: 30) Number of principal components used to embed the transcriptomes prior to k-nearest-neighbor graph construction.",
-            "value":30,
-            "type":"number",
-            "summary":True
+            "properties":{
+                "value":30,
+                "type":"number",
+            }
         },
         {
             "input":"Dropdown",
             "name":"svd_solver",
             "description":"str, optional (default: 'arpack') SVD solver to use. See available options for  'svd_solver' from 'sklearn.decomposition.PCA' or 'algorithm' from 'sklearn.decomposition.TruncatedSVD'",
-            "value": "arpack",
-            "clearable":False,
-            "options": ["arpack"]
+            "properties":{
+                "value": "arpack",
+                "clearable":False,
+                "options": ["arpack"]
+            }
         }
     ],
 
@@ -108,11 +131,13 @@ args = {
             "input":"AgTable",
             "name":"thresholds",
             "description":"Thresholds to apply to the data",
-            "header":[
-                { "headerName": "Batch", "field":"batch", "editable": False },
-                { "headerName": "Max", "field":"max", "editable": True },
-            ],
-            "value":{"function":"scrublet_data()"},
+            "properties":{
+                "header":[
+                    { "headerName": "Batch", "field":"batch", "editable": False },
+                    { "headerName": "Max", "field":"max", "editable": True },
+                ],
+                "data":{"function":"scrublet_data()"},
+            }
         },
     ],
 
@@ -121,7 +146,9 @@ args = {
             "input":"BooleanSwitch",
             "name":"show_scores",
             "description":"bool, optional (default: True) Pot scores of imputed cells.",
-            "value":True,
+            "properties":{
+                "on":True,
+            }
         },
     ]
 
@@ -132,7 +159,7 @@ def scrublet_data():
     selected = config.selected
     adata = config.adata
 
-    parameters = adata.uns[selected]["parameters"]
+    parameters = get_node(config.selected)['data']["parameters"]
 
     batch = [""]
     if parameters["batch"] != None:
@@ -167,15 +194,13 @@ def scrublet_(X, kwargs):
 
     return X, scrub.doublet_scores_obs_, scrub.doublet_scores_sim_
 
-def scrublet_f(adata, inputArgs, kwargs):
+def scrublet_f(adata, kwargs):
 
-    pos = get_node_pos(config.selected)
-
-    X = adata.X
+    X = get_matrix(kwargs["matrix"],kwargs["matrix_key"])
 
     X_umap = np.zeros((X.shape[0],2))
     doublet_scores_obs = np.zeros(X.shape[0])
-    simulated_doublet_score = {}
+    simulated_doublet_score = pd.DataFrame()
     if kwargs["batch"] != None:
         for batch in np.unique(config.adata.obs[kwargs["batch"]]):
             sub = config.adata.obs[kwargs["batch"]].values == batch
@@ -189,22 +214,17 @@ def scrublet_f(adata, inputArgs, kwargs):
         X_umap = subX
         simulated_doublet_score[" "] = sub_doublet_scores_sim_
 
-    d = {
-        "obsm" : X_umap,
-        "obs" : {
-            "doublet_scores_obs": doublet_scores_obs,
-            "doublet_scores_obs--keep": np.ones(X.shape[0], bool)
-        },
-        "uns" : {"simulated_scores": simulated_doublet_score}
-    }
+    config.adata.obsm[config.selected] = X_umap
+    config.adata.obs[config.selected+"--doublet_scores_obs"] = doublet_scores_obs
+    config.adata.obs[config.selected+"--doublet_scores_obs--keep"] = np.ones(X.shape[0], bool)
+    config.adata.uns[config.selected]["simulated_scores"] = simulated_doublet_score
 
-    return d
+    return
 
 def scrublet_reset_lims():
 
-    batch = config.adata.uns[config.selected]["parameters"]["batch"]
-    thresholds = config.adata.uns[config.selected]["parameters"]["thresholds"]
-    for l in config.adata.uns[config.selected]["parameters"]["thresholds"]:
+    batch = get_node(config.selected)["data"]["parameters"]["batch"]
+    for l in get_node(config.selected)["data"]["parameters"]["thresholds"]:
         name = get_name("doublet_scores_obs")
         name_keep = get_name("doublet_scores_obs")+"--keep"
         if batch != None:
@@ -224,16 +244,16 @@ def scrublet_plot():
 
     l = []
 
-    for b,c_sim in config.adata.uns[config.selected]["simulated_scores"].items():
+    for b in config.adata.uns[config.selected]["simulated_scores"].columns.values:
 
         if b == " ":
             sub = np.ones(config.adata.X.shape[0],dtype=bool)
             lims_max = float([i for i in node["data"]["parameters"]["thresholds"]][0]["max"])
-            x = config.adata.uns[config.selected]["simulated_scores"][" "]
+            x = config.adata.uns[config.selected]["simulated_scores"][" "].values
         else:
             sub = config.adata.obs[node["data"]["parameters"]["batch"]] == b
             lims_max = float([i for i in node["data"]["parameters"]["thresholds"] if i["batch"] == b][0]["max"])
-            x = config.adata.uns[config.selected]["simulated_scores"][b]
+            x = config.adata.uns[config.selected]["simulated_scores"][b].values
 
         # res = int(get_table_value(data,b,"scrublet nBins"))
         X = config.adata.obsm[config.selected][sub,:]

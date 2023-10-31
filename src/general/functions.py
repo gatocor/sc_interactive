@@ -34,6 +34,39 @@ class NpEncoder(json.JSONEncoder):
         
         return super(NpEncoder, self).default(obj)
 
+def matrix_options():
+
+    l = ["X"]
+    if len(config.adata.layers.keys()):
+        l.append("layers")
+    if len(config.adata.obsm.keys()):
+        l.append("obsm")
+
+    return l
+
+def matrix_keys():
+
+    l = []
+    if config.active_node_parameters['matrix'] == "layers":
+        l = [i for i in config.adata.layers.keys()]
+    elif config.active_node_parameters['matrix'] == "obsm":
+        l = [i for i in config.adata.obsm.keys()]
+
+    if l != []:
+        return l
+    else:
+        return [None]
+
+def get_matrix(matrix,key):
+    if matrix == "X":
+        l = config.adata.X
+    elif matrix == "layers":
+        l = config.adata.layers[key]
+    elif matrix == "obsm":
+        l = config.adata.layers[key]
+
+    return l
+
 def name_analysis_folder(file):
     
     if file.endswith(ENDH5AD):
@@ -78,12 +111,12 @@ def create_analysis(basedir, raw):
 
 def load_analysis(folder):
     
-    h5adfile = f"{folder}/h5ad/Raw.h5ad"
-    config.adata = sc.read_h5ad(h5adfile)
-
     graphfile = f"{folder}/analysis.json"
     with open(graphfile,"r") as outfile:
         config.graph = json.load(outfile)
+
+    h5adfile = f"{folder}/h5ad/Raw.h5ad"
+    load_adata(h5adfile)
 
     file = f"{folder}/report/report.md"
     with open(file,"r") as outfile:
@@ -97,8 +130,6 @@ def load_analysis(folder):
 
     if "Raw" not in config.adata.obsm.keys():
         config.adata.obsm["Raw"] = config.adata.raw.X
-
-    adapt_adata_loaded()
 
 def get_figures(fig):
     l = []
@@ -132,33 +163,33 @@ def deep_substitute(object, origin, target):
 
     return object
 
-def adapt_adata_saving():
+# def adapt_adata_saving():
 
-    config.adata.uns = deep_substitute(config.adata.uns, origin = None, target = "__None__")
+#     config.adata.uns = deep_substitute(config.adata.uns, origin = None, target = "__None__")
 
-    for i,j in config.adata.uns.items():
-        if "scinteractive" in j.keys():
-            for k in config.methods[j["method"]]["args"]["execution"]:
-                if k["input"] == "AgTable":
-                    config.adata.uns[i]["parameters"][k["name"]] = pd.DataFrame(config.adata.uns[i]["parameters"][k["name"]])
+#     for j in [i["data"] for i in get_nodes()]:
+#         if j["id"] in config.adata.uns.keys():
+#             for k in config.methods[j["method"]]["args"]["execution"]:
+#                 if k["input"] == "AgTable":
+#                     config.adata.uns[j["id"]]["parameters"][k["name"]] = pd.DataFrame(config.adata.uns[j["id"]]["parameters"][k["name"]])
 
-            for k in config.methods[j["method"]]["args"]["postexecution"]:
-                if k["input"] == "AgTable":
-                    config.adata.uns[i]["parameters"][k["name"]] = pd.DataFrame(config.adata.uns[i]["parameters"][k["name"]])
+#             for k in config.methods[j["method"]]["args"]["postexecution"]:
+#                 if k["input"] == "AgTable":
+#                     config.adata.uns[j["id"]]["parameters"][k["name"]] = pd.DataFrame(config.adata.uns[j["id"]]["parameters"][k["name"]])
 
-def adapt_adata_loaded():
+# def adapt_adata_loaded():
 
-    for i,j in config.adata.uns.items():
-        if "scinteractive" in j.keys():
-            for k in config.methods[j["method"]]["args"]["execution"]:
-                if k["input"] == "AgTable":
-                    config.adata.uns[i]["parameters"][k["name"]] = config.adata.uns[i]["parameters"][k["name"]].to_dict("records")
+#     for j in [i["data"] for i in get_nodes()]:
+#         if j["id"] in config.adata.uns.keys():
+#             for k in config.methods[j["method"]]["args"]["execution"]:
+#                 if k["input"] == "AgTable":
+#                     config.adata.uns[j["id"]]["parameters"][k["name"]] = config.adata.uns[j["id"]]["parameters"][k["name"]].to_dict("records")
 
-            for k in config.methods[j["method"]]["args"]["postexecution"]:
-                if k["input"] == "AgTable":
-                    config.adata.uns[i]["parameters"][k["name"]] = config.adata.uns[i]["parameters"][k["name"]].to_dict("records")
+#             for k in config.methods[j["method"]]["args"]["postexecution"]:
+#                 if k["input"] == "AgTable":
+#                     config.adata.uns[j["id"]]["parameters"][k["name"]] = config.adata.uns[j["id"]]["parameters"][k["name"]].to_dict("records")
 
-    config.adata.uns = deep_substitute(config.adata.uns, origin = "__None__", target = None)
+#     config.adata.uns = deep_substitute(config.adata.uns, origin = "__None__", target = None)
 
 def get_name(name):
     return config.selected+"--"+name
@@ -494,6 +525,19 @@ def de_markers2array(de, genes, var):
 
     return data_array, genes, clusters
 
+def get_value(arg):
+
+    if arg['input'] == 'Input':
+        input = arg["properties"]["value"]
+    elif arg['input'] == 'Dropdown':
+        input = arg["properties"]["value"]
+    elif arg['input'] == 'BooleanSwitch':
+        input = arg["properties"]["on"]
+    elif arg['input'] == 'AgTable':
+        input = arg["properties"]["data"]
+
+    return input
+
 ############################################################################################################################################
 ############################################################################################################################################
 # Functions
@@ -510,9 +554,17 @@ def save_graph():
 
 def save_adata():
 
+    # adapt_adata_saving()
+
     pos = get_node_pos(config.selected)
     file = f"{config.analysis_folder}/h5ad/{config.graph[pos]['data']['h5ad_file']}"
     config.adata.write(file)
+
+    # adapt_adata_loaded()
+
+def load_adata(file):
+    config.adata = sc.read(file)
+    # adapt_adata_loaded()
 
 def save_report():
     
@@ -555,12 +607,21 @@ def get_node_pos(name):
 def get_nodes():
     return [i for i in config.graph if 'id' in i['data'].keys()]
 
-def get_ancestors(name):
+def get_node_ancestors(name):
     l = []
     node = get_node(name)
     while node['data']['parameters']['input'] not in [None]:
         node = get_node(node['data']['parameters']['input'])
         l.insert(0,node)
+
+    return l
+
+def get_node_children(name):
+
+    l = []
+    for node in get_nodes():
+        if node["data"]["parameters"]["input"] == name:
+            l.append(node)
 
     return l
 
@@ -662,11 +723,9 @@ def deactivate_downstream(name):
 
     for node in get_nodes():
         if "input" in node['data']['parameters'].keys():
-            if name == node['data']['parameters']['input']:
+            if name == node['data']['parameters']['input'] and node['data']['computed']:
                 deactivate_node(node['data']['id'])
                 node = get_node(node['data']['id'])
-                if node['data']['computed']:
-                    config.functions_method_rm[node['data']['method']](node['data']['id'])
                 deactivate_downstream(node['data']['id'])
 
 def unselect_node(name):
@@ -716,10 +775,11 @@ def set_parameters(args, arg_type):
     for i,j in args.items():
         config.graph[pos]["data"][arg_type][i] = j
 
-    for i,j in args.items():
-        config.adata.uns[config.selected][arg_type][i] = j
-    config.adata.uns[config.selected]["scinteractive"] = True
-    config.adata.uns[config.selected]["method"] = get_node(config.selected)["data"]["method"]
+    # for i,j in args.items():
+    #     config.adata.uns[config.selected][arg_type][i] = j
+
+    # config.adata.uns[config.selected]["scinteractive"] = True
+    # config.adata.uns[config.selected]["method"] = get_node(config.selected)["data"]["method"]
 
 def get_args(name):
 
@@ -739,12 +799,12 @@ def get_args(name):
     #obsm
     obsm_key = name
     if obsm_key in config.adata.obsm.keys():
-            d["obsm"] = config.adata.obsm[obsm_key]
+        d["obsm"] = config.adata.obsm[obsm_key]
             
     #uns
     uns_key = name
     if uns_key in config.adata.uns.keys():
-            d["uns"] = config.adata.uns[uns_key]
+        d["uns"] = config.adata.uns[uns_key]
 
     return d
 
@@ -770,16 +830,33 @@ def del_adata_node(name):
     if uns_key in config.adata.uns.keys():
         del config.adata.uns[uns_key]
 
+def node_reassign_input(name,new_input):
+
+    for i,node in enumerate(config.graph):
+        if 'id' in node['data'].keys():
+            if name == node['data']['id']: #Remove input from cells that have this node as input
+                edge_rm(config.graph[i]["data"]['parameters']['input'],name)
+                edge_add(new_input,name)
+                config.graph[i]["data"]['parameters']['input'] = new_input
+
+def nodes_reassign_input(old_input,new_input):
+
+    for i,node in enumerate(config.graph):
+        if old_input == node['data']['parameters']['input']: #Remove input from cells that have this node as input
+            config.graph[i]["data"]['parameters']['input'] = new_input
+            edge_rm(old_input,node["data"]["id"])
+            edge_add(new_input,node["data"]["id"])
+
 def node_rm(name):
+
+    input = get_node(name)["data"]["parameters"]["input"]
+
+    nodes_reassign_input(name, input)
 
     l = []
     for i,node in enumerate(config.graph):
         if 'id' in node['data'].keys():
             if node['data']['id'] != name:
-
-                if name == node['data']['parameters']['input']: #Remove input from cells that have this node as input
-                    node['data']['parameters']['input'] = None
-                    config.adata.uns[node['name']]['parameters']['input'] = None
 
                 l.append(node)
         else:
@@ -815,7 +892,8 @@ def set_output(args):
             
     #uns
     if "uns" in args.keys():
-        config.adata.uns[config.selected] = args["uns"]
+        for i,j in args["uns"].items():
+            config.adata.uns[config.selected][i] = j
 
 def ag_table(id, columnDefs, rowData, deleteRows=False, suppressRowTransform=False, suppressRowClickSelection=False):
 

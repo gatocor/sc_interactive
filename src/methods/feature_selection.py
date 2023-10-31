@@ -92,7 +92,7 @@ def args_feature_selection():
 
 def f_feature_selection(name_analysis, kwargs, sub_name, sub):
 
-    l = [i["data"]["method"] for i in get_ancestors(name_analysis)]
+    l = [i["data"]["method"] for i in get_node_ancestors(name_analysis)]
 
     adata_copy = sc.AnnData(X=config.adata.X[sub,:])
 

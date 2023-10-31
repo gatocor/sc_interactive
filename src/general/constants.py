@@ -21,21 +21,47 @@ RAWNODE = {
 STARTPATH = '../../'  # Replace with the actual path to the folder containing .h5ad files
 
 ARGINPUT = {
-            "input":"Dropdown",
+            "input":"Input",
             "name":"input",
-            "description":"Observable to use",
-            "value":None,
-            "clearable":False,
-            "options": {"function": "node_names(exclude_downstream_from_node=config.selected)"}
+            "description":"Incoming analysis node.",
+            "properties":{
+                "value": None,
+                "readonly": True
+            }
+        }
+
+ARGMATRIX = {
+            "input":"Dropdown",
+            "name":"matrix",
+            "description":"Matrix from the adata object to use (to choose between X, layers or obsm; if the two later have any key).",
+            "properties":{
+                "value":"X",
+                "clearable":False,
+                "options": {"function":"matrix_options()"}
+            }
+        }
+
+ARGMATRIX_KEY = {
+            "input":"Dropdown",
+            "name":"matrix_key",
+            "description":"Observable matrix to use",
+            "properties":{
+                "value": {"function":"matrix_keys()[0]"},
+                "clearable":False,
+                "options": {"function":"matrix_keys()"},
+            },
+            "visible":{"function":"config.active_node_parameters['matrix'] in ['layers','obsm']"}
         }
 
 ARGBATCH = {
             "input":"Dropdown",
             "name":"batch",
-            "description":"Observable to use",
-            "value":None,
-            "clearable":True,
-            "options": {"function":"[i for i,j in zip(config.adata.obs.columns.values, config.adata.obs.dtypes) if j in ['str','object','category','int']]"}
+            "description":"adada.obs column used to perform the current node analysis in batches by this key.",
+            "properties":{
+                "value":None,
+                "clearable":True,
+                "options": {"function":"[i for i,j in zip(config.adata.obs.columns.values, config.adata.obs.dtypes) if j in ['str','object','category','int']]"}
+            }
         }
 
 GRAPHSTYLESHEET = [

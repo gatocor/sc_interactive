@@ -42,6 +42,27 @@ def layout():
             ),
             dbc.Modal(
                 [
+                    dbc.ModalHeader("New",close_button=False),
+                    dbc.ModalBody(id="new-message",
+                                children=[
+                                    html.Div("You are creating a new node. Please select a node to which attach this one and press add."),
+                                    html.Label("Source node"),
+                                    dcc.Dropdown(id="new-dropdown-before",value="Raw",options=node_names(), clearable=False),
+                                    html.Label("Target node (can be None for a new branch)"),
+                                    dcc.Dropdown(id="new-dropdown-after",value="Raw",options=node_names(), clearable=True)
+                                ]
+                    ),
+                    dbc.ModalFooter([
+                            dbc.Button("New", id="new-proceed", className="ml-auto"),
+                            dbc.Button("Cancel", id="new-cancel", className="ml-auto"),
+                    ])
+                ],
+                backdrop=False,
+                id="new-modal",
+                size="sm",
+            ),
+            dbc.Modal(
+                [
                     dbc.ModalHeader("Warning",close_button=False),
                     dbc.ModalBody(id="delete-message",
                                 children=[]
@@ -58,16 +79,7 @@ def layout():
             dbc.Modal(
                 [
                     dbc.ModalHeader("Warning",close_button=False),
-                    dbc.ModalBody(children=html.Div("An input must be assigned before executing the cell.")),
-                ],
-                backdrop=True,
-                id="execute-input-modal",
-                size="sm",
-            ),
-            dbc.Modal(
-                [
-                    dbc.ModalHeader("Warning",close_button=False),
-                    dbc.ModalBody(children=html.Div("The previous cell must be computed before computing this one.")),
+                    dbc.ModalBody(children=html.Div("The previous cells must be computed before computing this one.")),
                 ],
                 backdrop=True,
                 id="execute-computed-modal",
@@ -103,6 +115,13 @@ def layout():
                             id='graph_load_button',
                             children="Load"
                         )
+                    ),
+                    dbc.Col(
+                        dbc.Button(
+                            children="Delete",
+                            id="analysis_delete_button", 
+                            style={"background-color":"red"}, 
+                        ),
                     ),
                     dbc.Col(
                         dcc.Dropdown(
@@ -159,7 +178,6 @@ def layout():
 # Functions
 ############################################################################################################################################
 ############################################################################################################################################
-
 def fvalue(value):
     val = {"val":value}
     if type(value) == dict:
@@ -186,22 +204,17 @@ def parameters_eval(args, populate = None, count = 0):
         for i,j in enumerate(args):
             args[i] = parameters_eval(j, populate, count+1)
 
-            if count == 0 and\
-               populate == "execution":
-                config.active_node_parameters[args[i]["name"]] = args[i]["value"]
-                # config.adata.uns[config.selected]["parameters"][args[i]["name"]] = args[i]["value"]
-                # pos = get_node_pos(config.selected)
-                # config.graph[pos]["data"]["parameters"][args[i]["name"]] = args[i]["value"]
-            elif count == 0 and\
-               populate == "postexecution":
-                config.adata.uns[config.selected]["parameters"][args[i]["name"]] = args[i]["value"]
-                pos = get_node_pos(config.selected)
-                config.graph[pos]["data"]["parameters"][args[i]["name"]] = args[i]["value"]
-            elif count == 0 and\
-               populate == "plot":
-                config.adata.uns[config.selected]["plot"][args[i]["name"]] = args[i]["value"]
-                pos = get_node_pos(config.selected)
-                config.graph[pos]["data"]["plot"][args[i]["name"]] = args[i]["value"]
+            if count == 0:
+                value = get_value(args[i])
+
+                if populate == "execution":
+                    config.active_node_parameters[args[i]["name"]] = value
+                elif populate == "postexecution":
+                    pos = get_node_pos(config.selected)
+                    config.graph[pos]["data"]["parameters"][args[i]["name"]] = value
+                elif populate == "plot":
+                    pos = get_node_pos(config.selected)
+                    config.graph[pos]["data"]["plot"][args[i]["name"]] = value
 
     elif type(args) == dict:
         if "function" in args.keys():
@@ -216,13 +229,15 @@ def parameters2args(args, populate):
 
     args = parameters_eval(args, populate)
 
-    return {i["name"]:i["value"] for i in args}    
+    return {i["name"]:get_value(i) for i in args}    
 
 def method_create_pars(args_list):
 
     method_args = config.methods[get_node(config.selected)["data"]["method"]]["args"]
     for i in args_list:
-        parameters_eval(method_args[i], i)
+        args = parameters_eval(method_args[i], i)
+        if i == "execution":
+            pos = get_node_pos(config.selected)
 
 def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_header="args"):
 
@@ -243,13 +258,6 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
                     dbc.Col(
                         html.H1(config.selected, id="analysis_name")
                     ),
-                    dbc.Col(
-                        dbc.Row(
-                            dbc.Button("Delete",id="analysis_delete_button", style={"background-color":"red"}, class_name="btn btn-primary btn-sm"),
-                        ),
-                        width={"offset":7},
-                        align="center"
-                    ),
                 ],
                 align="center"
             )
@@ -268,20 +276,7 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
 
     for i,arg in enumerate(arglist):
 
-        arg = arg.copy()
-
         if fvisible(arg):
-
-            for i,j in arg.items():
-                arg[i] = fvalue(j)
-
-            if loaded_args != {}:
-                try:
-                    value = loaded_args[arg["name"]]
-                except:
-                    value = None
-            else:
-                value = arg["value"]
         
             l.append(
                 dbc.Tooltip(
@@ -293,23 +288,46 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
             lab = html.Label(arg["name"],id=id+str(i),style={'text-align': 'right'})
             if arg["input"] == "Input":
 
-                input = dbc.Input(id="analysis_"+str(arg["name"]),value=value,type=arg["type"])
+                try:
+                    arg["properties"]["value"] = loaded_args[arg["name"]]
+                except:
+                    None
+
+                input = dbc.Input(
+                            id="analysis_"+str(arg["name"]),
+                            **arg["properties"]
+                        )
 
             elif arg["input"] == "Dropdown":
 
+                try:
+                    arg["properties"]["value"] = loaded_args[arg["name"]]
+                except:
+                    None
+
                 input = dcc.Dropdown(
                             id="analysis_"+str(arg["name"]),
-                            options=arg["options"],
-                            value=value,
-                            # placeholder="Select a column",
-                            clearable=arg["clearable"]
+                            **arg["properties"]
                         )
                 
             elif arg["input"] == "BooleanSwitch":
 
-                input = daq.BooleanSwitch(id="analysis_"+str(arg["name"]), on=value)
+                try:
+                    arg["properties"]["on"] = loaded_args[arg["name"]]
+                except:
+                    None
+
+                input = daq.BooleanSwitch(
+                            id="analysis_"+str(arg["name"]),
+                            **arg["properties"]
+                        )
 
             elif arg["input"] == "AgTable":
+
+                try:
+                    arg["properties"]["data"] = loaded_args[arg["name"]]
+                except:
+                    None
 
                 if "deleteRows" in arg.keys():
                     d = arg["deleteRows"]
@@ -319,7 +337,7 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
                 input = [
                     dbc.Row(
                         html.Div(
-                                children= ag_table("analysis_"+str(arg["name"]), arg["header"], value, deleteRows=d),
+                                children= ag_table("analysis_"+str(arg["name"]), arg["properties"]["header"], arg["properties"]["data"], deleteRows=d),
                         ),
                     ),
                 ]
@@ -403,26 +421,26 @@ for method in config.methods.keys():
             if i['input'] == 'Input':
                 input = f"Input('analysis_{i['name']}','value'),"
                 up = f"config.active_node_parameters['{i['name']}'] = data"
-                up_post = ""
-                up_plot = ""
+                up_post = f"config.graph[get_node_pos(config.selected)]['data']['parameters']['{i['name']}'] = data"
+                up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
                 args = "data"
             elif i['input'] == 'Dropdown':
                 input = f"Input('analysis_{i['name']}','value'),"
                 up = f"config.active_node_parameters['{i['name']}'] = data"
-                up_post = ""
-                up_plot = ""
+                up_post = f"config.graph[get_node_pos(config.selected)]['data']['parameters']['{i['name']}'] = data"
+                up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
                 args = "data"
             elif i['input'] == 'BooleanSwitch':
                 input = f"Input('analysis_{i['name']}','on'),"
                 up = f"config.active_node_parameters['{i['name']}'] = data"
-                up_post = ""
-                up_plot = ""
+                up_post = f"config.graph[get_node_pos(config.selected)]['data']['parameters']['{i['name']}'] = data"
+                up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
                 args = "data"
             elif i['input'] == 'AgTable':
                 input = f"Input('analysis_{i['name']}','cellValueChanged'), State('analysis_{i['name']}','rowData'),"
                 up = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.active_node_parameters['{i['name']}'] = data"
-                up_post = "if cell != None: data[cell['rowIndex']] = cell['data']"
-                up_plot = up_post
+                up_post = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.graph[get_node_pos(config.selected)]['data']['parameters']['{i['name']}'] = data"
+                up_plot = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
                 args = "cell, data"
 
             add_input = ""
@@ -479,7 +497,7 @@ def change_postparameter_{i['name']}({args}):
         set_parameters(dict({i['name']}=data), 'parameters')
     
     elif '{i['name']}' in [i['name'] for i in config.methods[method]["args"]["plot"]]:
-
+    
         if '{i['name']}' in config.block_callback.keys():
             if config.block_callback['{i['name']}']:
                 config.block_callback['{i['name']}'] = False
@@ -499,16 +517,14 @@ def change_postparameter_{i['name']}({args}):
     for i in post_args:
         config.block_callback[i['name']] = True
     config.block_callback['{i['name']}'] = False
-    clean_arguments('{i['name']}', config.methods[method]["args"]["postexecution"], config.adata.uns[config.selected]['parameters'])
-    post_args_object = make_arguments(method, post_args, loaded_args=config.adata.uns[config.selected]['parameters'], add_execution_button=False, add_header="postargs")
+    clean_arguments('{i['name']}', config.methods[method]["args"]["postexecution"], get_node(config.selected)['data']['parameters'])
+    post_args_object = make_arguments(method, post_args, loaded_args=get_node(config.selected)['data']['parameters'], add_execution_button=False, add_header="postargs")
 
     plot_args = deepcopy(config.methods[method]["args"]["plot"])
     deactivate = False
-    for i in plot_args:
-        config.block_callback[i['name']] = True
+    clean_arguments('{i['name']}', config.methods[method]["args"]["plot"], get_node(config.selected)['data']['plot'])
+    plot_args_object = make_arguments(method, plot_args, loaded_args=get_node(config.selected)['data']['plot'], add_execution_button=False, add_header="plot")
     config.block_callback['{i['name']}'] = False
-    clean_arguments('{i['name']}', config.methods[method]["args"]["plot"], config.adata.uns[config.selected]['plot'])
-    plot_args_object = make_arguments(method, plot_args, loaded_args=config.adata.uns[config.selected]['plot'], add_execution_button=False, add_header="plot")
 
     plot = config.methods[method]['plot']()
 
@@ -600,6 +616,39 @@ def graph_update_pos(element):
 
 #Add node
 @app.callback(
+    Output('new-dropdown-after', 'value', allow_duplicate=True),
+    Output('new-dropdown-after', 'options', allow_duplicate=True),
+    Input('new-dropdown-before', 'value'),
+    prevent_initial_call=True
+)
+def graph_new_modal(innode):
+
+    l = [i["data"]["id"] for i in get_node_children(innode)]
+
+    return None, l
+
+@app.callback(
+    Output('new-modal', 'is_open', allow_duplicate=True),
+    Output('new-dropdown-before', 'value', allow_duplicate=True),
+    Output('new-dropdown-before', 'options', allow_duplicate=True),
+    Input('graph_new_button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def graph_new_modal(_):
+
+    return True, config.selected, node_names()
+
+@app.callback(
+    Output('new-modal', 'is_open', allow_duplicate=True),
+    Input('new-cancel', 'n_clicks'),
+    prevent_initial_call=True
+)
+def graph_new_node(_):
+
+    return False
+
+@app.callback(
+    Output('new-modal', 'is_open', allow_duplicate=True),
     Output('graph_cytoscape', 'elements', allow_duplicate=True),
     Output('graph_table', 'data', allow_duplicate=True),
     Output('analysis_args', 'children', allow_duplicate=True),
@@ -607,18 +656,19 @@ def graph_update_pos(element):
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
     [
-        Input('graph_new_button', 'n_clicks')
+        Input('new-proceed', 'n_clicks')
     ],
     [
+        State('new-dropdown-before', 'value'),
+        State('new-dropdown-after', 'value'),
         State('graph_dropdown_analysis', 'value'),
         State('graph_cytoscape', 'layout'),
     ],
     prevent_initial_call=True
 )
-def graph_new_node(_, method, cytoscape):
+def graph_new_node(_, input, output, method, cytoscape):
 
     #Make new name
-
     name = method
     nodes = node_names()
     count = 0
@@ -638,7 +688,7 @@ def graph_new_node(_, method, cytoscape):
             'computed':False,
             'opacity':.3,
             'summary':'', 
-            'parameters':{},
+            'parameters':{"input":input},
             'plot':{}
         }, 
         'position':{'x':config.max_x + 30,'y':0},
@@ -646,33 +696,52 @@ def graph_new_node(_, method, cytoscape):
     #make active node that is the one that will be presented
     # nodes_update_pos(config.graph,cytoscape)
 
+    if input != config.h5ad_file: #Load appropiate node
+        # save_adata()
+        innode = get_node(input)["data"]
+        load_adata(f"{config.analysis_folder}/h5ad/{innode['h5ad_file']}")
+
     #Create node
     config.graph.append(node)
     #Create uns
     config.adata.uns[name] = {}
-    config.adata.uns[name]["parameters"] = {}
     config.adata.uns[name]["plot"] = {}
     #Create block callbacks
     config.block_callback = {}
-    #Create active
-    config.active_node_parameters = {}
     #Selected
     unselect_node(config.selected)
     config.selected = name
     select_node(config.selected)
     #Create parameters
     method_create_pars(["execution"])
-    # set_active_node_parameters({i["name"]:i["value"] for i in args.copy()})
+    #Create active
+    config.active_node_parameters["input"] = input
+    set_parameters(config.active_node_parameters, "parameters")
+    # set_active_node_parameters({i["name"]:get_value(i) for i in args.copy()})
+    #Assign new file
+    innode = get_node(input)["data"]
+    pos = get_node_pos(config.selected)
+    if config.methods[innode["method"]]["properties"]["make_new_h5ad"]:
+        config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
+    else:
+        config.graph[pos]["data"]["h5ad_file"] = innode["h5ad_file"]
+
+    edge_add(input, config.selected)
+
+    if output:
+
+        deactivate_downstream(output)
+        deactivate_node(output)
+        node_reassign_input(output,name)
 
     #load interactive plots
     l, l2, l3, p = load_node(name)
 
-    return config.graph, graph2table(), l, l2, l3, p 
+    return False, config.graph, graph2table(), l, l2, l3, p 
 
 #Execute analysis button
 @app.callback(
     Output('graph_cytoscape', 'elements', allow_duplicate=True),
-    Output('execute-input-modal', 'is_open', allow_duplicate=True),
     Output('execute-computed-modal', 'is_open', allow_duplicate=True),
     Output('analysis_postargs', 'children', allow_duplicate=True),
     Output('analysis_plotargs', 'children', allow_duplicate=True),
@@ -680,99 +749,65 @@ def graph_new_node(_, method, cytoscape):
     [
         Input('analysis_execute_button', 'n_clicks')
     ],
-    State('execute-input-modal', 'is_open'),
     State('execute-computed-modal', 'is_open'),
     State('analysis_plot', 'children'),
     prevent_initial_call=True
 )
-def execute(n_clicks, warning_input, warning_computed, plot):
+def execute(n_clicks, warning_computed, plot):
 
     if n_clicks != None:
 
-        if "input" in config.active_node_parameters.keys():
+        for node in get_node_ancestors(config.selected):
+            
+            if not node['data']['computed']:
+            
+                return config.graph, True, [], [], []
 
-            if config.active_node_parameters['input'] == None:
+        #Get incoming input, old input and method
+        input = config.active_node_parameters["input"]
 
-                warning_input = True
+        method = get_node(config.selected)["data"]["method"]
 
-            elif not get_node(config.active_node_parameters['input'])['data']['computed']:
+        #Get erguments of incoming
+        inputArgs = get_args(input)
 
-                warning_computed = True
+        #Execute code
+        innode = get_node(input)["data"]
+        pos = get_node_pos(config.selected)
+        if innode["h5ad_file"] != config.h5ad_file: #Load appropiate node
+            load_adata(f"{config.analysis_folder}/h5ad/{innode['h5ad_file']}")
 
-            else:
+        # if config.methods[innode["method"]]["properties"]["make_new_h5ad"]:
+        #     config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
+        #     save = True
+        # else:
+        #     config.graph[pos]["data"]["h5ad_file"] = innode["h5ad_file"]
+        #     save = False
 
-                clean_h5ad()
+        config.h5ad_file = config.graph[pos]["data"]["h5ad_file"]      
+        config.methods[method]["function"](config.adata, config.active_node_parameters)
 
-                #Get incoming input, old input and method
-                input = config.active_node_parameters["input"]
-                try: 
-                    old_input = get_node(config.selected)["data"]["parameters"]["input"]
-                except:
-                    old_input = "Raw"
-                method = get_node(config.selected)["data"]["method"]
+        #save parameters
+        set_parameters(config.active_node_parameters, 'parameters')
+        method_create_pars(["postexecution","plot"])
 
-                #Get erguments of incoming
-                inputArgs = get_args(input)
+        #Activate node
+        activate_node(config.selected)
+        deactivate_downstream(config.selected)
 
-                #Execute code
-                innode = get_node(input)["data"]
-                pos = get_node_pos(config.selected)
-
-                if innode["h5ad_file"] != config.h5ad_file: #Load appropiate node
-                    del config.adata.uns[config.selected]
-                    config.adata = sc.read(f"{config.analysis_folder}/h5ad/{innode['h5ad_file']}")
-                    config.adata.uns[config.selected] = {"parameters":deepcopy(config.active_node_parameters),"plot":{}}
-
-                if config.methods[innode["method"]]["properties"]["make_new_h5ad"]:
-                        
-                    config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
-                    save = True
-
-                else:
-
-                    config.graph[pos]["data"]["h5ad_file"] = innode["h5ad_file"]
-                    save = False
-
-                config.h5ad_file = config.graph[pos]["data"]["h5ad_file"]      
-
-                outputArgs = config.methods[method]["function"](config.adata, inputArgs, config.active_node_parameters)
-
-                # Remove old edge if any and add new
-                edge_rm(old_input, config.selected)
-                edge_add(input, config.selected)
-
-                #save parameters
-                set_output(outputArgs)
-                set_parameters(config.active_node_parameters, 'parameters')
-
-                method_create_pars(["postexecution","plot"])
-
-                if save: #Save if needed to generate a new file
-                    adapt_adata_saving()
-                    save_adata()
-                    adapt_adata_loaded()
-
-                clean_h5ad()
-
-                #Activate node
-                activate_node(config.selected)
-                deactivate_downstream(config.selected)
-
-        post_args_object = {}
-        plot = []
         node_data = get_node(config.selected)['data']
-        if node_data['computed']:
+        post_args_object = make_arguments(node_data['method'], config.methods[node_data['method']]["args"]["postexecution"], add_execution_button=False, add_header="postargs")
+        plot_args_object = make_arguments(node_data['method'], config.methods[node_data['method']]["args"]["plot"], add_execution_button=False, add_header="plot")
+        plot = config.methods[node_data['method']]["plot"]()
 
-            post_args_object = make_arguments(node_data['method'], config.methods[node_data['method']]["args"]["postexecution"], add_execution_button=False, add_header="postargs")
-            plot_args_object = make_arguments(node_data['method'], config.methods[node_data['method']]["args"]["plot"], add_execution_button=False, add_header="plot")
-
-            plot = config.methods[node_data['method']]["plot"]()
+        save_adata()
+        save_graph()
 
     else:
 
         raise PreventUpdate()
 
-    return config.graph, warning_input, warning_computed, post_args_object, plot_args_object, plot
+    return config.graph, warning_computed, post_args_object, plot_args_object, plot
 
 #Delete analysis button
 @app.callback(
@@ -804,24 +839,34 @@ def delete(n_clicks):
     Output('analysis_plot', 'children', allow_duplicate=True),
     Output('delete-modal', 'is_open', allow_duplicate=True),
     Input('delete-proceed', 'n_clicks'),
+    State('graph_dropdown_load', 'value'),
     prevent_initial_call=True
 )
-def delete_confirmation(n_clicks):
+def delete_confirmation(n_clicks, val):
     
     modal = True
-    if n_clicks != None:
+    if n_clicks != None or  val != None:
 
-        name = config.selected
-        deactivate_downstream(name)
-        node_rm(name)
-        clean_h5ad()
+        if val != "Raw":
 
-        config.selected = 'Raw'
-        modal = False
+            deactivate_downstream(val)
+            node_rm(val)
 
-        l, l2, l3, p = load_node(config.selected)
+            if val == config.selected:
+                config.selected = 'Raw'
+            
+            modal = False
 
-        return config.graph, l, l2, l3, p, modal
+            l, l2, l3, p = load_node(config.selected)
+
+            return config.graph, l, l2, l3, p, modal
+        
+        else:
+
+            l, l2, l3, p = load_node(config.selected)
+            modal = False
+
+            return config.graph, l, l2, l3, p, modal
     
     else:
 
@@ -863,17 +908,19 @@ def load_analysis(_, name):
 
     if _ != None and name != None:
 
+        #adata
         node = get_node(name)["data"]
         if node["h5ad_file"] != config.h5ad_file:
             #reload file previous to the model
-            config.adata = sc.read(f"{config.analysis_folder}/h5ad/{node['h5ad_file']}")
+            load_adata(f"{config.analysis_folder}/h5ad/{node['h5ad_file']}")
             config.h5ad_file = node["h5ad_file"]
-            adapt_adata_loaded()
+            # adapt_adata_loaded()
 
         #Create block callbacks
         config.block_callback = {}
         #Create active
-        config.active_node_parameters = config.adata.uns[name]["parameters"]
+        pos = get_node_pos(name)
+        config.active_node_parameters = config.graph[pos]["data"]["parameters"]
         #Selected
         unselect_node(config.selected)
         config.selected = name
@@ -881,7 +928,7 @@ def load_analysis(_, name):
 
         # #Create parameters
         # method_create_pars(["execution"])
-        # # set_active_node_parameters({i["name"]:i["value"] for i in args.copy()})
+        # # set_active_node_parameters({i["name"]:get_value(i) for i in args.copy()})
 
         l, l2, l3, p = load_node(name)
 
@@ -911,11 +958,9 @@ def display_click_data(tap_node_data):
 def save(n_clicks):
     if n_clicks != None:
 
-        save_graph()
-
-        adapt_adata_saving()
         save_adata()
-        adapt_adata_loaded()
+        save_graph()
+        clean_h5ad()
 
     return ""
 

@@ -89,7 +89,7 @@ def plot_filtering():
     if name == None:
         return []
 
-    ancestors = get_ancestors(name)
+    ancestors = get_node_ancestors(name)
     ancestors.append(get_node(name))
 
     pos = get_node_pos(name_analysis)
