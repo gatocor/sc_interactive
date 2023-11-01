@@ -467,7 +467,7 @@ def make_adata_layout(adata):
                 className="mb-4"
             ),
             dbc.Row(
-                dash_renderjson.DashRenderjson(id="output_uns", data=json_serializable(adata.uns), max_depth=1, invert_theme=True)
+                dash_renderjson.DashRenderjson(id="output_uns", data=json_serializable(deepcopy(adata.uns)), max_depth=1, invert_theme=True)
             ),
             dbc.Row(
                 [
@@ -870,37 +870,37 @@ def node_rm(name):
             if node['data']['target'] != name and node['data']['source'] != name:
                 l.append(node)
 
-    #Remove info from adata
-    del_adata_node(name)
+    # #Remove info from adata
+    # del_adata_node(name)
 
     config.graph = l
 
     return
 
-def set_output(args):
+# def set_output(args):
 
-    #obs
-    obs_key = f"{config.selected}--"
-    if "obs" in args.keys():
-        for i,j in args["obs"].items():
-            i = f"{obs_key}{i}"
-            config.adata.obs[i] = j
+#     #obs
+#     obs_key = f"{config.selected}--"
+#     if "obs" in args.keys():
+#         for i,j in args["obs"].items():
+#             i = f"{obs_key}{i}"
+#             config.adata.obs[i] = j
 
-    #var
-    var_key = f"{config.selected}--"
-    if "var" in args.keys():
-        for i,j in args["var"].items():
-            i = f"{var_key}{i}"
-            config.adata.var[i] = j
+#     #var
+#     var_key = f"{config.selected}--"
+#     if "var" in args.keys():
+#         for i,j in args["var"].items():
+#             i = f"{var_key}{i}"
+#             config.adata.var[i] = j
 
-    #obsm
-    if "obsm" in args.keys():
-        config.adata.obsm[config.selected] = args["obsm"]
+#     #obsm
+#     if "obsm" in args.keys():
+#         config.adata.obsm[config.selected] = args["obsm"]
             
-    #uns
-    if "uns" in args.keys():
-        for i,j in args["uns"].items():
-            config.adata.uns[config.selected][i] = j
+#     #uns
+#     if "uns" in args.keys():
+#         for i,j in args["uns"].items():
+#             config.adata.uns[config.selected][i] = j
 
 def ag_table(id, columnDefs, rowData, deleteRows=False, suppressRowTransform=False, suppressRowClickSelection=False):
 

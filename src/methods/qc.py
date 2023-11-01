@@ -1,13 +1,6 @@
 import numpy as np
-import scanpy as sc
-import dash_bootstrap_components as dbc
 # from dash import dcc
 from dash import dcc
-from dash import html
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
-import dash
-from scipy.stats import mode
 import plotly.express as px
 
 from general import *
@@ -161,7 +154,6 @@ def qc_f(adata, kwargs):
         
     X = get_matrix(kwargs["matrix"], kwargs["matrix_key"])
 
-    d = {"obs":{}}
     for l in kwargs["measure"]:
         genes = qc_get_genes(l)
         if genes == "all":

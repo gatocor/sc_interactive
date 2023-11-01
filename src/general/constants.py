@@ -117,4 +117,9 @@ GRAPHSTYLESHEET = [
                     },
                 ]
 
+GRAPHLAYOUT = {'name':'dagre',
+                'roots':'[id="Raw"]',
+                'rankDir': "LR",
+                'rankSep': 5}
+
 ARGUMENTBOXSTYLE = {"background-color":"lightgray"}

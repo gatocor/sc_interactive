@@ -217,7 +217,7 @@ def scrublet_f(adata, kwargs):
     config.adata.obsm[config.selected] = X_umap
     config.adata.obs[config.selected+"--doublet_scores_obs"] = doublet_scores_obs
     config.adata.obs[config.selected+"--doublet_scores_obs--keep"] = np.ones(X.shape[0], bool)
-    config.adata.uns[config.selected]["simulated_scores"] = simulated_doublet_score
+    config.adata.uns[config.selected] = {"simulated_scores": simulated_doublet_score}
 
     return
 

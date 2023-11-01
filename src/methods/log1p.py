@@ -1,42 +1,38 @@
-import numpy as np
 import scanpy as sc
-import dash_bootstrap_components as dbc
-from dash import dcc, dash_table
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
-import dash
 
 from general import *
 
-def args_log1p():
+log1p_args = {
 
-    options = node_names(exclude_downstream_from_node=config.selected) 
-    
-    return [
-        {
-            "input":"Dropdown",
-            "name":"input",
-            "description":"Observable to use",
-            "value":None,
-            "clearable":False,
-            "options":options
-        },
-    ]
+    "execution" : [
+        ARGINPUT,
+    ],
 
-def f_log1p(name_analysis, kwargs):
+    "postexecution" : [],
+
+    "plot" : [],
+
+}
+
+def log1p_f(adata, kwargs):
         
-    sc.pp.log1p(config.adata)
+    sc.pp.log1p(config.adata, base=np.e)
 
-    return
-
-def rm_log1p(name_analysis):
-        
-    return
-
-def rename_log1p(name_analysis):
-        
-    return
-
-def plot_log1p(name_analysis):
+def log1p_plot():
 
     return []
+
+config.methods["log1p"] = {
+    
+    "properties":{
+        "type":"QC",
+        "make_new_h5ad":True,
+    },
+
+    "args": log1p_args,
+
+    "function": log1p_f,
+
+    "plot": log1p_plot,
+
+}

@@ -4,6 +4,7 @@ import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
 
 import os
+from traceback import format_exc
 
 from app import app
 from app import *
@@ -128,7 +129,7 @@ def layout():
                         dcc.Dropdown(
                             id='graph_dropdown_analysis',
                             value=[i for i in config.methods.keys() if i != "Raw"][0],
-                            options=[i for i in config.methods.keys() if i != "Raw"],
+                            options=[{"value":i, "label":i} for i,j in config.methods.items() if i != "Raw"],
                             clearable=False,
                         )
                     ),
@@ -144,7 +145,7 @@ def layout():
                 cyto.Cytoscape(
                     id='graph_cytoscape',
                     # layout={'name':'breadthfirst','roots':'[id="Raw"]'},#{'name': 'preset'},
-                    layout={'name':'dagre','roots':'[id="Raw"]','rankDir': "LR"},#{'name': 'preset'},
+                    layout=GRAPHLAYOUT,#{'name': 'preset'},
                     style={'width': '100%', 'height': '500px'},
                     elements=config.graph,
                     userZoomingEnabled=True,  # Disable zooming
@@ -152,6 +153,13 @@ def layout():
                     stylesheet=GRAPHSTYLESHEET,
                 ),
                 style={'width': '100wh', 'height':'120wh', 'margin': 'auto'}, #vh/wh
+            ),
+            dbc.Alert(
+                children="",
+                id="execution-error",
+                dismissable=True,
+                is_open=False,
+                color="danger"
             ),
             dbc.Row(id = 'analysis_args',
                     children = [],
@@ -242,6 +250,9 @@ def method_create_pars(args_list):
             pos = get_node_pos(config.selected)
 
 def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_header="args"):
+
+    if arg_list == []:
+        return []
 
     #Avoid updates after creating the inputs
     arglist = parameters_eval(arg_list)
@@ -705,9 +716,6 @@ def graph_new_node(_, input, output, method, cytoscape):
 
     #Create node
     config.graph.append(node)
-    #Create uns
-    config.adata.uns[name] = {}
-    config.adata.uns[name]["plot"] = {}
     #Create block callbacks
     config.block_callback = {}
     #Selected
@@ -721,12 +729,14 @@ def graph_new_node(_, input, output, method, cytoscape):
     set_parameters(config.active_node_parameters, "parameters")
     # set_active_node_parameters({i["name"]:get_value(i) for i in args.copy()})
     #Assign new file
-    innode = get_node(input)["data"]
+    innode = get_node(input)
     pos = get_node_pos(config.selected)
-    if config.methods[innode["method"]]["properties"]["make_new_h5ad"]:
+    if config.methods[node["data"]["method"]]["properties"]["make_new_h5ad"]:
+        config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
+    elif innode["data"]["id"] == "Raw":
         config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
     else:
-        config.graph[pos]["data"]["h5ad_file"] = innode["h5ad_file"]
+        config.graph[pos]["data"]["h5ad_file"] = innode["data"]["h5ad_file"]
 
     edge_add(input, config.selected)
 
@@ -748,6 +758,8 @@ def graph_new_node(_, input, output, method, cytoscape):
     Output('analysis_postargs', 'children', allow_duplicate=True),
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
+    Output('execution-error', 'is_open', allow_duplicate=True),
+    Output('execution-error', 'children', allow_duplicate=True),
     [
         Input('analysis_execute_button', 'n_clicks')
     ],
@@ -763,31 +775,28 @@ def execute(n_clicks, warning_computed, plot):
             
             if not node['data']['computed']:
             
-                return config.graph, True, [], [], []
-
+                return config.graph, True, [], [], [], False
+            
         #Get incoming input, old input and method
         input = config.active_node_parameters["input"]
 
         method = get_node(config.selected)["data"]["method"]
 
-        #Get erguments of incoming
-        inputArgs = get_args(input)
-
         #Execute code
         innode = get_node(input)["data"]
         pos = get_node_pos(config.selected)
+
         if innode["h5ad_file"] != config.h5ad_file: #Load appropiate node
             load_adata(f"{config.analysis_folder}/h5ad/{innode['h5ad_file']}")
-
-        # if config.methods[innode["method"]]["properties"]["make_new_h5ad"]:
-        #     config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
-        #     save = True
-        # else:
-        #     config.graph[pos]["data"]["h5ad_file"] = innode["h5ad_file"]
-        #     save = False
-
         config.h5ad_file = config.graph[pos]["data"]["h5ad_file"]      
-        config.methods[method]["function"](config.adata, config.active_node_parameters)
+
+        try:
+            config.methods[method]["function"](config.adata, config.active_node_parameters)
+        except BaseException as e:
+            l = [html.H2("Node failed to execute.")]
+            for i in format_exc().split("\n"):
+                l.append(html.Pre(i))
+            return config.graph, warning_computed, [], [], [], True, l
 
         #save parameters
         set_parameters(config.active_node_parameters, 'parameters')
@@ -805,11 +814,11 @@ def execute(n_clicks, warning_computed, plot):
         save_adata()
         save_graph()
 
+        return config.graph, warning_computed, post_args_object, plot_args_object, plot, False, ""
+
     else:
 
         raise PreventUpdate()
-
-    return config.graph, warning_computed, post_args_object, plot_args_object, plot
 
 #Delete analysis button
 @app.callback(
@@ -851,8 +860,6 @@ def delete_confirmation(n_clicks, val):
     if n_clicks != None:
 
         if val not in  ["Raw", None]:
-
-            print(val)
 
             deactivate_downstream(val)
             node_rm(val)
@@ -925,7 +932,7 @@ def load_analysis(_, name):
         config.block_callback = {}
         #Create active
         pos = get_node_pos(name)
-        config.active_node_parameters = config.graph[pos]["data"]["parameters"]
+        config.active_node_parameters = deepcopy(config.graph[pos]["data"]["parameters"])
         #Selected
         unselect_node(config.selected)
         config.selected = name
