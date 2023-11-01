@@ -7,13 +7,13 @@ from plotly.subplots import make_subplots
 
 from general import *
 
-args_pca = {
+pca_args = {
 
     "execution" : [
         ARGINPUT,
         {
             "input":"BooleanSwitch",
-            "name":"use_highly_varying",
+            "name":"use_highly_variable",
             "description":"Whether to use highly variable genes only.",
             "properties":{
                 "on":True,
@@ -33,7 +33,7 @@ args_pca = {
             "name":"zero_center",
             "description":"If True, compute standard PCA from covariance matrix. If False, omit zero-centering variables (uses TruncatedSVD), which allows to handle sparse input efficiently. Passing None decides automatically based on sparseness of the data.",
             "properties":{
-                "value":True,
+                "on":True,
             }
         },
         {
@@ -60,14 +60,103 @@ args_pca = {
     "postexecution" : [],
 
     "plot" : [
-
+        {
+            "input":"Dropdown",
+            "name":"plot_type",
+            "description":"Choose the visualization aimed.",
+            "properties":{
+                "value":"variance_ratio",
+                "clearable":False,
+                "options":["variance_ratio", "components", "correlation_matrix"] 
+            }
+        },
+        {
+            "input":"Dropdown",
+            "name":"n_plot_components",
+            "description":"Number of components displayed.",
+            "properties":{
+                "value":{"function":"min(3,len(config.adata.uns['pca']['variance']))"},
+                "clearable":False,
+                "options":{"function":"n_pcas()"} 
+            },
+            "visible":{"function":"get_node(config.selected)['data']['plot']['plot_type'] in ['components','correlation_matrix']"}
+        },
+        {
+            "input":"BooleanSwitch",
+            "name":"show_data",
+            "description":"Show scatter data.",
+            "properties":{
+                "on":True,
+            },
+            "visible":{"function":"get_node(config.selected)['data']['plot']['plot_type'] == 'components'"}
+        },
+        {
+            "input":"BooleanSwitch",
+            "name":"show_loadings",
+            "description":"Show loadings.",
+            "properties":{
+                "on":False,
+            },
+            "visible":{"function":"get_node(config.selected)['data']['plot']['plot_type'] == 'components'"}
+        },
+        {
+            "input":"Dropdown",
+            "name":"n_plot_loadings",
+            "description":"How many of the most important loadings to display.",
+            "properties":{
+                "value":{"function":"min(10,config.adata.varm['PCs'].shape[0])"},
+                "clearable":False,
+                "options":{"function":"n_loadings()"} 
+            },
+            "visible":{"function":"get_node(config.selected)['data']['plot']['plot_type'] in ['components']"}
+        },
+        {
+            "input":"Dropdown",
+            "name":"n_plot_loadings_per_pc",
+            "description":"How many of the most important loadings to display per component displayed.",
+            "properties":{
+                "value":{"function":"min(10,config.adata.varm['PCs'].shape[0])"},
+                "clearable":False,
+                "options":{"function":"n_loadings()"} 
+            },
+            "visible":{"function":"get_node(config.selected)['data']['plot']['plot_type'] in ['correlation_matrix']"}
+        },
+        {
+            "input":"Input",
+            "name":"loadings_scale",
+            "description":"Scale of loading arrows.",
+            "properties":{
+                "value":100,
+                "type":"number"
+            },
+            "visible":{"function":"get_node(config.selected)['data']['plot']['plot_type'] in ['components']"}
+        },
+        {
+            "input":"Dropdown",
+            "name":"var_key",
+            "description":".var key to use as label for the loadings.",
+            "properties":{
+                "value":{"function":"config.adata.var.columns.values[0]"},
+                "clearable":False,
+                "options":{"function":"config.adata.var.columns.values"} 
+            },
+            "visible":{"function":"get_node(config.selected)['data']['plot']['plot_type'] in ['components','correlation_matrix']"}
+        },
     ]
 }
+
+def n_pcas():
+
+    return list(range(1,len(config.adata.uns['pca']['variance'])))
+
+def n_loadings():
+
+    return list(range(1,100))
 
 def pca_f(adata, kwargs):
         
     sc.pp.pca(config.adata,
-              use_highly_varying=kwargs["use_highly_varying"],
+              use_highly_variable=kwargs["use_highly_variable"],
               n_comps=kwargs["n_comps"],
               zero_center=kwargs["zero_center"],
               svd_solver=kwargs["svd_solver"],
@@ -76,94 +165,120 @@ def pca_f(adata, kwargs):
 
 def pca_plot():
 
-    if not node["data"]["computed"]:
-        return []
+    plot_params = get_node(config.selected)['data']['plot']
+    plot_type = plot_params['plot_type']
 
-    columns = node["data"]["threshold"]["columns"]
-    data = node["data"]["threshold"]["data"]
-    color = node["data"]["plot"]["color"]
+    if plot_type == "variance_ratio":
 
-    l = [
-            dbc.Row([
-                dash_table.DataTable(id="pca_threshold",
-                    columns= columns,
-                    data = data 
-                ),
-            ]),
-            dcc.Dropdown(id="pca_color",
-                    value = color,
-                    options = list_observables()
-                ),
-    ]
+        y = config.adata.uns['pca']['variance_ratio']
 
-    for b,c_sim in config.graph[pos]["data"]["uns"].items():
+        fig = px.line(x=np.arange(1,len(y)+1),y=y)
+        fig.layout["xaxis"]["title"] = "pcs"
+        fig.layout["yaxis"]["title"] = "variance_ratio"
 
-        if b == "null":
-            b = None
+        return plot_center(dcc.Graph(figure=fig))
 
-        if b == None:
-            sub = np.ones(np.array(config.graph[pos]["data"]["obsm"]["PCA"]).shape[0],dtype=bool)
+    elif plot_type == "correlation_matrix":
+
+        if config.adata.uns['pca']['params']['use_highly_variable']:
+            X = config.adata.varm["PCs"][config.adata.var["highly_variable"].values,:plot_params['n_plot_components']]
+            genes = config.adata.var[plot_params["var_key"]].values[config.adata.var["highly_variable"].values]
         else:
-            sub = np.array(config.graph[pos]["data"]["batch"]) == b
+            X = config.adata.varm["PCs"][:,:plot_params['n_plot_components']]
+            genes = config.adata.var[plot_params["var_key"]].values
 
-        y = c_sim["variance_ratio"]
+        gene_names = {}
+        for i in range(plot_params['n_plot_components']):
+            j = np.argsort(-np.abs(X[:,i]))[:plot_params["n_plot_loadings_per_pc"]]
+            for k in j:
+                gene_names[k] = str(genes[k])
 
-        threshold = int(get_table_value(data,b,"pca maxPCA"))
-        n_comp = int(get_table_value(data,b,"pca nPlots"))
-        c = get_observable(color)
+        m = [i for i in gene_names.keys()]
+        y = [j for i,j in gene_names.items()]
+        x = [str(i) for i in np.arange(1,plot_params['n_plot_components']+1)]
 
-        fig = make_subplots(rows=n_comp-1, cols=n_comp-1, shared_yaxes=True, shared_xaxes=True)
+        fig = px.imshow(np.transpose(X[m,:]),x=y,y=x)
+        fig.layout["xaxis"]["title"] = "original variables"
+        fig.layout["yaxis"]["title"] = "pcs"
 
-        X = np.array(config.graph[pos]["data"]["obsm"]["PCA"])
+        return plot_center(dcc.Graph(figure=fig))
 
-        for i in range(n_comp-1):
+    elif plot_type == "components" :
 
-            for j in range(i+1,n_comp):
-                x_pca = X[sub,i]
-                y_pca = X[sub,j]
+        X = config.adata.obsm["X_pca"]
 
-                fig.add_trace(
-                        go.Scattergl(
-                                    x=x_pca,
-                                    y=y_pca,
-                                    mode="markers",
-                                    marker=dict(color=qualitative_colors(c)),    
-                        ),
-                        row=j, col=i+1
-                )
+        # Loadings
+        if config.adata.uns['pca']['params']['use_highly_variable']:
+            X_loadings = config.adata.varm["PCs"][config.adata.var["highly_variable"].values,:plot_params['n_plot_components']]
+            genes = config.adata.var[plot_params["var_key"]].values[config.adata.var["highly_variable"].values]
+        else:
+            X_loadings = config.adata.varm["PCs"][:,:plot_params['n_plot_components']]
+            genes = config.adata.var[plot_params["var_key"]].values
+
+        fig = make_subplots(rows=plot_params['n_plot_components']-1, cols=plot_params['n_plot_components']-1, shared_yaxes=True, shared_xaxes=True)
+        for i in range(plot_params['n_plot_components']-1):
+
+            for j in range(i+1,plot_params['n_plot_components']):
+                x_pca = X[:,i]
+                y_pca = X[:,j]
+
+                if plot_params["show_data"]:
+                    fig.add_trace(
+                            list(px.scatter(
+                                        x=x_pca,
+                                        y=y_pca,
+                                        # color=c,
+                            ).select_traces())[0],
+                            row=j, col=i+1
+                    )
+
+                if plot_params["show_loadings"]:
+                    feature = {}
+                    order = np.argsort(-np.sum(np.power(X_loadings[:,[i,j]],2),axis=1))[:plot_params["n_plot_loadings"]]
+                    for k in order:
+                        feature[k] = str(genes[k])
+
+                    scale = plot_params["loadings_scale"]
+                    for k, feature in feature.items():
+                        fig.add_trace(
+                            go.Scatter(
+                                    x=[0,X_loadings[k, i]*scale],
+                                    y=[0,X_loadings[k, j]*scale],
+                                    marker={
+                                        "color":"black",
+                                        "symbol": "arrow-bar-up", 
+                                        "angleref":"previous"
+                                    }
+                            ),
+                            row=j, col=i+1
+                        )
+                        fig.add_annotation(
+                            x=X_loadings[k, i]*scale,
+                            y=X_loadings[k, j]*scale,
+                            ax=0, ay=0,
+                            xanchor="center",
+                            yanchor="bottom",
+                            text=feature,
+                            xshift=X_loadings[k, i]*scale,
+                            yshift=X_loadings[k, j]*scale,
+                            row=j, col=i+1
+                        )
 
         fig.update_layout(height=1200, width=1200, autosize=True, showlegend=False)
 
-        l += [
-            dbc.Row([
-                dcc.Graph(
-                    figure = {"data":[
-                                    go.Scatter(
-                                        x=np.array(range(len(y))),
-                                        y=y,
-                                        mode="markers",
-                                        name="Variance ratio",
-                                    ),
-                                    go.Scatter(
-                                        x=[threshold+.5, threshold+.5],
-                                        y=[0,max(y)],
-                                        mode="lines",
-                                        name="Threshold",
-                                        line=dict(color="red")
-                                    )
-                                ]
-                            }
-                ),
-            ]),
-            dbc.Row([
-                dbc.Col(),
-                dbc.Col(
-                    dcc.Graph(
-                        figure = fig
-                    ),
-                ),
-                dbc.Col(),
-            ]),
-        ]
+        return plot_center(dcc.Graph(figure=fig))
 
-    return l
+config.methods["pca"] = {
+    
+    "properties":{
+        "type":"QC",
+        "make_new_h5ad":False,
+    },
+
+    "args": pca_args,
+
+    "function": pca_f,
+
+    "plot": pca_plot,
+
+}
