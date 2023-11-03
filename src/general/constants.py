@@ -64,6 +64,55 @@ ARGBATCH = {
             }
         }
 
+ARGS_COLOR = [
+        {
+            "input":"Dropdown",
+            "name":"color",
+            "description":"Color used to represent.",
+            "properties":{
+                "value":None,
+                "clearable":True,
+                "options":{"function":"args_color()"} 
+            },
+        },
+        {
+            "input":"Dropdown",
+            "name":"color_var",
+            "description":"What var key to use.",
+            "properties":{
+                "value":{"function":"args_color_var()[0]"},
+                "clearable":False,
+                "options":{"function":"args_color_var()"} 
+            },
+            "visible":{"function":"None != args_color_var()[0]"},
+            "recomputeAfter": ["color"] 
+        },
+        {
+            "input":"Dropdown",
+            "name":"color_layer",
+            "description":"What var key to use.",
+            "properties":{
+                "value":"X",
+                "clearable":False,
+                "options":{"function":"['X']+[i for i in config.adata.layers.keys()]"} 
+            },
+            "visible":{"function":"None != args_color_var()[0]"},
+            "recomputeAfter": ["color"] 
+        },
+        {
+            "input":"Dropdown",
+            "name":"color_obsm_dimension",
+            "description":"What var key to use.",
+            "properties":{
+                "value":{"function":"args_color_obsm()[0]"},
+                "clearable":False,
+                "options":{"function":"args_color_obsm()"} 
+            },
+            "visible":{"function":"None != args_color_obsm()[0]"},
+            "recomputeAfter": ["color"] 
+        },
+]
+
 GRAPHSTYLESHEET = [
                     {
                         'selector': 'node',

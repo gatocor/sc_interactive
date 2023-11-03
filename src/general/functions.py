@@ -1,4 +1,5 @@
 import scanpy as sc
+from scipy.sparse import issparse
 import numpy as np
 import pandas as pd
 import json
@@ -33,6 +34,69 @@ class NpEncoder(json.JSONEncoder):
             return obj.tolist()
         
         return super(NpEncoder, self).default(obj)
+
+def args_color():
+
+    l = []
+    for i in config.adata.obs.columns.values:
+        l.append(f"obs.{i}")
+    for i in config.adata.var.columns.values:
+        l.append(f"var.{i}")
+    for i in config.adata.obsm.keys():
+        l.append(f"obsm.{i}")
+
+    return l
+
+def args_color_var():
+
+    if get_node(config.selected)['data']['plot']['color'] == None:
+        return [None]
+    elif get_node(config.selected)['data']['plot']['color'].startswith("var."): 
+        var = get_node(config.selected)['data']['plot']['color'][4:]
+        return config.adata.var[var].values
+    else:
+        return [None]
+    
+def args_color_obsm():
+
+    if get_node(config.selected)['data']['plot']['color'] == None:
+        return [None]
+    elif get_node(config.selected)['data']['plot']['color'].startswith("obsm."):
+        obsm = get_node(config.selected)['data']['plot']['color'][5:]
+        return np.arange(config.adata.obsm[obsm].shape[0])
+    else:
+        return [None]
+
+def get_color():
+
+    plot_args = get_node(config.selected)['data']['plot']
+
+    if plot_args['color'] == None:
+        return None
+    
+    elif plot_args['color'].startswith("var."):
+
+        key = plot_args['color'][4:]
+        pos = np.where(config.adata.var[key].values == plot_args["color_var"])[0]
+
+        if plot_args["color_layer"] == "X":
+            X = config.adata.X
+        else:
+            X = config.adata.layer[plot_args["color_layer"]]
+
+        if issparse(X):
+            return np.array(X[:,pos].todense()[:,0]).reshape(-1)
+        else:
+            return X[:,pos].reshape(-1)
+        
+    elif plot_args['color'].startswith("obsm."):
+        key = plot_args['color'][5:]
+        return config.adata.obsm[key][:,plot_args['color_obsm_dimension']]
+
+    elif plot_args['color'].startswith("obs."):
+        key = plot_args['color'][4:]
+        return np.array(config.adata.obs[key].values)
+
 
 def matrix_options():
 
@@ -323,7 +387,10 @@ def clean_arguments(name, args, d):
     for i in args:
         if "recomputeAfter" in i.keys():
             if name in i["recomputeAfter"]:
-                del d[i['name']]
+                try:
+                    del d[i['name']]
+                except:
+                    None
 
 def f_qc_table_pattern(adata):
 

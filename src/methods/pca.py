@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.sparse import issparse
 import scanpy as sc
 import dash_bootstrap_components as dbc
 from dash import dcc, dash_table
@@ -6,6 +7,10 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 from general import *
+
+#Only show color when plot type is components
+ARGS_COLOR_PCA = deepcopy(ARGS_COLOR)
+ARGS_COLOR_PCA[0]["visible"] = {"function":"get_node(config.selected)['data']['plot']['plot_type'] in ['components']"}
 
 pca_args = {
 
@@ -65,7 +70,7 @@ pca_args = {
             "name":"plot_type",
             "description":"Choose the visualization aimed.",
             "properties":{
-                "value":"variance_ratio",
+                "value":"components",
                 "clearable":False,
                 "options":["variance_ratio", "components", "correlation_matrix"] 
             }
@@ -129,7 +134,7 @@ pca_args = {
                 "value":100,
                 "type":"number"
             },
-            "visible":{"function":"get_node(config.selected)['data']['plot']['plot_type'] in ['components']"}
+            "visible":{"function":"get_node(config.selected)['data']['plot']['show_loadings']"}
         },
         {
             "input":"Dropdown",
@@ -140,9 +145,9 @@ pca_args = {
                 "clearable":False,
                 "options":{"function":"config.adata.var.columns.values"} 
             },
-            "visible":{"function":"get_node(config.selected)['data']['plot']['plot_type'] in ['components','correlation_matrix']"}
+            "visible":{"function":"get_node(config.selected)['data']['plot']['show_loadings']"}
         },
-    ]
+    ]+ARGS_COLOR_PCA
 }
 
 def n_pcas():
@@ -207,6 +212,8 @@ def pca_plot():
 
         X = config.adata.obsm["X_pca"]
 
+        c = get_color()
+
         # Loadings
         if config.adata.uns['pca']['params']['use_highly_variable']:
             X_loadings = config.adata.varm["PCs"][config.adata.var["highly_variable"].values,:plot_params['n_plot_components']]
@@ -223,14 +230,23 @@ def pca_plot():
                 y_pca = X[:,j]
 
                 if plot_params["show_data"]:
-                    fig.add_trace(
-                            list(px.scatter(
-                                        x=x_pca,
-                                        y=y_pca,
-                                        # color=c,
-                            ).select_traces())[0],
-                            row=j, col=i+1
-                    )
+                    if c:
+                        fig.add_traces(
+                                list(px.scatter(
+                                            x=x_pca,
+                                            y=y_pca,
+                                            color=c,
+                                ).select_traces()),
+                                rows=j, cols=i+1
+                        )
+                    else:
+                        fig.add_traces(
+                                list(px.scatter(
+                                            x=x_pca,
+                                            y=y_pca,
+                                ).select_traces()),
+                                rows=j, cols=i+1
+                        )
 
                 if plot_params["show_loadings"]:
                     feature = {}

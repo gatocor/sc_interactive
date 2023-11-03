@@ -304,7 +304,7 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
                 try:
                     arg["properties"]["value"] = loaded_args[arg["name"]]
                 except:
-                    None
+                    loaded_args[arg["name"]] = arg["properties"]["value"]
 
                 input = dbc.Input(
                             id="analysis_"+str(arg["name"]),
@@ -316,7 +316,7 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
                 try:
                     arg["properties"]["value"] = loaded_args[arg["name"]]
                 except:
-                    None
+                    loaded_args[arg["name"]] = arg["properties"]["value"]
 
                 input = dcc.Dropdown(
                             id="analysis_"+str(arg["name"]),
@@ -328,7 +328,7 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
                 try:
                     arg["properties"]["on"] = loaded_args[arg["name"]]
                 except:
-                    None
+                    loaded_args[arg["name"]] = arg["properties"]["on"]
 
                 input = daq.BooleanSwitch(
                             id="analysis_"+str(arg["name"]),
