@@ -18,6 +18,7 @@ import dash_renderjson
 
 import plotly.graph_objs as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 
 from . import config
 from .constants import *
@@ -97,6 +98,53 @@ def get_color():
         key = plot_args['color'][4:]
         return np.array(config.adata.obs[key].values)
 
+def get_representation_styles():
+    if config.adata.obsm[get_node(config.selected)['data']['plot']['plot_representation']].shape[1]>2: 
+        return ['scatter_2d','scatter_3d']
+    else: 
+        return ['scatter_2d']
+
+def get_representation(color=None):
+
+    plot_args = get_node(config.selected)["data"]["plot"]
+
+    X = config.adata.obsm[plot_args["plot_representation"]]
+
+    if plot_args["plot_style"] == "scatter_2d":
+
+        fig = make_subplots(rows=plot_args['plot_n_components']-1, cols=plot_args['plot_n_components']-1, shared_yaxes=True, shared_xaxes=True)
+        for i in range(plot_args['plot_n_components']-1):
+
+            for j in range(i+1,plot_args['plot_n_components']):
+                x = X[:,i]
+                y = X[:,j]
+                if plot_args['plot_n_components'] == 2:
+                    x = X[:,plot_args["plot_dimension_x"]]
+                    y = X[:,plot_args["plot_dimension_y"]]
+
+                fig.add_traces(
+                        list(px.scatter(
+                                    x=x,
+                                    y=y,
+                                    color=color,
+                                    labels=None
+                        ).select_traces()),
+                        rows=j, cols=i+1
+                )
+
+    elif plot_args["plot_style"] == "scatter_3d":
+        x = X[:,plot_args["plot_dimension_x"]]
+        y = X[:,plot_args["plot_dimension_y"]]
+        z = X[:,plot_args["plot_dimension_z"]]
+
+        fig = px.scatter_3d(
+                    x=x,
+                    y=y,
+                    z=z,
+                    color=color,
+                )
+
+    return fig
 
 def matrix_options():
 

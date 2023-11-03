@@ -64,6 +64,78 @@ ARGBATCH = {
             }
         }
 
+ARGS_REPRESENTATION = [
+        {
+            "input":"Dropdown",
+            "name":"plot_representation",
+            "description":"Representation used to plot.",
+            "properties":{
+                "value":{"function":"[i for i in config.adata.obsm.keys()][0]"},
+                "clearable":True,
+                "options":{"function":"[i for i in config.adata.obsm.keys()]"} 
+            },
+        },
+        {
+            "input":"Dropdown",
+            "name":"plot_style",
+            "description":"Representation used to plot.",
+            "properties":{
+                "value":"scatter_2d",
+                "clearable":False,
+                "options":{"function":"get_representation_styles()"} 
+            },
+            "recomputeAfter":["plot_representation"]
+        },
+        {
+            "input":"Dropdown",
+            "name":"plot_n_components",
+            "description":"Number of component to plot.",
+            "properties":{
+                "value":2,
+                "clearable":True,
+                "options":{"function":"np.arange(2,config.adata.obsm[get_node(config.selected)['data']['plot']['plot_representation']].shape[1]+1)"} 
+            },
+            "visible":"get_node(config.selected)['data']['plot']['plot_style'] == 'scatter_2d'",
+            "recomputeAfter":["plot_representation"]
+        },
+        {
+            "input":"Dropdown",
+            "name":"plot_dimension_x",
+            "description":"Dimension to plot in x axis.",
+            "properties":{
+                "value":0,
+                "clearable":True,
+                "options":{"function":"np.arange(0,config.adata.obsm[get_node(config.selected)['data']['plot']['plot_representation']].shape[1])"} 
+            },
+            "visible":"get_node(config.selected)['data']['plot']['plot_style'] in ['scatter_2d','scatter_3d']",
+            "recomputeAfter":["plot_representation"]
+        },
+        {
+            "input":"Dropdown",
+            "name":"plot_dimension_y",
+            "description":"Dimension to plot in x axis.",
+            "properties":{
+                "value":1,
+                "clearable":True,
+                "options":{"function":"np.arange(0,config.adata.obsm[get_node(config.selected)['data']['plot']['plot_representation']].shape[1])"} 
+            },
+            "visible":"get_node(config.selected)['data']['plot']['plot_style'] in ['scatter_2d','scatter_3d']",
+            "recomputeAfter":["plot_representation"]
+        },
+        {
+            "input":"Dropdown",
+            "name":"plot_dimension_z",
+            "description":"Dimension to plot in x axis.",
+            "properties":{
+                "value":2,
+                "clearable":True,
+                "options":{"function":"np.arange(0,config.adata.obsm[get_node(config.selected)['data']['plot']['plot_representation']].shape[1])"} 
+            },
+            "visible":"get_node(config.selected)['data']['plot']['plot_style'] in ['scatter_3d']",
+            "recomputeAfter":["plot_representation"]
+        },
+]
+
 ARGS_COLOR = [
         {
             "input":"Dropdown",
