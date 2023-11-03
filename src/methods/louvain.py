@@ -2,32 +2,6 @@ import scanpy as sc
 
 from general import *
 
-def args_louvain():
-
-    options = node_names(exclude_downstream_from_node=config.selected) 
-    options_batch = get_batch_keys()
-    
-    return [
-        {
-            "input":"BooleanSwitch",
-            "name":"directed",
-            "description":"Whether to treat the graph as directed or undirected.",
-            "value":True,
-        },
-        {
-            "input":"BooleanSwitch",
-            "name":"use_weights",
-            "description":"If True, edge weights from the graph are used in the computation (placing more emphasis on stronger edges).",
-            "value":True,
-        },
-        # partition_type=None
-    ]
-
-import numpy as np
-import scanpy as sc
-
-from general import *
-
 louvain_args = {
 
     "execution" : [

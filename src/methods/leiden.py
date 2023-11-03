@@ -1,4 +1,3 @@
-import numpy as np
 import scanpy as sc
 
 from general import *
