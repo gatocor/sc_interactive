@@ -222,7 +222,10 @@ def pca_plot():
             X_loadings = config.adata.varm["PCs"][:,:plot_params['n_plot_components']]
             genes = config.adata.var[plot_params["var_key"]].values
 
-        fig = make_subplots(rows=plot_params['n_plot_components']-1, cols=plot_params['n_plot_components']-1, shared_yaxes=True, shared_xaxes=True)
+        fig = make_subplots(rows=plot_params['n_plot_components']-1, cols=plot_params['n_plot_components']-1, 
+                    shared_yaxes=True, 
+                    shared_xaxes=True,                     
+        )
         for i in range(plot_params['n_plot_components']-1):
 
             for j in range(i+1,plot_params['n_plot_components']):
@@ -280,7 +283,7 @@ def pca_plot():
                             row=j, col=i+1
                         )
 
-        fig.update_layout(height=1200, width=1200, autosize=True, showlegend=False)
+        fig.update_layout(width=PLOTWIDTH, height=PLOTHEIGHT, autosize=True, showlegend=False)
 
         return plot_center(dcc.Graph(figure=fig))
 

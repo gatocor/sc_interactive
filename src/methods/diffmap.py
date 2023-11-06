@@ -85,7 +85,10 @@ def diffmap_plot():
 
         c = get_color()
 
-        fig = make_subplots(rows=plot_params['n_plot_components']-1, cols=plot_params['n_plot_components']-1, shared_yaxes=True, shared_xaxes=True)
+        fig = make_subplots(rows=plot_params['n_plot_components']-1, cols=plot_params['n_plot_components']-1, 
+                            shared_yaxes=True, 
+                            shared_xaxes=True,
+                )
         for i in range(1,plot_params['n_plot_components']):
 
             for j in range(i+1,plot_params['n_plot_components']+1):
