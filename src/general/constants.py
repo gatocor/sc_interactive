@@ -244,3 +244,6 @@ GRAPHLAYOUT = {'name':'dagre',
                 'rankSep': 5}
 
 ARGUMENTBOXSTYLE = {"background-color":"lightgray"}
+
+PLOTHEIGHT = 1000
+PLOTWIDTH = 1000

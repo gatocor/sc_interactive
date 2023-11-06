@@ -601,7 +601,7 @@ def make_adata_layout(adata):
     
     return layout
 
-def de2array(de, n_genes=2):
+def de2array(de, plot_measure, n_genes=2):
 
     clusters = de["scores"].dtype.names
     labels_x = []
@@ -616,7 +616,7 @@ def de2array(de, n_genes=2):
     for i,cluster in enumerate(clusters):
         for j,gene in enumerate(labels_x):
             g = gene == de["names"][cluster]
-            data_array[j,i] = de["scores"][cluster][g][0]
+            data_array[j,i] = de[plot_measure][cluster][g][0]
             color.append(de["scores"][cluster][g][0])
 
     return data_array, labels_x, labels_y

@@ -99,7 +99,7 @@ def plot_dendogram(data_array, groups=None, orientation='bottom'):
         dendro_top['data'][i][v2+'axis'] = v2+'2'
         dendro_top['data'][i][v] -= mm
         dendro_top['data'][i][v] *= (data_array.shape[0]-ratio)/(MM-mm)
-        dendro_top['data'][i][v] += ratio/4
+        # dendro_top['data'][i][v] += ratio/4
     
     dendro_leaves_x =[]
     for i in np.array(dendro_top['layout'][v+'axis']['ticktext'],int)*ratio:
@@ -129,13 +129,16 @@ def plot_scattermap(data_array, xorder=None, yorder=None):
     X = X.transpose()
     Y = Y.transpose()
 
+    size = np.abs(data_array.reshape(-1))
+    size /= np.max(size)
+
     heatmap = go.Scatter(
             x = Y.reshape(-1),
             y = X.reshape(-1),
             mode = "markers",
             marker = {
                 "color":data_array.reshape(-1),
-                "size":np.abs(data_array.reshape(-1)),
+                "size":size*30,
             },
             text=list(map(str,data_array.reshape(-1)))
         )
@@ -150,25 +153,31 @@ def plot_heatmap(data_array, xorder=None, yorder=None):
 
 def plot_clustermap(data_array, labels_x, labels_y, style="heatmap"):
 
-    fig = make_subplots(rows=2, cols=2, 
-                        column_widths=[.8, .2], row_heights=[0.2, 0.8],
+    fig = make_subplots(rows=1, cols=2, 
+                        column_widths=[.9, .1], row_heights=[1],
                         horizontal_spacing=0, vertical_spacing=0,
                         shared_xaxes=True, shared_yaxes=True,
                         )
 
-    # Initialize figure by creating dendrograms
-    dendrox, xorder = plot_dendogram(data_array, orientation='bottom')
-    for data in dendrox['data']:
-        fig.add_trace(data, row=1, col=1)
-    fig.update_xaxes(showticklabels=False, row=1, col=1)
-    fig.update_yaxes(showticklabels=False, row=1, col=1)
+    # # Initialize figure by creating dendrograms
+    # dendrox, xorder = plot_dendogram(data_array, orientation='bottom')
+    # for data in dendrox['data']:
+    #     fig.add_trace(data, row=1, col=1)
+    # fig.update_xaxes(showticklabels=False, row=1, col=1)
+    # fig.update_yaxes(showticklabels=False, row=1, col=1)
 
     dendroy, yorder = plot_dendogram(data_array, groups = 1, orientation="left")
+    r = data_array.shape
+    r = int(r[0]/r[1])
+    xorder = []
+    for i in yorder:
+        for j in range(r):
+            xorder.append(i*r+j)
     # dendroy, yorder = dendogram_side(data_array)
     for data in dendroy['data']:
-        fig.add_trace(data, row=2, col=2)
-    fig.update_xaxes(showticklabels=False, row=2, col=2)
-    fig.update_yaxes(showticklabels=False, row=2, col=2)
+        fig.add_trace(data, row=1, col=2)
+    fig.update_xaxes(showticklabels=False, row=1, col=2)
+    fig.update_yaxes(showticklabels=False, row=1, col=2)
 
     # Create Heatmap
     if style == "heatmap":
@@ -177,16 +186,16 @@ def plot_clustermap(data_array, labels_x, labels_y, style="heatmap"):
         scatter = plot_scattermap(data_array, xorder, yorder)
 
     # Add Heatmap Data to Figure
-    fig.add_trace(scatter, row=2, col=1)
+    fig.add_trace(scatter, row=1, col=1)
     fig.update_xaxes(tickvals=np.arange(0,len(labels_x),1),
                      ticktext=np.array(labels_x)[xorder],
-                     row=2, col=1)
+                     row=1, col=1)
     fig.update_yaxes(tickvals=np.arange(0,len(labels_y),1),
                      ticktext=np.array(labels_y)[yorder],
-                     row=2, col=1)
+                     row=1, col=1)
 
     # Edit Layout
-    fig.update_layout({'width':50*data_array.shape[0], 'height':50*data_array.shape[1],
+    fig.update_layout({'width':min(50*data_array.shape[0],1000), 'height':min(50*data_array.shape[1],500),
                             'showlegend':False, 'hovermode': 'closest',
                             })
 

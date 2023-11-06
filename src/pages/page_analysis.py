@@ -146,10 +146,10 @@ def layout():
                     id='graph_cytoscape',
                     # layout={'name':'breadthfirst','roots':'[id="Raw"]'},#{'name': 'preset'},
                     layout=GRAPHLAYOUT,#{'name': 'preset'},
-                    style={'width': '100%', 'height': '500px'},
+                    style={'width': '100%', 'height': '700px'},
                     elements=config.graph,
-                    userZoomingEnabled=True,  # Disable zooming
-                    userPanningEnabled=False,  # Disable panning
+                    userZoomingEnabled=False,  # Disable zooming
+                    userPanningEnabled=True,  # Disable panning
                     stylesheet=GRAPHSTYLESHEET,
                 ),
                 style={'width': '100wh', 'height':'120wh', 'margin': 'auto'}, #vh/wh
@@ -645,11 +645,12 @@ def graph_new_modal(innode):
     Output('new-dropdown-before', 'value', allow_duplicate=True),
     Output('new-dropdown-before', 'options', allow_duplicate=True),
     Input('graph_new_button', 'n_clicks'),
+    State('graph_dropdown_load', 'value'),
     prevent_initial_call=True
 )
-def graph_new_modal(_):
+def graph_new_modal(_,load):
 
-    return True, config.selected, node_names()
+    return True, load, node_names()
 
 @app.callback(
     Output('new-modal', 'is_open', allow_duplicate=True),

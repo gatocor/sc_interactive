@@ -1,20 +1,11 @@
-import numpy as np
 import scanpy as sc
-import dash_bootstrap_components as dbc
-# from dash import dcc
-from dash import dcc
-from dash import html
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
-import dash
-import scrublet
-from scipy.stats import mode
 
 from general import *
 
 umap_args = {
 
     "execution" : [
+        ARGINPUT,
         {
             "input":"Input",
             "name":"min_dist",
@@ -154,7 +145,9 @@ def umap_plot():
         fig = px.scatter(
                         x=X[:,0],
                         y=X[:,1],
-                        color=c
+                        color=c,
+                        height=PLOTHEIGHT,
+                        width=PLOTWIDTH
                 )
 
     else:
@@ -164,10 +157,12 @@ def umap_plot():
                             y=X[:,1],
                             z=X[:,2],
                             color=c,
-                            opacity=0.8
+                            opacity=0.8,
+                            height=PLOTHEIGHT,
+                            width=PLOTWIDTH
                 )
 
-    fig.update_layout(height=1200, width=1200, autosize=True, showlegend=False)
+    # fig.update_layout({"yaxis":{"scaleanchor":"x","scaleratio":1}})
     
     return  plot_center(dcc.Graph(figure=fig))
 
