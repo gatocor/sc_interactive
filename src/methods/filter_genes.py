@@ -22,42 +22,42 @@ filter_genes_args = dict(
         input='Input', 
         name='min_counts', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['min_counts']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['min_counts'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='min_cells', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['min_cells']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['min_cells'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='max_counts', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['max_counts']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['max_counts'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='max_cells', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['max_cells']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['max_cells'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='inplace', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['inplace']"),
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['inplace'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],
@@ -66,21 +66,21 @@ filter_genes_args = dict(
         input='Input', 
         name='log', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['plot']['log']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['plot']['log'] or config.show_plot"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
         name='show', 
         description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['show']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['show'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='save', 
         description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['save']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),]
 )

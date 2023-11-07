@@ -22,63 +22,63 @@ normalize_total_args = dict(
         input='Input', 
         name='target_sum', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['target_sum']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['target_sum'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='exclude_highly_expressed', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['exclude_highly_expressed']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['exclude_highly_expressed'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
         name='max_fraction', 
         description="<class 'float'>", 
-        visible=dict(function="str(0.05)!=get_node(config.selected)['data']['parameters']['max_fraction']"),
+        visible=dict(function="str(0.05)!=get_node(config.selected)['data']['parameters']['max_fraction'] or config.show_parameters"),
         properties=dict(value="0.05",type="text")
     ),
     dict(
         input='Input', 
         name='key_added', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['key_added']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['key_added'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='layer', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layer']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layer'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='layers', 
         description="typing.Union[typing.Literal['all'], typing.Iterable[str]]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layers']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layers'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='layer_norm', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layer_norm']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layer_norm'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='inplace', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['inplace']"),
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['inplace'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],

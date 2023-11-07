@@ -22,70 +22,70 @@ neighbors_args = dict(
         input='Input', 
         name='n_neighbors', 
         description="<class 'int'>", 
-        visible=dict(function="str(15)!=get_node(config.selected)['data']['parameters']['n_neighbors']"),
+        visible=dict(function="str(15)!=get_node(config.selected)['data']['parameters']['n_neighbors'] or config.show_parameters"),
         properties=dict(value="15",type="text")
     ),
     dict(
         input='Input', 
         name='n_pcs', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['n_pcs']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['n_pcs'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='use_rep', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['use_rep']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['use_rep'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='knn', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['knn']"),
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['knn'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='random_state', 
         description="typing.Union[str, int, numpy.random.mtrand.RandomState]", 
-        visible=dict(function="str(0)!=get_node(config.selected)['data']['parameters']['random_state']"),
+        visible=dict(function="str(0)!=get_node(config.selected)['data']['parameters']['random_state'] or config.show_parameters"),
         properties=dict(value="0",type="text")
     ),
     dict(
         input='Input', 
         name='method', 
         description="typing.Optional[typing.Literal['umap', 'gauss', 'rapids']]", 
-        visible=dict(function="'umap'!=eval(get_node(config.selected)['data']['parameters']['method'])"),
+        visible=dict(function="'umap'!=eval(get_node(config.selected)['data']['parameters']['method']) or config.show_parameters"),
         properties=dict(value="'umap'",type="text")
     ),
     dict(
         input='Input', 
         name='metric', 
         description="typing.Union[typing.Literal['cityblock', 'cosine', 'euclidean', 'l1', 'l2', 'manhattan'], typing.Literal['braycurtis', 'canberra', 'chebyshev', 'correlation', 'dice', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule'], typing.Callable[[numpy.ndarray, numpy.ndarray], float]]", 
-        visible=dict(function="'euclidean'!=eval(get_node(config.selected)['data']['parameters']['metric'])"),
+        visible=dict(function="'euclidean'!=eval(get_node(config.selected)['data']['parameters']['metric']) or config.show_parameters"),
         properties=dict(value="'euclidean'",type="text")
     ),
     dict(
         input='Input', 
         name='metric_kwds', 
         description="typing.Mapping[str, typing.Any]", 
-        visible=dict(function="str({})!=get_node(config.selected)['data']['parameters']['metric_kwds']"),
+        visible=dict(function="str({})!=get_node(config.selected)['data']['parameters']['metric_kwds'] or config.show_parameters"),
         properties=dict(value="{}",type="text")
     ),
     dict(
         input='Input', 
         name='key_added', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['key_added']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['key_added'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],

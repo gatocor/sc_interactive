@@ -22,91 +22,91 @@ highly_variable_genes_args = dict(
         input='Input', 
         name='layer', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layer']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layer'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='n_top_genes', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['n_top_genes']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['n_top_genes'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='min_disp', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(0.5)!=get_node(config.selected)['data']['parameters']['min_disp']"),
+        visible=dict(function="str(0.5)!=get_node(config.selected)['data']['parameters']['min_disp'] or config.show_parameters"),
         properties=dict(value="0.5",type="text")
     ),
     dict(
         input='Input', 
         name='max_disp', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(inf)!=get_node(config.selected)['data']['parameters']['max_disp']"),
+        visible=dict(function="str(inf)!=get_node(config.selected)['data']['parameters']['max_disp'] or config.show_parameters"),
         properties=dict(value="inf",type="text")
     ),
     dict(
         input='Input', 
         name='min_mean', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(0.0125)!=get_node(config.selected)['data']['parameters']['min_mean']"),
+        visible=dict(function="str(0.0125)!=get_node(config.selected)['data']['parameters']['min_mean'] or config.show_parameters"),
         properties=dict(value="0.0125",type="text")
     ),
     dict(
         input='Input', 
         name='max_mean', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(3)!=get_node(config.selected)['data']['parameters']['max_mean']"),
+        visible=dict(function="str(3)!=get_node(config.selected)['data']['parameters']['max_mean'] or config.show_parameters"),
         properties=dict(value="3",type="text")
     ),
     dict(
         input='Input', 
         name='span', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(0.3)!=get_node(config.selected)['data']['parameters']['span']"),
+        visible=dict(function="str(0.3)!=get_node(config.selected)['data']['parameters']['span'] or config.show_parameters"),
         properties=dict(value="0.3",type="text")
     ),
     dict(
         input='Input', 
         name='n_bins', 
         description="<class 'int'>", 
-        visible=dict(function="str(20)!=get_node(config.selected)['data']['parameters']['n_bins']"),
+        visible=dict(function="str(20)!=get_node(config.selected)['data']['parameters']['n_bins'] or config.show_parameters"),
         properties=dict(value="20",type="text")
     ),
     dict(
         input='Input', 
         name='flavor', 
         description="typing.Literal['seurat', 'cell_ranger', 'seurat_v3']", 
-        visible=dict(function="'seurat'!=eval(get_node(config.selected)['data']['parameters']['flavor'])"),
+        visible=dict(function="'seurat'!=eval(get_node(config.selected)['data']['parameters']['flavor']) or config.show_parameters"),
         properties=dict(value="'seurat'",type="text")
     ),
     dict(
         input='Input', 
         name='subset', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['subset']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['subset'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
         name='inplace', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['inplace']"),
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['inplace'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='batch_key', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['batch_key']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['batch_key'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='check_values', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['check_values']"),
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['check_values'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),],
     postexecution = [],
@@ -115,28 +115,28 @@ highly_variable_genes_args = dict(
         input='Input', 
         name='log', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['plot']['log']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['plot']['log'] or config.show_plot"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
         name='show', 
         description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['show']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['show'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='save', 
         description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['save']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='highly_variable_genes', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['plot']['highly_variable_genes']"),
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['plot']['highly_variable_genes'] or config.show_plot"),
         properties=dict(value="True",type="text")
     ),]
 )

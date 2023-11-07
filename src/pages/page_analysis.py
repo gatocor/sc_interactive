@@ -386,7 +386,7 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
             )
 
     if add_execution_button:
-        if config.show_execute_arguments:
+        if config.show_parameters:
             l.append(
                     dbc.Button("Less Arguments",id="analysis_unfold_execution_button",color="gray")
             )
@@ -398,7 +398,7 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
                 dbc.Button("Execute",id="analysis_execute_button")
         )
     else:
-        if config.show_execute_arguments:
+        if config.show_plot:
             l.append(
                     dbc.Button("Less Arguments",id="analysis_unfold_plot_button",color="gray")
             )

@@ -22,63 +22,63 @@ calculate_qc_metrics_args = dict(
         input='Input', 
         name='expr_type', 
         description="<class 'str'>", 
-        visible=dict(function="'counts'!=eval(get_node(config.selected)['data']['parameters']['expr_type'])"),
+        visible=dict(function="'counts'!=eval(get_node(config.selected)['data']['parameters']['expr_type']) or config.show_parameters"),
         properties=dict(value="'counts'",type="text")
     ),
     dict(
         input='Input', 
         name='var_type', 
         description="<class 'str'>", 
-        visible=dict(function="'genes'!=eval(get_node(config.selected)['data']['parameters']['var_type'])"),
+        visible=dict(function="'genes'!=eval(get_node(config.selected)['data']['parameters']['var_type']) or config.show_parameters"),
         properties=dict(value="'genes'",type="text")
     ),
     dict(
         input='Input', 
         name='qc_vars', 
         description="typing.Collection[str]", 
-        visible=dict(function="str(())!=get_node(config.selected)['data']['parameters']['qc_vars']"),
+        visible=dict(function="str(())!=get_node(config.selected)['data']['parameters']['qc_vars'] or config.show_parameters"),
         properties=dict(value="()",type="text")
     ),
     dict(
         input='Input', 
         name='percent_top', 
         description="typing.Optional[typing.Collection[int]]", 
-        visible=dict(function="str((50, 100, 200, 500))!=get_node(config.selected)['data']['parameters']['percent_top']"),
+        visible=dict(function="str((50, 100, 200, 500))!=get_node(config.selected)['data']['parameters']['percent_top'] or config.show_parameters"),
         properties=dict(value="(50, 100, 200, 500)",type="text")
     ),
     dict(
         input='Input', 
         name='layer', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layer']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layer'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='use_raw', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['use_raw']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['use_raw'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
         name='inplace', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['inplace']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['inplace'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
         name='log1p', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['log1p']"),
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['log1p'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='parallel', 
         description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['parallel']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['parallel'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),],
     postexecution = [],

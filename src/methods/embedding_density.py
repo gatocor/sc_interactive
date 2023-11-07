@@ -22,28 +22,28 @@ embedding_density_args = dict(
         input='Input', 
         name='basis', 
         description="<class 'str'>", 
-        visible=dict(function="'umap'!=eval(get_node(config.selected)['data']['parameters']['basis'])"),
+        visible=dict(function="'umap'!=eval(get_node(config.selected)['data']['parameters']['basis']) or config.show_parameters"),
         properties=dict(value="'umap'",type="text")
     ),
     dict(
         input='Input', 
         name='groupby', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['groupby']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['groupby'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='key_added', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['key_added']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['key_added'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='components', 
         description="typing.Union[str, typing.Sequence[str]]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['components']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['components'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),],
     postexecution = [],
@@ -52,133 +52,133 @@ embedding_density_args = dict(
         input='Input', 
         name='basis', 
         description="<class 'str'>", 
-        visible=dict(function="'umap'!=eval(get_node(config.selected)['data']['plot']['basis'])"),
+        visible=dict(function="'umap'!=eval(get_node(config.selected)['data']['plot']['basis']) or config.show_plot"),
         properties=dict(value="'umap'",type="text")
     ),
     dict(
         input='Input', 
         name='key', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['key']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['key'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='groupby', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['groupby']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['groupby'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='group', 
         description="typing.Union[str, typing.List[str], str]", 
-        visible=dict(function="'all'!=eval(get_node(config.selected)['data']['plot']['group'])"),
+        visible=dict(function="'all'!=eval(get_node(config.selected)['data']['plot']['group']) or config.show_plot"),
         properties=dict(value="'all'",type="text")
     ),
     dict(
         input='Input', 
         name='color_map', 
         description="typing.Union[matplotlib.colors.Colormap, str]", 
-        visible=dict(function="'YlOrRd'!=eval(get_node(config.selected)['data']['plot']['color_map'])"),
+        visible=dict(function="'YlOrRd'!=eval(get_node(config.selected)['data']['plot']['color_map']) or config.show_plot"),
         properties=dict(value="'YlOrRd'",type="text")
     ),
     dict(
         input='Input', 
         name='bg_dotsize', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(80)!=get_node(config.selected)['data']['plot']['bg_dotsize']"),
+        visible=dict(function="str(80)!=get_node(config.selected)['data']['plot']['bg_dotsize'] or config.show_plot"),
         properties=dict(value="80",type="text")
     ),
     dict(
         input='Input', 
         name='fg_dotsize', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(180)!=get_node(config.selected)['data']['plot']['fg_dotsize']"),
+        visible=dict(function="str(180)!=get_node(config.selected)['data']['plot']['fg_dotsize'] or config.show_plot"),
         properties=dict(value="180",type="text")
     ),
     dict(
         input='Input', 
         name='vmax', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(1)!=get_node(config.selected)['data']['plot']['vmax']"),
+        visible=dict(function="str(1)!=get_node(config.selected)['data']['plot']['vmax'] or config.show_plot"),
         properties=dict(value="1",type="text")
     ),
     dict(
         input='Input', 
         name='vmin', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(0)!=get_node(config.selected)['data']['plot']['vmin']"),
+        visible=dict(function="str(0)!=get_node(config.selected)['data']['plot']['vmin'] or config.show_plot"),
         properties=dict(value="0",type="text")
     ),
     dict(
         input='Input', 
         name='vcenter', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['vcenter']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['vcenter'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='norm', 
         description="typing.Optional[matplotlib.colors.Normalize]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['norm']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['norm'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='ncols', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(4)!=get_node(config.selected)['data']['plot']['ncols']"),
+        visible=dict(function="str(4)!=get_node(config.selected)['data']['plot']['ncols'] or config.show_plot"),
         properties=dict(value="4",type="text")
     ),
     dict(
         input='Input', 
         name='hspace', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(0.25)!=get_node(config.selected)['data']['plot']['hspace']"),
+        visible=dict(function="str(0.25)!=get_node(config.selected)['data']['plot']['hspace'] or config.show_plot"),
         properties=dict(value="0.25",type="text")
     ),
     dict(
         input='Input', 
         name='wspace', 
         description="<class 'str'>", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['wspace']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['wspace'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='title', 
         description="<class 'str'>", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['title']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['title'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='show', 
         description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['show']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['show'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='save', 
         description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['save']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='ax', 
         description="typing.Optional[matplotlib.axes._axes.Axes]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['ax']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['ax'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='return_fig', 
         description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['return_fig']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['return_fig'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),]
 )

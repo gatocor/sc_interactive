@@ -22,28 +22,28 @@ recipe_zheng17_args = dict(
         input='Input', 
         name='n_top_genes', 
         description="<class 'int'>", 
-        visible=dict(function="str(1000)!=get_node(config.selected)['data']['parameters']['n_top_genes']"),
+        visible=dict(function="str(1000)!=get_node(config.selected)['data']['parameters']['n_top_genes'] or config.show_parameters"),
         properties=dict(value="1000",type="text")
     ),
     dict(
         input='Input', 
         name='log', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['log']"),
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['log'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='plot', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['plot']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['plot'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],

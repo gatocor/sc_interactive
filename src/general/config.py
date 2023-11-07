@@ -8,8 +8,8 @@ h5ad_file = "Raw.h5ad"
 adata = None
 graph = []
 report = None
-show_execute_arguments = False
-show_plot_arguments = False
+show_parameters = False
+show_plot = False
 
 active_node_parameters = {}
 max_x = 0

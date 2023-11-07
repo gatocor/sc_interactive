@@ -22,49 +22,49 @@ marker_gene_overlap_args = dict(
         input='Input', 
         name='key', 
         description="<class 'str'>", 
-        visible=dict(function="'rank_genes_groups'!=eval(get_node(config.selected)['data']['parameters']['key'])"),
+        visible=dict(function="'rank_genes_groups'!=eval(get_node(config.selected)['data']['parameters']['key']) or config.show_parameters"),
         properties=dict(value="'rank_genes_groups'",type="text")
     ),
     dict(
         input='Input', 
         name='method', 
         description="typing.Literal['overlap_count', 'overlap_coef', 'jaccard']", 
-        visible=dict(function="'overlap_count'!=eval(get_node(config.selected)['data']['parameters']['method'])"),
+        visible=dict(function="'overlap_count'!=eval(get_node(config.selected)['data']['parameters']['method']) or config.show_parameters"),
         properties=dict(value="'overlap_count'",type="text")
     ),
     dict(
         input='Input', 
         name='normalize', 
         description="typing.Optional[typing.Literal['reference', 'data']]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['normalize']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['normalize'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='top_n_markers', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['top_n_markers']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['top_n_markers'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='adj_pval_threshold', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['adj_pval_threshold']"),
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['adj_pval_threshold'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='key_added', 
         description="<class 'str'>", 
-        visible=dict(function="'marker_gene_overlap'!=eval(get_node(config.selected)['data']['parameters']['key_added'])"),
+        visible=dict(function="'marker_gene_overlap'!=eval(get_node(config.selected)['data']['parameters']['key_added']) or config.show_parameters"),
         properties=dict(value="'marker_gene_overlap'",type="text")
     ),
     dict(
         input='Input', 
         name='inplace', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['inplace']"),
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['inplace'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],
