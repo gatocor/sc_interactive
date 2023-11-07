@@ -1,8 +1,5 @@
 import numpy as np
-from scipy.sparse import issparse
 import scanpy as sc
-import dash_bootstrap_components as dbc
-from dash import dcc, dash_table
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
