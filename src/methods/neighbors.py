@@ -1,114 +1,141 @@
+
+import numpy
+from numpy import inf
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 import scanpy as sc
+import louvain
+import scipy
+import leidenalg
+import plotly.tools as tls
+import cycler
+import matplotlib      # pip install matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import base64
+from io import BytesIO
 from general import *
 
-neighbors_args = {
+neighbors_args = dict(
+    execution = [ARGINPUT,
+    dict(
+        input='Input', 
+        name='n_neighbors', 
+        description="<class 'int'>", 
+        visible=dict(function="str(15)!=get_node(config.selected)['data']['parameters']['n_neighbors']"),
+        properties=dict(value="15",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='n_pcs', 
+        description="typing.Optional[int]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['n_pcs']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='use_rep', 
+        description="typing.Optional[str]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['use_rep']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='knn', 
+        description="<class 'bool'>", 
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['knn']"),
+        properties=dict(value="True",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='random_state', 
+        description="typing.Union[str, int, numpy.random.mtrand.RandomState]", 
+        visible=dict(function="str(0)!=get_node(config.selected)['data']['parameters']['random_state']"),
+        properties=dict(value="0",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='method', 
+        description="typing.Optional[typing.Literal['umap', 'gauss', 'rapids']]", 
+        visible=dict(function="'umap'!=eval(get_node(config.selected)['data']['parameters']['method'])"),
+        properties=dict(value="'umap'",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='metric', 
+        description="typing.Union[typing.Literal['cityblock', 'cosine', 'euclidean', 'l1', 'l2', 'manhattan'], typing.Literal['braycurtis', 'canberra', 'chebyshev', 'correlation', 'dice', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule'], typing.Callable[[numpy.ndarray, numpy.ndarray], float]]", 
+        visible=dict(function="'euclidean'!=eval(get_node(config.selected)['data']['parameters']['metric'])"),
+        properties=dict(value="'euclidean'",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='metric_kwds', 
+        description="typing.Mapping[str, typing.Any]", 
+        visible=dict(function="str({})!=get_node(config.selected)['data']['parameters']['metric_kwds']"),
+        properties=dict(value="{}",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='key_added', 
+        description="typing.Optional[str]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['key_added']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='copy', 
+        description="<class 'bool'>", 
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy']"),
+        properties=dict(value="False",type="text")
+    ),],
+    postexecution = [],
+    plot = []
+)
 
-    "execution" : [
-        ARGINPUT,
-        {
-            "input":"Input",
-            "name":"n_neighbors",
-            "description":"The size of local neighborhood (in terms of number of neighboring data points) used for manifold approximation. Larger values result in more global views of the manifold, while smaller values result in more local data being preserved. In general values should be in the range 2 to 100. If knn is True, number of nearest neighbors to be searched. If knn is False, a Gaussian kernel width is set to the distance of the n_neighbors neighbor.",
-            "properties" : {
-                "value":15,
-                "type":"number"
-            }
-        },
-        {
-            "input":"Dropdown",
-            "name":"use_rep",
-            "description":"Use the indicated representation. 'X' or any key for .obsm is valid. If None, the representation is chosen automatically: For .n_vars < scanpy.settings.N_PCS (default: 50), .X is used, otherwise ‘X_pca’ is used. If ‘X_pca’ is not present, it’s computed with default parameters or n_pcs if present.",
-            "properties" : {
-                "value":"X",
-                "options":{"function":"['X']+[i for i in config.adata.obsm.keys()]"}
-            }
-        },
-        {
-            "input":"Dropdown",
-            "name":"n_pcs",
-            "description":"Use this many components.",
-            "properties" : {
-                "value":None,
-                "options":{"function":"neighbors_components()"}
-            },
-            "recomputeAfter":["use_rep"]
-        },
-        {
-            "input":"BooleanSwitch",
-            "name":"knn",
-            "description":"If True, use a hard threshold to restrict the number of neighbors to n_neighbors, that is, consider a knn graph. Otherwise, use a Gaussian Kernel to assign low weights to neighbors more distant than the n_neighbors nearest neighbor.",
-            "properties" : {
-                "on":True,
-            }
-        },
-        {
-            "input":"Input",
-            "name":"random_state",
-            "description":"A numpy random seed.",
-            "properties" : {
-                "value":0,
-                "type":"number"
-            }
-        },
-        {
-            "input":"Dropdown",
-            "name":"method",
-            "description":"Use 'umap' [McInnes18] or 'gauss' (Gauss kernel following [Coifman05] with adaptive width [Haghverdi16]) for computing connectivities. Use 'rapids' for the RAPIDS implementation of UMAP (experimental, GPU only).",
-            "properties" : {
-                "value":'umap',
-                "clearable":False,
-                "options":['umap', 'gauss', 'rapids']
-            }
-        },
-        {
-            "input":"Dropdown",
-            "name":"metric",
-            "description":"A known metric's name or a callable that returns a distance.",
-            "properties" : {
-                "value":'correlation',
-                "clearable":False,
-                "options":['cityblock', 'cosine', 'euclidean', 'l1', 'l2', 'manhattan','braycurtis', 'canberra', 'chebyshev', 'correlation', 'dice', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
-            }
-        },
-    ],
+def neighbors_f(adata,kwargs):
 
-    "postexecution" : [],
-
-    "plot" : []
-
-}
-
-def neighbors_components():
-    if config.active_node_parameters["use_rep"] == "X":
-        return np.arange(1,config.adata.X.shape[1])
-    else:
-        return np.arange(1,config.adata.obsm[config.active_node_parameters["use_rep"]].shape[1])
-
-def neighbors_f(adata, kwargs):
-        
-    sc.pp.neighbors(adata,
-              n_neighbors=kwargs["n_neighbors"],
-              knn=kwargs["knn"],
-              random_state=kwargs["random_state"],
-              method=kwargs["method"],
-              metric=kwargs["metric"],
+    sc.pp.neighbors(
+        adata,
+        n_neighbors=type_formater(kwargs["n_neighbors"],int),
+        n_pcs=type_formater(kwargs["n_pcs"],typing.Optional[int]),
+        use_rep=type_formater(kwargs["use_rep"],typing.Optional[str]),
+        knn=type_formater(kwargs["knn"],bool),
+        random_state=type_formater(kwargs["random_state"],typing.Union[str, int, numpy.random.mtrand.RandomState]),
+        method=type_formater(kwargs["method"],typing.Optional[typing.Literal['umap', 'gauss', 'rapids']]),
+        metric=type_formater(kwargs["metric"],typing.Union[typing.Literal['cityblock', 'cosine', 'euclidean', 'l1', 'l2', 'manhattan'], typing.Literal['braycurtis', 'canberra', 'chebyshev', 'correlation', 'dice', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule'], typing.Callable[[numpy.ndarray, numpy.ndarray], float]]),
+        metric_kwds=type_formater(kwargs["metric_kwds"],typing.Mapping[str, typing.Any]),
+        key_added=type_formater(kwargs["key_added"],typing.Optional[str]),
+        copy=type_formater(kwargs["copy"],bool),
     )
+        
+    return
 
 def neighbors_plot():
 
-    return []
-
-config.methods["neighbors"] = {
+    kwargs = get_node(config.selected)['data']['plot']
     
-    "properties":{
-        "type":"QC",
-        "make_new_h5ad":False,
-    },
 
-    "args": neighbors_args,
+    # Save it to a temporary buffer.
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    # Embed the result in the html output.
+    fig_data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    fig_bar_matplotlib = f'data:image/png;base64,'+fig_data
+    fig =  html.Img(id='bar-graph-matplotlib',src=fig_bar_matplotlib)
 
-    "function": neighbors_f,
+    return fig
 
-    "plot": neighbors_plot,
+config.methods["neighbors"] = dict(
+        
+    properties=dict(
+        type="QC",
+        make_new_h5ad=False,
+    ),
 
-}
+    args = neighbors_args,
+
+    function = neighbors_f,
+
+    plot = neighbors_plot,
+
+)

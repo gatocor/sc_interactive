@@ -16,21 +16,21 @@ import base64
 from io import BytesIO
 from general import *
 
-log1p_args = dict(
+filter_rank_genes_groups_args = dict(
     execution = [ARGINPUT,],
     postexecution = [],
     plot = []
 )
 
-def log1p_f(adata,kwargs):
+def filter_rank_genes_groups_f(adata,kwargs):
 
-    sc.pp.log1p(
+    sc.tl.filter_rank_genes_groups(
         adata,
     )
         
     return
 
-def log1p_plot():
+def filter_rank_genes_groups_plot():
 
     kwargs = get_node(config.selected)['data']['plot']
     
@@ -45,17 +45,17 @@ def log1p_plot():
 
     return fig
 
-config.methods["log1p"] = dict(
+config.methods["filter_rank_genes_groups"] = dict(
         
     properties=dict(
         type="QC",
         make_new_h5ad=False,
     ),
 
-    args = log1p_args,
+    args = filter_rank_genes_groups_args,
 
-    function = log1p_f,
+    function = filter_rank_genes_groups_f,
 
-    plot = log1p_plot,
+    plot = filter_rank_genes_groups_plot,
 
 )

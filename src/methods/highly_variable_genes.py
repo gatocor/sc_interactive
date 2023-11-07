@@ -1,169 +1,201 @@
-import scanpy as sc
-import dash_bootstrap_components as dbc
-import plotly.express as px
 
+import numpy
+from numpy import inf
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+import scanpy as sc
+import louvain
+import scipy
+import leidenalg
+import plotly.tools as tls
+import cycler
+import matplotlib      # pip install matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import base64
+from io import BytesIO
 from general import *
 
-highly_variable_genes_args = {
-    
-    "execution" : [
-        ARGINPUT,
-        {
-            "input":"Input",
-            "name":"n_top_genes",
-            "description":"Number of highly-variable genes to keep. Mandatory if flavor='seurat_v3'.",
-            "properties":{
-                "value":1000,
-                "type":"number"
-            }
-        },
-        {
-            "input":"Input",
-            "name":"min_disp",
-            "description":"If n_top_genes unequals None, this and all other cutoffs for the means and the normalized dispersions are ignored. Ignored if flavor='seurat_v3'.",
-            "properties":{
-                "value":.5,
-                "type":"number"
-            }
-        },
-        {
-            "input":"Input",
-            "name":"max_disp",
-            "description":"If n_top_genes unequals None, this and all other cutoffs for the means and the normalized dispersions are ignored. Ignored if flavor='seurat_v3'.",
-            "properties":{
-                "value":None,
-                "type":"number"
-            }
-        },
-        {
-            "input":"Input",
-            "name":"min_mean",
-            "description":"If n_top_genes unequals None, this and all other cutoffs for the means and the normalized dispersions are ignored. Ignored if flavor='seurat_v3'.",
-            "properties":{
-                "value":0.0125,
-                "type":"number"
-            }
-        },
-        {
-            "input":"Input",
-            "name":"max_mean",
-            "description":"If n_top_genes unequals None, this and all other cutoffs for the means and the normalized dispersions are ignored. Ignored if flavor='seurat_v3'.",
-            "properties":{
-                "value":3,
-                "type":"number"
-            }
-        },
-        {
-            "input":"Input",
-            "name":"span",
-            "description":"The fraction of the data (cells) used when estimating the variance in the loess model fit if flavor='seurat_v3'.",
-            "properties":{
-                "value":.3,
-                "type":"number"
-            }
-        },
-        {
-            "input":"Input",
-            "name":"n_bins",
-            "description":"Number of bins for binning the mean gene expression. Normalization is done with respect to each bin. If just a single gene falls into a bin, the normalized dispersion is artificially set to 1. You’ll be informed about this if you set settings.verbosity = 4.",
-            "properties":{
-                "value":20,
-                "type":"number"
-            }
-        },
-        {
-            "input":"Dropdown",
-            "name":"flavor",
-            "description":"Choose the flavor for identifying highly variable genes. For the dispersion based methods in their default workflows, Seurat passes the cutoffs whereas Cell Ranger passes n_top_genes.",
-            "properties":{
-                "value":"seurat",
-                "clearable":False,
-                "options":["seurat", "cell_ranger", "seurat_v3"] 
-            }
-        },
-        {
-            "input":"Dropdown",
-            "name":"batch_key",
-            "description":"If specified, highly-variable genes are selected within each batch separately and merged. This simple process avoids the selection of batch-specific genes and acts as a lightweight batch correction method. For all flavors, genes are first sorted by how many batches they are a HVG. For dispersion-based flavors ties are broken by normalized dispersion. If flavor = 'seurat_v3', ties are broken by the median (across batches) rank based on within-batch normalized variance.",
-            "properties":{
-                "value":None,
-                "clearable":True,
-                "options":{"function":"[i for i in config.adata.obs.columns.values if config.adata.obs.dtypes[i] in ['int','bool','category','object','str']]"} 
-            }
-        },
-    ],
+highly_variable_genes_args = dict(
+    execution = [ARGINPUT,
+    dict(
+        input='Input', 
+        name='layer', 
+        description="typing.Optional[str]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['layer']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='n_top_genes', 
+        description="typing.Optional[int]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['n_top_genes']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='min_disp', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(0.5)!=get_node(config.selected)['data']['parameters']['min_disp']"),
+        properties=dict(value="0.5",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='max_disp', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(inf)!=get_node(config.selected)['data']['parameters']['max_disp']"),
+        properties=dict(value="inf",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='min_mean', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(0.0125)!=get_node(config.selected)['data']['parameters']['min_mean']"),
+        properties=dict(value="0.0125",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='max_mean', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(3)!=get_node(config.selected)['data']['parameters']['max_mean']"),
+        properties=dict(value="3",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='span', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(0.3)!=get_node(config.selected)['data']['parameters']['span']"),
+        properties=dict(value="0.3",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='n_bins', 
+        description="<class 'int'>", 
+        visible=dict(function="str(20)!=get_node(config.selected)['data']['parameters']['n_bins']"),
+        properties=dict(value="20",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='flavor', 
+        description="typing.Literal['seurat', 'cell_ranger', 'seurat_v3']", 
+        visible=dict(function="'seurat'!=eval(get_node(config.selected)['data']['parameters']['flavor'])"),
+        properties=dict(value="'seurat'",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='subset', 
+        description="<class 'bool'>", 
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['subset']"),
+        properties=dict(value="False",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='inplace', 
+        description="<class 'bool'>", 
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['inplace']"),
+        properties=dict(value="True",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='batch_key', 
+        description="typing.Optional[str]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['batch_key']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='check_values', 
+        description="<class 'bool'>", 
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['check_values']"),
+        properties=dict(value="True",type="text")
+    ),],
+    postexecution = [],
+    plot = [
+    dict(
+        input='Input', 
+        name='log', 
+        description="<class 'bool'>", 
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['plot']['log']"),
+        properties=dict(value="False",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='show', 
+        description="typing.Optional[bool]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['show']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='save', 
+        description="typing.Union[bool, str, str]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['save']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='highly_variable_genes', 
+        description="<class 'bool'>", 
+        visible=dict(function="str(True)!=get_node(config.selected)['data']['plot']['highly_variable_genes']"),
+        properties=dict(value="True",type="text")
+    ),]
+)
 
-    "postexecution" : [],
+def highly_variable_genes_f(adata,kwargs):
 
-    "plot" : []
-}
-
-def highly_variable_genes_f(adata, kwargs):
-
-    sc.pp.highly_variable_genes(config.adata,
-        n_top_genes = kwargs["n_top_genes"], 
-        min_disp = kwargs["min_disp"], 
-        max_disp = kwargs["max_disp"], 
-        min_mean = kwargs["min_mean"], 
-        max_mean = kwargs["max_mean"], 
-        span = kwargs["span"], 
-        n_bins = kwargs["n_bins"], 
-        flavor = kwargs["flavor"], 
+    sc.pp.highly_variable_genes(
+        adata,
+        layer=type_formater(kwargs["layer"],typing.Optional[str]),
+        n_top_genes=type_formater(kwargs["n_top_genes"],typing.Optional[int]),
+        min_disp=type_formater(kwargs["min_disp"],typing.Optional[float]),
+        max_disp=type_formater(kwargs["max_disp"],typing.Optional[float]),
+        min_mean=type_formater(kwargs["min_mean"],typing.Optional[float]),
+        max_mean=type_formater(kwargs["max_mean"],typing.Optional[float]),
+        span=type_formater(kwargs["span"],typing.Optional[float]),
+        n_bins=type_formater(kwargs["n_bins"],int),
+        flavor=type_formater(kwargs["flavor"],typing.Literal['seurat', 'cell_ranger', 'seurat_v3']),
+        subset=type_formater(kwargs["subset"],bool),
+        inplace=type_formater(kwargs["inplace"],bool),
+        batch_key=type_formater(kwargs["batch_key"],typing.Optional[str]),
+        check_values=type_formater(kwargs["check_values"],bool),
     )
+        
+    return
 
 def highly_variable_genes_plot():
 
-    m = config.adata.var["means"]
-    c = config.adata.var["highly_variable"]
-    if "dispersions" in config.adata.var.keys():
-        v = config.adata.var["dispersions"]
-        vn = config.adata.var["dispersions_norm"]
-        p = "Dispersions"
-    else:
-        v = config.adata.var["variances"]
-        vn = config.adata.var["variances_norm"]
-        p = "Variances"
-
-    fig = px.scatter(x=m, y=v, color=c)    
-    fig.layout["xaxis"]["title"] = "Means"
-    fig.layout["yaxis"]["title"] = p
-    fig.layout["legend"]["title"] = "Selected genes"
-
-    fign = px.scatter(x=m, y=vn, color=c)    
-    fign.layout["xaxis"]["title"] = "Means"
-    fign.layout["yaxis"]["title"] = p
-    fign.layout["legend"]["title"] = "Selected genes"
-
-    l = dbc.Row([
-            dbc.Col(
-                plot_center(
-                    dcc.Graph(
-                        figure = fig
-                    )
-                ),
-            ),
-            dbc.Col(
-                plot_center(
-                    dcc.Graph(
-                        figure = fign
-                    )
-                ),
-            ),
-        ])   
-                
-    return l
-
-config.methods["highly_variable_genes"] = {
+    kwargs = get_node(config.selected)['data']['plot']
     
-    "properties":{
-        "type":"QC",
-        "make_new_h5ad":False,
-    },
+    fig = sc.pl.highly_variable_genes(
+        config.adata,
+        log=type_formater(kwargs["log"],bool),
+        show=type_formater(kwargs["show"],typing.Optional[bool]),
+        save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
+        highly_variable_genes=type_formater(kwargs["highly_variable_genes"],bool),
+    )
 
-    "args": highly_variable_genes_args,
 
-    "function": highly_variable_genes_f,
+    # Save it to a temporary buffer.
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    # Embed the result in the html output.
+    fig_data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    fig_bar_matplotlib = f'data:image/png;base64,'+fig_data
+    fig =  html.Img(id='bar-graph-matplotlib',src=fig_bar_matplotlib)
 
-    "plot": highly_variable_genes_plot,
+    return fig
 
-}
+config.methods["highly_variable_genes"] = dict(
+        
+    properties=dict(
+        type="QC",
+        make_new_h5ad=False,
+    ),
+
+    args = highly_variable_genes_args,
+
+    function = highly_variable_genes_f,
+
+    plot = highly_variable_genes_plot,
+
+)

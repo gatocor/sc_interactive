@@ -16,21 +16,21 @@ import base64
 from io import BytesIO
 from general import *
 
-log1p_args = dict(
+paga_degrees_args = dict(
     execution = [ARGINPUT,],
     postexecution = [],
     plot = []
 )
 
-def log1p_f(adata,kwargs):
+def paga_degrees_f(adata,kwargs):
 
-    sc.pp.log1p(
+    sc.tl.paga_degrees(
         adata,
     )
         
     return
 
-def log1p_plot():
+def paga_degrees_plot():
 
     kwargs = get_node(config.selected)['data']['plot']
     
@@ -45,17 +45,17 @@ def log1p_plot():
 
     return fig
 
-config.methods["log1p"] = dict(
+config.methods["paga_degrees"] = dict(
         
     properties=dict(
         type="QC",
         make_new_h5ad=False,
     ),
 
-    args = log1p_args,
+    args = paga_degrees_args,
 
-    function = log1p_f,
+    function = paga_degrees_f,
 
-    plot = log1p_plot,
+    plot = paga_degrees_plot,
 
 )

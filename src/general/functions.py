@@ -6,6 +6,7 @@ import json
 import os
 from shutil import rmtree, copyfile
 from copy import deepcopy
+import typing
 
 from dash import dash_table
 from dash import dcc
@@ -22,6 +23,20 @@ from plotly.subplots import make_subplots
 
 from . import config
 from .constants import *
+
+def type_formater(arg,type_,subtype_=None):
+
+    if arg == "":
+        m = None
+    elif arg == None:
+        m = None
+    else:
+        m = eval(arg)
+    
+        # if not isinstance(m,type_):
+        #     raise ValueError(f"Expected a {type_}.")
+                    
+    return m
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):

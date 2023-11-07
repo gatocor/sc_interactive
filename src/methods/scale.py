@@ -16,21 +16,21 @@ import base64
 from io import BytesIO
 from general import *
 
-log1p_args = dict(
+scale_args = dict(
     execution = [ARGINPUT,],
     postexecution = [],
     plot = []
 )
 
-def log1p_f(adata,kwargs):
+def scale_f(adata,kwargs):
 
-    sc.pp.log1p(
+    sc.pp.scale(
         adata,
     )
         
     return
 
-def log1p_plot():
+def scale_plot():
 
     kwargs = get_node(config.selected)['data']['plot']
     
@@ -45,17 +45,17 @@ def log1p_plot():
 
     return fig
 
-config.methods["log1p"] = dict(
+config.methods["scale"] = dict(
         
     properties=dict(
         type="QC",
         make_new_h5ad=False,
     ),
 
-    args = log1p_args,
+    args = scale_args,
 
-    function = log1p_f,
+    function = scale_f,
 
-    plot = log1p_plot,
+    plot = scale_plot,
 
 )

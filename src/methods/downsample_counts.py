@@ -16,21 +16,21 @@ import base64
 from io import BytesIO
 from general import *
 
-log1p_args = dict(
+downsample_counts_args = dict(
     execution = [ARGINPUT,],
     postexecution = [],
     plot = []
 )
 
-def log1p_f(adata,kwargs):
+def downsample_counts_f(adata,kwargs):
 
-    sc.pp.log1p(
+    sc.pp.downsample_counts(
         adata,
     )
         
     return
 
-def log1p_plot():
+def downsample_counts_plot():
 
     kwargs = get_node(config.selected)['data']['plot']
     
@@ -45,17 +45,17 @@ def log1p_plot():
 
     return fig
 
-config.methods["log1p"] = dict(
+config.methods["downsample_counts"] = dict(
         
     properties=dict(
         type="QC",
         make_new_h5ad=False,
     ),
 
-    args = log1p_args,
+    args = downsample_counts_args,
 
-    function = log1p_f,
+    function = downsample_counts_f,
 
-    plot = log1p_plot,
+    plot = downsample_counts_plot,
 
 )

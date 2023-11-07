@@ -1,176 +1,117 @@
-import scanpy as sc
 
+import numpy
+from numpy import inf
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+import scanpy as sc
+import louvain
+import scipy
+import leidenalg
+import plotly.tools as tls
+import cycler
+import matplotlib      # pip install matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import base64
+from io import BytesIO
 from general import *
 
-marker_gene_overlap_args = {
+marker_gene_overlap_args = dict(
+    execution = [ARGINPUT,
+    dict(
+        input='Input', 
+        name='key', 
+        description="<class 'str'>", 
+        visible=dict(function="'rank_genes_groups'!=eval(get_node(config.selected)['data']['parameters']['key'])"),
+        properties=dict(value="'rank_genes_groups'",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='method', 
+        description="typing.Literal['overlap_count', 'overlap_coef', 'jaccard']", 
+        visible=dict(function="'overlap_count'!=eval(get_node(config.selected)['data']['parameters']['method'])"),
+        properties=dict(value="'overlap_count'",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='normalize', 
+        description="typing.Optional[typing.Literal['reference', 'data']]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['normalize']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='top_n_markers', 
+        description="typing.Optional[int]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['top_n_markers']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='adj_pval_threshold', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['adj_pval_threshold']"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='key_added', 
+        description="<class 'str'>", 
+        visible=dict(function="'marker_gene_overlap'!=eval(get_node(config.selected)['data']['parameters']['key_added'])"),
+        properties=dict(value="'marker_gene_overlap'",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='inplace', 
+        description="<class 'bool'>", 
+        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['inplace']"),
+        properties=dict(value="False",type="text")
+    ),],
+    postexecution = [],
+    plot = []
+)
 
-    "execution" : [
-        ARGINPUT,
-        {
-            "input":"Dropdown",
-            "name":"var_key",
-            "description":"A columns of adata.var",
-            "properties" : {
-                "value":{"function":"[i for i in config.adata.var.columns.values][0]"},
-                "options":{"function":"[i for i in config.adata.var.columns.values]"},
-            }
-        },
-        {
-            "input":"AgTable",
-            "name":"reference_markers",
-            "description":"A marker gene dictionary object. Keys should be strings with the cell identity name and values are sets or lists of strings which match format of var_key.",
-            "properties":{
-                "header":[
-                    { "headerName": "Type", "field":"type", "editable": True },
-                    { "headerName": "Markers", "field":"markers", "editable": True },
-                ],
-                "data":[{"type":"example_cell_type","markers":"T,Sox2"}],
-            },
-            "addRows":{"type":"", "field":""},
-            "deleteRows": True                
-        },
-        {
-            "input":"Dropdown",
-            "name":"method",
-            "description":"Method to calculate marker gene overlap. 'overlap_count' uses the intersection of the gene set, 'overlap_coef' uses the overlap coefficient, and 'jaccard' uses the Jaccard index.",
-            "properties" : {
-                "value":"overlap_count",
-                "clearable":False,
-                "options":['overlap_count', 'overlap_coef', 'jaccard'],
-            }
-        },
-        {
-            "input":"Dropdown",
-            "name":"normalize",
-            "description":"Normalization option for the marker gene overlap output. This parameter can only be set when method is set to 'overlap_count'. 'reference' normalizes the data by the total number of marker genes given in the reference annotation per group. 'data' normalizes the data by the total number of marker genes used for each cluster.",
-            "properties" : {
-                "value":None,
-                "clearable":True,
-                "options":['reference', 'data'],
-            }
-        },
-        {
-            "input":"Input",
-            "name":"top_n_markers",
-            "description":"The number of top data-derived marker genes to use. By default the top 100 marker genes are used. If adj_pval_threshold is set along with top_n_markers, then adj_pval_threshold is ignored.",
-            "properties" : {
-                "value":None,
-                "type":"number"
-            }
-        },
-        {
-            "input":"Input",
-            "name":"adj_pval_threshold",
-            "description":"A significance threshold on the adjusted p-values to select marker genes. This can only be used when adjusted p-values are calculated by sc.tl.rank_genes_groups(). If adj_pval_threshold is set along with top_n_markers, then adj_pval_threshold is ignored.",
-            "properties" : {
-                "value":None,
-                "type":"number"
-            }
-        },
-    ],
+def marker_gene_overlap_f(adata,kwargs):
 
-    "postexecution" : [],
-
-    "plot" : [
-        # {
-        #     "input":"Dropdown",
-        #     "name":"plot_style",
-        #     "description":"Style of plot.",
-        #     "properties":{
-        #         "value":"heatmap",
-        #         "clearable":False,
-        #         "options":["heatmap","scattermap","table"]
-        #     },
-        # },
-        # {
-        #     "input":"Dropdown",
-        #     "name":"plot_n_genes",
-        #     "description":"Number of genes ploted.",
-        #     "properties":{
-        #         "value":2,
-        #         "clearable":False,
-        #         "options":np.arange(1,100)
-        #     },
-        # },
-        # {
-        #     "input":"Dropdown",
-        #     "name":"var_key",
-        #     "description":"var key to show.",
-        #     "properties":{
-        #         "value":{"function":"config.adata.var.columns.values[0]"},
-        #         "clearable":False,
-        #         "options":{"function":"config.adata.var.columns.values"}
-        #     },
-        # },
-        # {
-        #     "input":"Dropdown",
-        #     "name":"values_to_plot",
-        #     "description":"Values to plot.",
-        #     "properties":{
-        #         "value":"scores",
-        #         "clearable":False,
-        #         "options":['scores', 'logfoldchanges', 'pvals', 'pvals_adj']
-        #     },
-        # },
-        # {
-        #     "input":"Dropdown",
-        #     "name":"plot_cluster",
-        #     "description":"Values to plot.",
-        #     "properties":{
-        #         "value":{"function":"config.adata.uns['marker_gene_overlap']['scores'].dtype.names[0]"},
-        #         "clearable":False,
-        #         "options":{"function":"config.adata.uns['marker_gene_overlap']['scores'].dtype.names"}
-        #     },
-        # },
-    ]
-}
-
-def marker_gene_overlap_f(adata, kwargs):
-
-    d = pd.DataFrame()
-    d["source"] = config.adata.var[kwargs["var_key"]].values
-    d["target"] = config.adata.var.index.values
-    d.set_index("source",inplace=True)
-    
-    dic = {}
-    for i in kwargs["reference_markers"]:
-        dic[i["type"]] = {d.loc[j,"target"] for j in i["markers"].split(",")}
-
-    d = sc.tl.marker_gene_overlap(
-                config.adata,
-                reference_markers=dic,
-                method=kwargs["method"],
-                normalize=kwargs["normalize"],
-                top_n_markers=kwargs["top_n_markers"],
-                adj_pval_threshold=kwargs["adj_pval_threshold"],
-                inplace=False,
-                )
-    
-    config.adata.uns["marker_gene_overlap"] = d
+    sc.tl.marker_gene_overlap(
+        adata,
+        key=type_formater(kwargs["key"],str),
+        method=type_formater(kwargs["method"],typing.Literal['overlap_count', 'overlap_coef', 'jaccard']),
+        normalize=type_formater(kwargs["normalize"],typing.Optional[typing.Literal['reference', 'data']]),
+        top_n_markers=type_formater(kwargs["top_n_markers"],typing.Optional[int]),
+        adj_pval_threshold=type_formater(kwargs["adj_pval_threshold"],typing.Optional[float]),
+        key_added=type_formater(kwargs["key_added"],str),
+        inplace=type_formater(kwargs["inplace"],bool),
+    )
+        
+    return
 
 def marker_gene_overlap_plot():
 
-    fig = px.imshow(config.adata.uns["marker_gene_overlap"].values, 
-                    y=config.adata.uns["marker_gene_overlap"].index.values,
-                    x=config.adata.uns["marker_gene_overlap"].columns.values,
-                    text_auto=True
-                    )
+    kwargs = get_node(config.selected)['data']['plot']
+    
 
-    fig = dcc.Graph(figure=fig)
+    # Save it to a temporary buffer.
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    # Embed the result in the html output.
+    fig_data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    fig_bar_matplotlib = f'data:image/png;base64,'+fig_data
+    fig =  html.Img(id='bar-graph-matplotlib',src=fig_bar_matplotlib)
 
     return fig
 
-config.methods["marker_gene_overlap"] = {
+config.methods["marker_gene_overlap"] = dict(
+        
+    properties=dict(
+        type="QC",
+        make_new_h5ad=False,
+    ),
 
-    "properties":{
-        "type":"QC",
-        "make_new_h5ad":False,
-    },
+    args = marker_gene_overlap_args,
 
-    "args": marker_gene_overlap_args,
+    function = marker_gene_overlap_f,
 
-    "function":marker_gene_overlap_f,
+    plot = marker_gene_overlap_plot,
 
-    "plot":marker_gene_overlap_plot,
-
-}
+)
