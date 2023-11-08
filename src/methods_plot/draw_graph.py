@@ -18,9 +18,10 @@ from general import *
 
 def draw_graph_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.draw_graph(
+    sc.pl.draw_graph(
         config.adata,
         color=type_formater(kwargs["color"],typing.Union[str, typing.Sequence[str], str]),
         gene_symbols=type_formater(kwargs["gene_symbols"],typing.Optional[str]),
@@ -50,7 +51,7 @@ def draw_graph_plot():
         legend_loc=type_formater(kwargs["legend_loc"],str),
         legend_fontoutline=type_formater(kwargs["legend_fontoutline"],typing.Optional[int]),
         colorbar_loc=type_formater(kwargs["colorbar_loc"],typing.Optional[str]),
-        vmax=type_formater(kwargs["vmax"],typing.Union[str, float, typing.Callable[[typing.Sequence[float]], float], typing.Sequence[typing.Union[str, float, typing.Callable[[typing.Sequence[float]], float]]], str]),
+        vmax=ax,
         vmin=type_formater(kwargs["vmin"],typing.Union[str, float, typing.Callable[[typing.Sequence[float]], float], typing.Sequence[typing.Union[str, float, typing.Callable[[typing.Sequence[float]], float]]], str]),
         vcenter=type_formater(kwargs["vcenter"],typing.Union[str, float, typing.Callable[[typing.Sequence[float]], float], typing.Sequence[typing.Union[str, float, typing.Callable[[typing.Sequence[float]], float]]], str]),
         norm=type_formater(kwargs["norm"],typing.Union[matplotlib.colors.Normalize, typing.Sequence[matplotlib.colors.Normalize], str]),
@@ -63,8 +64,8 @@ def draw_graph_plot():
         title=type_formater(kwargs["title"],typing.Union[str, typing.Sequence[str], str]),
         show=type_formater(kwargs["show"],typing.Optional[bool]),
         save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
-        return_fig=True,
+        ax=ax,
+        return_fig=False,
         layout=type_formater(kwargs["layout"],typing.Optional[typing.Literal['fa', 'fr', 'rt', 'rt_circular', 'drl', 'eq_tree', ...]]),
     )
 

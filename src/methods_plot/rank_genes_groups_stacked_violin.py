@@ -18,9 +18,10 @@ from general import *
 
 def rank_genes_groups_stacked_violin_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.rank_genes_groups_stacked_violin(
+    sc.pl.rank_genes_groups_stacked_violin(
         config.adata,
         groups=type_formater(kwargs["groups"],typing.Union[str, typing.Sequence[str]]),
         n_genes=type_formater(kwargs["n_genes"],typing.Optional[int]),
@@ -31,7 +32,7 @@ def rank_genes_groups_stacked_violin_plot():
         key=type_formater(kwargs["key"],typing.Optional[str]),
         show=type_formater(kwargs["show"],typing.Optional[bool]),
         save=type_formater(kwargs["save"],typing.Optional[bool]),
-        return_fig=True,
+        return_fig=False,
     )
 
     # Save it to a temporary buffer.

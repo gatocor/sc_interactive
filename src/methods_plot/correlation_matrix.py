@@ -18,18 +18,18 @@ from general import *
 
 def correlation_matrix_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.correlation_matrix(
+    sc.pl.correlation_matrix(
         config.adata,
+        groupby=type_formater(kwargs["groupby"],str),
         show_correlation_numbers=type_formater(kwargs["show_correlation_numbers"],bool),
         dendrogram=type_formater(kwargs["dendrogram"],typing.Union[bool, str, str]),
         figsize=type_formater(kwargs["figsize"],typing.Optional[typing.Tuple[float, float]]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[str, bool, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
+        ax=ax,
         vmin=type_formater(kwargs["vmin"],typing.Optional[float]),
-        vmax=type_formater(kwargs["vmax"],typing.Optional[float]),
+        vmax=ax,
         vcenter=type_formater(kwargs["vcenter"],typing.Optional[float]),
         norm=type_formater(kwargs["norm"],typing.Optional[matplotlib.colors.Normalize]),
     )
@@ -49,6 +49,13 @@ config.methods_plot["correlation_matrix"] = dict(
     args = [
     dict(
         input='Input', 
+        name='groupby', 
+        description="<class 'str'>", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
+    dict(
+        input='Input', 
         name='show_correlation_numbers', 
         description="<class 'bool'>", 
         visible=dict(function="str(False)!=config.active_plot_parameters['show_correlation_numbers'] or config.show_plot"),
@@ -66,20 +73,6 @@ config.methods_plot["correlation_matrix"] = dict(
         name='figsize', 
         description="typing.Optional[typing.Tuple[float, float]]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['figsize'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[str, bool, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(

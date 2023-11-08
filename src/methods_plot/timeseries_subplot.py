@@ -18,12 +18,13 @@ from general import *
 
 def timeseries_subplot_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.timeseries_subplot(
+    sc.pl.timeseries_subplot(
         config.adata,
         palette=type_formater(kwargs["palette"],typing.Union[typing.Sequence[str], cycler.Cycler, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
+        ax=ax,
     )
 
     # Save it to a temporary buffer.

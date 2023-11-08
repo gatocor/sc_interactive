@@ -18,9 +18,10 @@ from general import *
 
 def timeseries_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.timeseries(
+    sc.pl.timeseries(
         config.adata,
     )
 

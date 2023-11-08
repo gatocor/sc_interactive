@@ -18,15 +18,14 @@ from general import *
 
 def sim_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.sim(
+    sc.pl.sim(
         config.adata,
         tmax_realization=type_formater(kwargs["tmax_realization"],typing.Optional[int]),
         as_heatmap=type_formater(kwargs["as_heatmap"],bool),
         shuffle=type_formater(kwargs["shuffle"],bool),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
     )
 
     # Save it to a temporary buffer.
@@ -62,20 +61,6 @@ config.methods_plot["sim"] = dict(
         description="<class 'bool'>", 
         visible=dict(function="str(False)!=config.active_plot_parameters['shuffle'] or config.show_plot"),
         properties=dict(value="False",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
-        properties=dict(value="None",type="text")
     ),],
 
     function = sim_plot

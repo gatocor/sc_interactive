@@ -18,10 +18,13 @@ from general import *
 
 def tracksplot_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.tracksplot(
+    sc.pl.tracksplot(
         config.adata,
+        var_names=type_formater(kwargs["var_names"],typing.Union[str, typing.Sequence[str], typing.Mapping[str, typing.Union[str, typing.Sequence[str]]]]),
+        groupby=type_formater(kwargs["groupby"],typing.Union[str, typing.Sequence[str]]),
         use_raw=type_formater(kwargs["use_raw"],typing.Optional[bool]),
         log=type_formater(kwargs["log"],bool),
         dendrogram=type_formater(kwargs["dendrogram"],typing.Union[bool, str]),
@@ -29,8 +32,6 @@ def tracksplot_plot():
         var_group_positions=type_formater(kwargs["var_group_positions"],typing.Optional[typing.Sequence[typing.Tuple[int, int]]]),
         var_group_labels=type_formater(kwargs["var_group_labels"],typing.Optional[typing.Sequence[str]]),
         layer=type_formater(kwargs["layer"],typing.Optional[str]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[str, bool, str]),
         figsize=type_formater(kwargs["figsize"],typing.Optional[typing.Tuple[float, float]]),
     )
 
@@ -47,6 +48,20 @@ def tracksplot_plot():
 config.methods_plot["tracksplot"] = dict(
     
     args = [
+    dict(
+        input='Input', 
+        name='var_names', 
+        description="typing.Union[str, typing.Sequence[str], typing.Mapping[str, typing.Union[str, typing.Sequence[str]]]]", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='groupby', 
+        description="typing.Union[str, typing.Sequence[str]]", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
     dict(
         input='Input', 
         name='use_raw', 
@@ -94,20 +109,6 @@ config.methods_plot["tracksplot"] = dict(
         name='layer', 
         description="typing.Optional[str]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['layer'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[str, bool, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(

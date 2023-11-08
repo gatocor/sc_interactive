@@ -862,7 +862,7 @@ def execute(n_clicks, warning_computed):
             
             if not node['data']['computed']:
             
-                return config.graph, True, [], [], [], False
+                return config.graph, True, False, []
             
         #Get incoming input, old input and method
         input = config.active_node_parameters["input"]
@@ -883,7 +883,7 @@ def execute(n_clicks, warning_computed):
             l = [html.H2("Node failed to execute.")]
             for i in format_exc().split("\n"):
                 l.append(html.Pre(i))
-            return config.graph, warning_computed, [], [], [], True, l
+            return config.graph, warning_computed, True, l
 
         #save parameters
         set_parameters(config.active_node_parameters, 'parameters')
@@ -922,25 +922,26 @@ def graph_new_node(plot_type):
         raise PreventUpdate()
 
 @app.callback(
-    Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
-    Output('analysis_inspector', 'children', allow_duplicate=True),
-    [
-        Input('analysis_execute_plot_button', 'n_clicks')
-    ],
+    Output('execution-error', 'is_open', allow_duplicate=True),
+    Output('execution-error', 'children', allow_duplicate=True),
+    Input('analysis_execute_plot_button', 'n_clicks'),
+    State('analysis_plot_dropdown','value'),
     prevent_initial_call=True
 )
-def execute_plot(n_clicks):
+def execute_plot(n_clicks, plot_type):
 
     if n_clicks != None:
             
-        node_data = get_node(config.selected)['data']
-        plot_args_object = make_arguments(node_data['method'], config.methods[node_data['method']]["args"]["plot"], plot=False)
-        plot = config.methods[node_data['method']]["plot"]()
+        try:
+            plot = config.methods_plot[plot_type]['function']()
+        except BaseException as e:
+            l = [html.H2("Node failed to execute.")]
+            for i in format_exc().split("\n"):
+                l.append(html.Pre(i))
+            return [], True, l
 
-        inspector = print_to_string(config.adata)
-
-        return plot_args_object, plot, html.Pre(inspector)
+        return plot, False, []
 
     else:
 

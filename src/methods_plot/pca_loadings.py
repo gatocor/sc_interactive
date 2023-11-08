@@ -18,15 +18,14 @@ from general import *
 
 def pca_loadings_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.pca_loadings(
+    sc.pl.pca_loadings(
         config.adata,
         components=type_formater(kwargs["components"],typing.Union[str, typing.Sequence[int], str]),
         include_lowest=type_formater(kwargs["include_lowest"],bool),
         n_points=type_formater(kwargs["n_points"],typing.Optional[int]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[str, bool, str]),
     )
 
     # Save it to a temporary buffer.
@@ -61,20 +60,6 @@ config.methods_plot["pca_loadings"] = dict(
         name='n_points', 
         description="typing.Optional[int]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['n_points'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[str, bool, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),],
 

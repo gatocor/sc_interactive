@@ -18,9 +18,10 @@ from general import *
 
 def scatter_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.scatter(
+    sc.pl.scatter(
         config.adata,
         x=type_formater(kwargs["x"],typing.Optional[str]),
         y=type_formater(kwargs["y"],typing.Optional[str]),
@@ -44,9 +45,7 @@ def scatter_plot():
         left_margin=type_formater(kwargs["left_margin"],typing.Optional[float]),
         size=type_formater(kwargs["size"],typing.Union[int, float, str]),
         title=type_formater(kwargs["title"],typing.Optional[str]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[str, bool, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
+        ax=ax,
     )
 
     # Save it to a temporary buffer.
@@ -214,20 +213,6 @@ config.methods_plot["scatter"] = dict(
         name='title', 
         description="typing.Optional[str]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['title'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[str, bool, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(

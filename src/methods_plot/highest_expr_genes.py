@@ -18,14 +18,13 @@ from general import *
 
 def highest_expr_genes_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.highest_expr_genes(
+    sc.pl.highest_expr_genes(
         config.adata,
         n_top=type_formater(kwargs["n_top"],int),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[str, bool, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
+        ax=ax,
         gene_symbols=type_formater(kwargs["gene_symbols"],typing.Optional[str]),
         log=type_formater(kwargs["log"],bool),
     )
@@ -49,20 +48,6 @@ config.methods_plot["highest_expr_genes"] = dict(
         description="<class 'int'>", 
         visible=dict(function="str(30)!=config.active_plot_parameters['n_top'] or config.show_plot"),
         properties=dict(value="30",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[str, bool, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
-        properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 

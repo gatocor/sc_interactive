@@ -18,9 +18,10 @@ from general import *
 
 def paga_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.paga(
+    sc.pl.paga(
         config.adata,
         threshold=type_formater(kwargs["threshold"],typing.Optional[float]),
         color=type_formater(kwargs["color"],typing.Union[str, typing.Mapping[typing.Union[str, int], typing.Mapping[typing.Any, float]], str]),
@@ -49,16 +50,14 @@ def paga_plot():
         pos=type_formater(kwargs["pos"],typing.Union[numpy.ndarray, str, pathlib.Path, str]),
         normalize_to_color=type_formater(kwargs["normalize_to_color"],bool),
         cmap=type_formater(kwargs["cmap"],typing.Union[str, matplotlib.colors.Colormap]),
-        cax=type_formater(kwargs["cax"],typing.Optional[matplotlib.axes._axes.Axes]),
+        cax=ax,
         cb_kwds=type_formater(kwargs["cb_kwds"],typing.Mapping[str, typing.Any]),
         frameon=type_formater(kwargs["frameon"],typing.Optional[bool]),
         add_pos=type_formater(kwargs["add_pos"],bool),
         export_to_gexf=type_formater(kwargs["export_to_gexf"],bool),
         use_raw=type_formater(kwargs["use_raw"],bool),
         plot=type_formater(kwargs["plot"],bool),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
+        ax=ax,
     )
 
     # Save it to a temporary buffer.
@@ -311,20 +310,6 @@ config.methods_plot["paga"] = dict(
         description="<class 'bool'>", 
         visible=dict(function="str(True)!=config.active_plot_parameters['plot'] or config.show_plot"),
         properties=dict(value="True",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
-        properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 

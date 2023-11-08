@@ -18,14 +18,13 @@ from general import *
 
 def clustermap_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.clustermap(
+    sc.pl.clustermap(
         config.adata,
         obs_keys=type_formater(kwargs["obs_keys"],str),
         use_raw=type_formater(kwargs["use_raw"],typing.Optional[bool]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
     )
 
     # Save it to a temporary buffer.
@@ -53,20 +52,6 @@ config.methods_plot["clustermap"] = dict(
         name='use_raw', 
         description="typing.Optional[bool]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['use_raw'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),],
 

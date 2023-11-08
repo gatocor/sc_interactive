@@ -18,9 +18,10 @@ from general import *
 
 def rank_genes_groups_dotplot_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.rank_genes_groups_dotplot(
+    sc.pl.rank_genes_groups_dotplot(
         config.adata,
         groups=type_formater(kwargs["groups"],typing.Union[str, typing.Sequence[str]]),
         n_genes=type_formater(kwargs["n_genes"],typing.Optional[int]),
@@ -30,9 +31,6 @@ def rank_genes_groups_dotplot_plot():
         gene_symbols=type_formater(kwargs["gene_symbols"],typing.Optional[str]),
         min_logfoldchange=type_formater(kwargs["min_logfoldchange"],typing.Optional[float]),
         key=type_formater(kwargs["key"],typing.Optional[str]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Optional[bool]),
-        return_fig=True,
     )
 
     # Save it to a temporary buffer.
@@ -103,27 +101,6 @@ config.methods_plot["rank_genes_groups_dotplot"] = dict(
         description="typing.Optional[str]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['key'] or config.show_plot"),
         properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='return_fig', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(False)!=config.active_plot_parameters['return_fig'] or config.show_plot"),
-        properties=dict(value="False",type="text")
     ),],
 
     function = rank_genes_groups_dotplot_plot

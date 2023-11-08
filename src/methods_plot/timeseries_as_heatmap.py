@@ -18,9 +18,10 @@ from general import *
 
 def timeseries_as_heatmap_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.timeseries_as_heatmap(
+    sc.pl.timeseries_as_heatmap(
         config.adata,
         var_names=type_formater(kwargs["var_names"],typing.Collection[str]),
     )

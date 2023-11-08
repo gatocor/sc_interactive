@@ -18,10 +18,13 @@ from general import *
 
 def ranking_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.ranking(
+    sc.pl.ranking(
         config.adata,
+        attr=type_formater(kwargs["attr"],typing.Literal['var', 'obs', 'uns', 'varm', 'obsm']),
+        keys=type_formater(kwargs["keys"],typing.Union[str, typing.Sequence[str]]),
     )
 
     # Save it to a temporary buffer.
@@ -36,7 +39,21 @@ def ranking_plot():
 
 config.methods_plot["ranking"] = dict(
     
-    args = [],
+    args = [
+    dict(
+        input='Input', 
+        name='attr', 
+        description="typing.Literal['var', 'obs', 'uns', 'varm', 'obsm']", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='keys', 
+        description="typing.Union[str, typing.Sequence[str]]", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),],
 
     function = ranking_plot
 )

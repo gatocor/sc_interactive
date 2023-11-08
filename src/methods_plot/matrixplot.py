@@ -18,10 +18,13 @@ from general import *
 
 def matrixplot_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.matrixplot(
+    sc.pl.matrixplot(
         config.adata,
+        var_names=type_formater(kwargs["var_names"],typing.Union[str, typing.Sequence[str], typing.Mapping[str, typing.Union[str, typing.Sequence[str]]]]),
+        groupby=type_formater(kwargs["groupby"],typing.Union[str, typing.Sequence[str]]),
         use_raw=type_formater(kwargs["use_raw"],typing.Optional[bool]),
         log=type_formater(kwargs["log"],bool),
         num_categories=type_formater(kwargs["num_categories"],int),
@@ -38,12 +41,9 @@ def matrixplot_plot():
         standard_scale=type_formater(kwargs["standard_scale"],typing.Literal['var', 'group']),
         values_df=type_formater(kwargs["values_df"],typing.Optional[pandas.core.frame.DataFrame]),
         swap_axes=type_formater(kwargs["swap_axes"],bool),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[str, bool, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[scanpy.plotting._utils._AxesSubplot]),
-        return_fig=True,
+        ax=ax,
         vmin=type_formater(kwargs["vmin"],typing.Optional[float]),
-        vmax=type_formater(kwargs["vmax"],typing.Optional[float]),
+        vmax=ax,
         vcenter=type_formater(kwargs["vcenter"],typing.Optional[float]),
         norm=type_formater(kwargs["norm"],typing.Optional[matplotlib.colors.Normalize]),
     )
@@ -61,6 +61,20 @@ def matrixplot_plot():
 config.methods_plot["matrixplot"] = dict(
     
     args = [
+    dict(
+        input='Input', 
+        name='var_names', 
+        description="typing.Union[str, typing.Sequence[str], typing.Mapping[str, typing.Union[str, typing.Sequence[str]]]]", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='groupby', 
+        description="typing.Union[str, typing.Sequence[str]]", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
     dict(
         input='Input', 
         name='use_raw', 
@@ -175,31 +189,10 @@ config.methods_plot["matrixplot"] = dict(
     ),
     dict(
         input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[str, bool, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
         name='ax', 
         description="typing.Optional[scanpy.plotting._utils._AxesSubplot]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['ax'] or config.show_plot"),
         properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='return_fig', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(False)!=config.active_plot_parameters['return_fig'] or config.show_plot"),
-        properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 

@@ -18,10 +18,13 @@ from general import *
 
 def heatmap_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.heatmap(
+    sc.pl.heatmap(
         config.adata,
+        var_names=type_formater(kwargs["var_names"],typing.Union[str, typing.Sequence[str], typing.Mapping[str, typing.Union[str, typing.Sequence[str]]]]),
+        groupby=type_formater(kwargs["groupby"],typing.Union[str, typing.Sequence[str]]),
         use_raw=type_formater(kwargs["use_raw"],typing.Optional[bool]),
         log=type_formater(kwargs["log"],bool),
         num_categories=type_formater(kwargs["num_categories"],int),
@@ -34,11 +37,9 @@ def heatmap_plot():
         standard_scale=type_formater(kwargs["standard_scale"],typing.Optional[typing.Literal['var', 'obs']]),
         swap_axes=type_formater(kwargs["swap_axes"],bool),
         show_gene_labels=type_formater(kwargs["show_gene_labels"],typing.Optional[bool]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[str, bool, str]),
         figsize=type_formater(kwargs["figsize"],typing.Optional[typing.Tuple[float, float]]),
         vmin=type_formater(kwargs["vmin"],typing.Optional[float]),
-        vmax=type_formater(kwargs["vmax"],typing.Optional[float]),
+        vmax=ax,
         vcenter=type_formater(kwargs["vcenter"],typing.Optional[float]),
         norm=type_formater(kwargs["norm"],typing.Optional[matplotlib.colors.Normalize]),
     )
@@ -56,6 +57,20 @@ def heatmap_plot():
 config.methods_plot["heatmap"] = dict(
     
     args = [
+    dict(
+        input='Input', 
+        name='var_names', 
+        description="typing.Union[str, typing.Sequence[str], typing.Mapping[str, typing.Union[str, typing.Sequence[str]]]]", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='groupby', 
+        description="typing.Union[str, typing.Sequence[str]]", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
     dict(
         input='Input', 
         name='use_raw', 
@@ -138,20 +153,6 @@ config.methods_plot["heatmap"] = dict(
         name='show_gene_labels', 
         description="typing.Optional[bool]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['show_gene_labels'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[str, bool, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(

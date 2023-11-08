@@ -56,7 +56,7 @@ COUNT = 0
 METHOD = ""
 POSITION = "parameters"
 
-def adapt(args, args_info):
+def adapt(args, args_info, ignore_args=[]):
 
     global COUNT, METHOD, POSITION
 
@@ -64,15 +64,28 @@ def adapt(args, args_info):
     txt_missing = ""
     txt_ignored = ""
     n_args = 0
+    if args.args != None:
+        try:
+            n_args = len(args.args)-len(args.defaults)
+        except:
+            n_args = len(args.args)
+
+        for i in range(1,n_args):
+            try:
+                kargs.append((args.args[i],'',args.annotations[args.args[i]]))
+            except:
+                kargs.append((args.args[i],'',None))
+
     if args.defaults != None:
         n_args = len(args.args)-len(args.defaults)
         if n_args > 1:
             txt_missing += "\n\t\t"+str(args.args[:n_args])
         for i,d in enumerate(args.defaults):
-            try:
-                kargs.append((args.args[i+n_args],d,args.annotations[args.args[i+n_args]]))
-            except:
-                kargs.append((args.args[i+n_args],d,None))
+            if args.args[i+n_args] not in ignore_args:
+                try:
+                    kargs.append((args.args[i+n_args],d,args.annotations[args.args[i+n_args]]))
+                except:
+                    kargs.append((args.args[i+n_args],d,None))
 
     if args.kwonlyargs != None:
         for i,d in enumerate(args.kwonlyargs):
@@ -100,13 +113,19 @@ def adapt(args, args_info):
             a = arg[1].replace('\n'," ")
         else:
             a = arg[1]
-
+            
         if POSITION == "plot":
             vis = f"'{a}'!=eval(config.active_plot_parameters['{arg[0]}'])"
             vis2 = f"str({a})!=config.active_plot_parameters['{arg[0]}']"
+            count = 1
         elif POSITION == "parameters":
             vis = f"'{a}'!=eval(config.active_node_parameters['{arg[0]}'])"
             vis2 = f"str({a})!=config.active_node_parameters['{arg[0]}']"
+            count = 2
+
+        if j < n_args - count:
+            vis = True
+            vis2 = True
 
         if arg[2] != None:
             if isinstance(a,str):
@@ -222,7 +241,7 @@ print("Uncomplete functions: ", COUNT)
 ########################################################################################################################################
 avoid = ["palettes","paga_compare"]
 plot = [("pl",i) for i in dir(sc.pl) if not i.startswith("_") and i.islower() and i not in avoid]
-
+ignore_args = ["show","save","return_fig"]
 for plot_module, plot_function in plot:
     METHOD = plot_function
     POSITION = "plot"
@@ -232,12 +251,12 @@ for plot_module, plot_function in plot:
         exec(code,locals(),globals())
         code_info = f"args_info = sc.{plot_module}.{plot_function}.__doc__"
         exec(code_info,locals(),globals())
-        plot_c, plot_kargs, plot_n_args = adapt(args, args_info)
+        plot_c, plot_kargs, plot_n_args = adapt(args, args_info, ignore_args)
         
         executioncode = f"[{plot_c}]"
 
         figs = f"""
-    fig = sc.{plot_module}.{plot_function}(
+    sc.{plot_module}.{plot_function}(
         config.adata,{plot_kargs}
     )
 """
@@ -262,7 +281,8 @@ from general import *
 
 def {plot_function.lower()}_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     {figs}
     # Save it to a temporary buffer.
     buf = BytesIO()
@@ -283,7 +303,8 @@ config.methods_plot["{plot_function.lower()}"] = dict(
 """
         
         code = code.replace("NoneType","str")
-        code = re.sub(r'return_fig=.*,',"return_fig=True,", code)
+        code = re.sub(r'return_fig=.*,',"return_fig=False,", code)
+        code = re.sub(r'ax=.*,',"ax=ax,", code)
         # exec(code, locals(), globals())
         file = f"../methods_plot/{plot_function.lower()}.py"
         with open(file,"w") as outfile:

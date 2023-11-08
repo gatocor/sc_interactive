@@ -18,13 +18,12 @@ from general import *
 
 def highly_variable_genes_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.highly_variable_genes(
+    sc.pl.highly_variable_genes(
         config.adata,
         log=type_formater(kwargs["log"],bool),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
         highly_variable_genes=type_formater(kwargs["highly_variable_genes"],bool),
     )
 
@@ -47,20 +46,6 @@ config.methods_plot["highly_variable_genes"] = dict(
         description="<class 'bool'>", 
         visible=dict(function="str(False)!=config.active_plot_parameters['log'] or config.show_plot"),
         properties=dict(value="False",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
-        properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 

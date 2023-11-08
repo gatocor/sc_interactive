@@ -18,9 +18,10 @@ from general import *
 
 def embedding_density_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.embedding_density(
+    sc.pl.embedding_density(
         config.adata,
         basis=type_formater(kwargs["basis"],str),
         key=type_formater(kwargs["key"],typing.Optional[str]),
@@ -29,7 +30,7 @@ def embedding_density_plot():
         color_map=type_formater(kwargs["color_map"],typing.Union[matplotlib.colors.Colormap, str]),
         bg_dotsize=type_formater(kwargs["bg_dotsize"],typing.Optional[int]),
         fg_dotsize=type_formater(kwargs["fg_dotsize"],typing.Optional[int]),
-        vmax=type_formater(kwargs["vmax"],typing.Optional[int]),
+        vmax=ax,
         vmin=type_formater(kwargs["vmin"],typing.Optional[int]),
         vcenter=type_formater(kwargs["vcenter"],typing.Optional[int]),
         norm=type_formater(kwargs["norm"],typing.Optional[matplotlib.colors.Normalize]),
@@ -37,10 +38,7 @@ def embedding_density_plot():
         hspace=type_formater(kwargs["hspace"],typing.Optional[float]),
         wspace=type_formater(kwargs["wspace"],str),
         title=type_formater(kwargs["title"],str),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
-        return_fig=True,
+        ax=ax,
     )
 
     # Save it to a temporary buffer.
@@ -163,30 +161,9 @@ config.methods_plot["embedding_density"] = dict(
     ),
     dict(
         input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
         name='ax', 
         description="typing.Optional[matplotlib.axes._axes.Axes]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['ax'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='return_fig', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['return_fig'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),],
 

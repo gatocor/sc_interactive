@@ -18,9 +18,10 @@ from general import *
 
 def pca_overview_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.pca_overview(
+    sc.pl.pca_overview(
         config.adata,
     )
 

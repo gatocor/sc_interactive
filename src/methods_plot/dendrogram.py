@@ -18,16 +18,18 @@ from general import *
 
 def dendrogram_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.dendrogram(
+    sc.pl.dendrogram(
         config.adata,
+        groupby=type_formater(kwargs["groupby"],str),
         dendrogram_key=type_formater(kwargs["dendrogram_key"],typing.Optional[str]),
         orientation=type_formater(kwargs["orientation"],typing.Literal['top', 'bottom', 'left', 'right']),
         remove_labels=type_formater(kwargs["remove_labels"],bool),
         show=type_formater(kwargs["show"],typing.Optional[bool]),
         save=type_formater(kwargs["save"],typing.Union[str, bool, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
+        ax=ax,
     )
 
     # Save it to a temporary buffer.
@@ -43,6 +45,13 @@ def dendrogram_plot():
 config.methods_plot["dendrogram"] = dict(
     
     args = [
+    dict(
+        input='Input', 
+        name='groupby', 
+        description="<class 'str'>", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
     dict(
         input='Input', 
         name='dendrogram_key', 

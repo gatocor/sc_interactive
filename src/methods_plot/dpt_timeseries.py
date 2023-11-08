@@ -18,13 +18,12 @@ from general import *
 
 def dpt_timeseries_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.dpt_timeseries(
+    sc.pl.dpt_timeseries(
         config.adata,
         color_map=type_formater(kwargs["color_map"],typing.Union[str, matplotlib.colors.Colormap]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Optional[bool]),
         as_heatmap=type_formater(kwargs["as_heatmap"],bool),
     )
 
@@ -46,20 +45,6 @@ config.methods_plot["dpt_timeseries"] = dict(
         name='color_map', 
         description="typing.Union[str, matplotlib.colors.Colormap]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['color_map'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(

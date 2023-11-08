@@ -18,14 +18,13 @@ from general import *
 
 def pca_variance_ratio_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.pca_variance_ratio(
+    sc.pl.pca_variance_ratio(
         config.adata,
         n_pcs=type_formater(kwargs["n_pcs"],int),
         log=type_formater(kwargs["log"],bool),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
     )
 
     # Save it to a temporary buffer.
@@ -54,20 +53,6 @@ config.methods_plot["pca_variance_ratio"] = dict(
         description="<class 'bool'>", 
         visible=dict(function="str(False)!=config.active_plot_parameters['log'] or config.show_plot"),
         properties=dict(value="False",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
-        properties=dict(value="None",type="text")
     ),],
 
     function = pca_variance_ratio_plot

@@ -18,9 +18,10 @@ from general import *
 
 def matrix_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.matrix(
+    sc.pl.matrix(
         config.adata,
     )
 

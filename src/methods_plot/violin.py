@@ -18,10 +18,12 @@ from general import *
 
 def violin_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.violin(
+    sc.pl.violin(
         config.adata,
+        keys=type_formater(kwargs["keys"],typing.Union[str, typing.Sequence[str]]),
         groupby=type_formater(kwargs["groupby"],typing.Optional[str]),
         log=type_formater(kwargs["log"],bool),
         use_raw=type_formater(kwargs["use_raw"],typing.Optional[bool]),
@@ -35,9 +37,7 @@ def violin_plot():
         xlabel=type_formater(kwargs["xlabel"],str),
         ylabel=type_formater(kwargs["ylabel"],typing.Union[str, typing.Sequence[str], str]),
         rotation=type_formater(kwargs["rotation"],typing.Optional[float]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
+        ax=ax,
     )
 
     # Save it to a temporary buffer.
@@ -53,6 +53,13 @@ def violin_plot():
 config.methods_plot["violin"] = dict(
     
     args = [
+    dict(
+        input='Input', 
+        name='keys', 
+        description="typing.Union[str, typing.Sequence[str]]", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
     dict(
         input='Input', 
         name='groupby', 
@@ -142,20 +149,6 @@ config.methods_plot["violin"] = dict(
         name='rotation', 
         description="typing.Optional[float]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['rotation'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(

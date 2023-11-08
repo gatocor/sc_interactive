@@ -18,9 +18,10 @@ from general import *
 
 def rank_genes_groups_violin_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.rank_genes_groups_violin(
+    sc.pl.rank_genes_groups_violin(
         config.adata,
         groups=type_formater(kwargs["groups"],typing.Optional[typing.Sequence[str]]),
         n_genes=type_formater(kwargs["n_genes"],int),
@@ -33,9 +34,7 @@ def rank_genes_groups_violin_plot():
         strip=type_formater(kwargs["strip"],bool),
         jitter=type_formater(kwargs["jitter"],typing.Union[int, float, bool]),
         size=type_formater(kwargs["size"],int),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Optional[bool]),
+        ax=ax,
     )
 
     # Save it to a temporary buffer.
@@ -133,20 +132,6 @@ config.methods_plot["rank_genes_groups_violin"] = dict(
         name='ax', 
         description="typing.Optional[matplotlib.axes._axes.Axes]", 
         visible=dict(function="str(None)!=config.active_plot_parameters['ax'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),],
 

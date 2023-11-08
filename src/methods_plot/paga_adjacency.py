@@ -18,9 +18,10 @@ from general import *
 
 def paga_adjacency_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.paga_adjacency(
+    sc.pl.paga_adjacency(
         config.adata,
     )
 

@@ -18,10 +18,13 @@ from general import *
 
 def paga_path_plot():
 
-    kwargs = config.selected_plot_parameters
+    kwargs = config.active_plot_parameters
+    fig,ax = plt.subplots()
     
-    fig = sc.pl.paga_path(
+    sc.pl.paga_path(
         config.adata,
+        nodes=type_formater(kwargs["nodes"],typing.Sequence[typing.Union[str, int]]),
+        keys=type_formater(kwargs["keys"],typing.Sequence[str]),
         use_raw=type_formater(kwargs["use_raw"],bool),
         annotations=type_formater(kwargs["annotations"],typing.Sequence[str]),
         color_map=type_formater(kwargs["color_map"],typing.Union[str, matplotlib.colors.Colormap, str]),
@@ -41,9 +44,7 @@ def paga_path_plot():
         normalize_to_zero_one=type_formater(kwargs["normalize_to_zero_one"],bool),
         as_heatmap=type_formater(kwargs["as_heatmap"],bool),
         return_data=type_formater(kwargs["return_data"],bool),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
-        ax=type_formater(kwargs["ax"],typing.Optional[matplotlib.axes._axes.Axes]),
+        ax=ax,
     )
 
     # Save it to a temporary buffer.
@@ -59,6 +60,20 @@ def paga_path_plot():
 config.methods_plot["paga_path"] = dict(
     
     args = [
+    dict(
+        input='Input', 
+        name='nodes', 
+        description="typing.Sequence[typing.Union[str, int]]", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='keys', 
+        description="typing.Sequence[str]", 
+        visible=dict(function="True or config.show_plot"),
+        properties=dict(value="''",type="text")
+    ),
     dict(
         input='Input', 
         name='use_raw', 
@@ -191,20 +206,6 @@ config.methods_plot["paga_path"] = dict(
         description="<class 'bool'>", 
         visible=dict(function="str(False)!=config.active_plot_parameters['return_data'] or config.show_plot"),
         properties=dict(value="False",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
-        properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
