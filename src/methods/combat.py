@@ -22,21 +22,21 @@ combat_args = dict(
         input='Input', 
         name='key', 
         description="<class 'str'>", 
-        visible=dict(function="'batch'!=eval(get_node(config.selected)['data']['parameters']['key']) or config.show_parameters"),
+        visible=dict(function="'batch'!=eval(config.active_node_parameters['key']) or config.show_parameters"),
         properties=dict(value="'batch'",type="text")
     ),
     dict(
         input='Input', 
         name='covariates', 
         description="typing.Optional[typing.Collection[str]]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['covariates'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['covariates'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='inplace', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['inplace'] or config.show_parameters"),
+        visible=dict(function="str(True)!=config.active_node_parameters['inplace'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),],
     postexecution = [],

@@ -22,84 +22,84 @@ leiden_args = dict(
         input='Input', 
         name='resolution', 
         description="<class 'float'>", 
-        visible=dict(function="str(1)!=get_node(config.selected)['data']['parameters']['resolution'] or config.show_parameters"),
+        visible=dict(function="str(1)!=config.active_node_parameters['resolution'] or config.show_parameters"),
         properties=dict(value="1",type="text")
     ),
     dict(
         input='Input', 
         name='restrict_to', 
         description="typing.Optional[typing.Tuple[str, typing.Sequence[str]]]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['restrict_to'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['restrict_to'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='random_state', 
         description="typing.Union[str, int, numpy.random.mtrand.RandomState]", 
-        visible=dict(function="str(0)!=get_node(config.selected)['data']['parameters']['random_state'] or config.show_parameters"),
+        visible=dict(function="str(0)!=config.active_node_parameters['random_state'] or config.show_parameters"),
         properties=dict(value="0",type="text")
     ),
     dict(
         input='Input', 
         name='key_added', 
         description="<class 'str'>", 
-        visible=dict(function="'leiden'!=eval(get_node(config.selected)['data']['parameters']['key_added']) or config.show_parameters"),
+        visible=dict(function="'leiden'!=eval(config.active_node_parameters['key_added']) or config.show_parameters"),
         properties=dict(value="'leiden'",type="text")
     ),
     dict(
         input='Input', 
         name='adjacency', 
         description="typing.Optional[scipy.sparse._matrix.spmatrix]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['adjacency'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['adjacency'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='directed', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['directed'] or config.show_parameters"),
+        visible=dict(function="str(True)!=config.active_node_parameters['directed'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='use_weights', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['use_weights'] or config.show_parameters"),
+        visible=dict(function="str(True)!=config.active_node_parameters['use_weights'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='n_iterations', 
         description="<class 'int'>", 
-        visible=dict(function="str(-1)!=get_node(config.selected)['data']['parameters']['n_iterations'] or config.show_parameters"),
+        visible=dict(function="str(-1)!=config.active_node_parameters['n_iterations'] or config.show_parameters"),
         properties=dict(value="-1",type="text")
     ),
     dict(
         input='Input', 
         name='partition_type', 
         description="typing.Optional[typing.Type[leidenalg.VertexPartition.MutableVertexPartition]]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['partition_type'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['partition_type'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='neighbors_key', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['neighbors_key'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['neighbors_key'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='obsp', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['obsp'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['obsp'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
+        visible=dict(function="str(False)!=config.active_node_parameters['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],

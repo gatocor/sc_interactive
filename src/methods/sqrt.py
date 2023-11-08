@@ -22,21 +22,21 @@ sqrt_args = dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
+        visible=dict(function="str(False)!=config.active_node_parameters['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
         name='chunked', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['chunked'] or config.show_parameters"),
+        visible=dict(function="str(False)!=config.active_node_parameters['chunked'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
         name='chunk_size', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['chunk_size'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['chunk_size'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),],
     postexecution = [],

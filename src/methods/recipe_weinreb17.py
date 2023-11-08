@@ -22,42 +22,42 @@ recipe_weinreb17_args = dict(
         input='Input', 
         name='log', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['log'] or config.show_parameters"),
+        visible=dict(function="str(True)!=config.active_node_parameters['log'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='mean_threshold', 
         description="<class 'float'>", 
-        visible=dict(function="str(0.01)!=get_node(config.selected)['data']['parameters']['mean_threshold'] or config.show_parameters"),
+        visible=dict(function="str(0.01)!=config.active_node_parameters['mean_threshold'] or config.show_parameters"),
         properties=dict(value="0.01",type="text")
     ),
     dict(
         input='Input', 
         name='cv_threshold', 
         description="<class 'int'>", 
-        visible=dict(function="str(2)!=get_node(config.selected)['data']['parameters']['cv_threshold'] or config.show_parameters"),
+        visible=dict(function="str(2)!=config.active_node_parameters['cv_threshold'] or config.show_parameters"),
         properties=dict(value="2",type="text")
     ),
     dict(
         input='Input', 
         name='n_pcs', 
         description="<class 'int'>", 
-        visible=dict(function="str(50)!=get_node(config.selected)['data']['parameters']['n_pcs'] or config.show_parameters"),
+        visible=dict(function="str(50)!=config.active_node_parameters['n_pcs'] or config.show_parameters"),
         properties=dict(value="50",type="text")
     ),
     dict(
         input='Input', 
         name='random_state', 
         description="typing.Union[str, int, numpy.random.mtrand.RandomState]", 
-        visible=dict(function="str(0)!=get_node(config.selected)['data']['parameters']['random_state'] or config.show_parameters"),
+        visible=dict(function="str(0)!=config.active_node_parameters['random_state'] or config.show_parameters"),
         properties=dict(value="0",type="text")
     ),
     dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
+        visible=dict(function="str(False)!=config.active_node_parameters['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],

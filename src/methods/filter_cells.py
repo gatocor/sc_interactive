@@ -22,42 +22,42 @@ filter_cells_args = dict(
         input='Input', 
         name='min_counts', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['min_counts'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['min_counts'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='min_genes', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['min_genes'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['min_genes'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='max_counts', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['max_counts'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['max_counts'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='max_genes', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['max_genes'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['max_genes'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='inplace', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['inplace'] or config.show_parameters"),
+        visible=dict(function="str(True)!=config.active_node_parameters['inplace'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
+        visible=dict(function="str(False)!=config.active_node_parameters['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],

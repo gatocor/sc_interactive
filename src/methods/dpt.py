@@ -22,42 +22,42 @@ dpt_args = dict(
         input='Input', 
         name='n_dcs', 
         description="<class 'int'>", 
-        visible=dict(function="str(10)!=get_node(config.selected)['data']['parameters']['n_dcs'] or config.show_parameters"),
+        visible=dict(function="str(10)!=config.active_node_parameters['n_dcs'] or config.show_parameters"),
         properties=dict(value="10",type="text")
     ),
     dict(
         input='Input', 
         name='n_branchings', 
         description="<class 'int'>", 
-        visible=dict(function="str(0)!=get_node(config.selected)['data']['parameters']['n_branchings'] or config.show_parameters"),
+        visible=dict(function="str(0)!=config.active_node_parameters['n_branchings'] or config.show_parameters"),
         properties=dict(value="0",type="text")
     ),
     dict(
         input='Input', 
         name='min_group_size', 
         description="<class 'float'>", 
-        visible=dict(function="str(0.01)!=get_node(config.selected)['data']['parameters']['min_group_size'] or config.show_parameters"),
+        visible=dict(function="str(0.01)!=config.active_node_parameters['min_group_size'] or config.show_parameters"),
         properties=dict(value="0.01",type="text")
     ),
     dict(
         input='Input', 
         name='allow_kendall_tau_shift', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['allow_kendall_tau_shift'] or config.show_parameters"),
+        visible=dict(function="str(True)!=config.active_node_parameters['allow_kendall_tau_shift'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='neighbors_key', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['neighbors_key'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['neighbors_key'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
+        visible=dict(function="str(False)!=config.active_node_parameters['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],
@@ -66,28 +66,28 @@ dpt_args = dict(
         input='Input', 
         name='color_map', 
         description="typing.Union[str, matplotlib.colors.Colormap, str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['color_map'] or config.show_plot"),
+        visible=dict(function="str(None)!=config.active_node_parameters['color_map'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='palette', 
         description="typing.Union[typing.Sequence[str], cycler.Cycler, str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['palette'] or config.show_plot"),
+        visible=dict(function="str(None)!=config.active_node_parameters['palette'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='show', 
         description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['show'] or config.show_plot"),
+        visible=dict(function="str(None)!=config.active_node_parameters['show'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='save', 
         description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['save'] or config.show_plot"),
+        visible=dict(function="str(None)!=config.active_node_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),]
 )

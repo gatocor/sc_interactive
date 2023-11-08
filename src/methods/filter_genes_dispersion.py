@@ -22,70 +22,70 @@ filter_genes_dispersion_args = dict(
         input='Input', 
         name='flavor', 
         description="typing.Literal['seurat', 'cell_ranger']", 
-        visible=dict(function="'seurat'!=eval(get_node(config.selected)['data']['parameters']['flavor']) or config.show_parameters"),
+        visible=dict(function="'seurat'!=eval(config.active_node_parameters['flavor']) or config.show_parameters"),
         properties=dict(value="'seurat'",type="text")
     ),
     dict(
         input='Input', 
         name='min_disp', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['min_disp'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['min_disp'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='max_disp', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['max_disp'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['max_disp'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='min_mean', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['min_mean'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['min_mean'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='max_mean', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['max_mean'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['max_mean'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='n_bins', 
         description="<class 'int'>", 
-        visible=dict(function="str(20)!=get_node(config.selected)['data']['parameters']['n_bins'] or config.show_parameters"),
+        visible=dict(function="str(20)!=config.active_node_parameters['n_bins'] or config.show_parameters"),
         properties=dict(value="20",type="text")
     ),
     dict(
         input='Input', 
         name='n_top_genes', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['n_top_genes'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['n_top_genes'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='log', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['log'] or config.show_parameters"),
+        visible=dict(function="str(True)!=config.active_node_parameters['log'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='subset', 
         description="<class 'bool'>", 
-        visible=dict(function="str(True)!=get_node(config.selected)['data']['parameters']['subset'] or config.show_parameters"),
+        visible=dict(function="str(True)!=config.active_node_parameters['subset'] or config.show_parameters"),
         properties=dict(value="True",type="text")
     ),
     dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
+        visible=dict(function="str(False)!=config.active_node_parameters['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],
@@ -94,21 +94,21 @@ filter_genes_dispersion_args = dict(
         input='Input', 
         name='log', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['plot']['log'] or config.show_plot"),
+        visible=dict(function="str(False)!=config.active_node_parameters['log'] or config.show_plot"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
         name='show', 
         description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['show'] or config.show_plot"),
+        visible=dict(function="str(None)!=config.active_node_parameters['show'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='save', 
         description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['plot']['save'] or config.show_plot"),
+        visible=dict(function="str(None)!=config.active_node_parameters['save'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),]
 )

@@ -243,7 +243,7 @@ GRAPHLAYOUT = {'name':'dagre',
                 'rankDir': "LR",
                 'rankSep': 5}
 
-ARGUMENTBOXSTYLE = {"background-color":"lightgray"}
+ARGUMENTBOXSTYLE = {"background-color":"transparent"}
 
 PLOTHEIGHT = 1000
 PLOTWIDTH = 1000

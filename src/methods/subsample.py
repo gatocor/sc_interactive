@@ -22,28 +22,28 @@ subsample_args = dict(
         input='Input', 
         name='fraction', 
         description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['fraction'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['fraction'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='n_obs', 
         description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=get_node(config.selected)['data']['parameters']['n_obs'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_node_parameters['n_obs'] or config.show_parameters"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
         name='random_state', 
         description="typing.Union[str, int, numpy.random.mtrand.RandomState]", 
-        visible=dict(function="str(0)!=get_node(config.selected)['data']['parameters']['random_state'] or config.show_parameters"),
+        visible=dict(function="str(0)!=config.active_node_parameters['random_state'] or config.show_parameters"),
         properties=dict(value="0",type="text")
     ),
     dict(
         input='Input', 
         name='copy', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=get_node(config.selected)['data']['parameters']['copy'] or config.show_parameters"),
+        visible=dict(function="str(False)!=config.active_node_parameters['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
     ),],
     postexecution = [],

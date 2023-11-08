@@ -105,7 +105,7 @@ def adapt(args, args_info):
         input='Input', 
         name='{arg[0]}', 
         description="{res}", 
-        visible=dict(function="'{arg[1]}'!=eval(get_node(config.selected)['data']['{POSITION}']['{arg[0]}']) or config.show_{POSITION}"),
+        visible=dict(function="'{arg[1]}'!=eval(config.active_node_parameters['{arg[0]}']) or config.show_{POSITION}"),
         properties=dict(value="'{arg[1]}'",type="text")
     )"""
                 codearg = f"""
@@ -117,7 +117,7 @@ def adapt(args, args_info):
         input='Input', 
         name='{arg[0]}', 
         description="{res}", 
-        visible=dict(function="str({arg[1]})!=get_node(config.selected)['data']['{POSITION}']['{arg[0]}'] or config.show_{POSITION}"),
+        visible=dict(function="str({arg[1]})!=config.active_node_parameters['{arg[0]}'] or config.show_{POSITION}"),
         properties=dict(value="{arg[1]}",type="text")
     )"""
                 codearg = f"""
