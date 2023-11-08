@@ -12,7 +12,7 @@ from general import *
 from app import server
 from app import app
 # import all pages in the app
-from pages import page_home, page_analysis, page_h5ad, page_report
+from pages import page_home, page_analysis, page_report
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -31,7 +31,6 @@ navbar = dbc.Navbar(
             dbc.Nav([
                 dbc.DropdownMenu([
                     dbc.DropdownMenuItem("Home", href="/home"),                     
-                    dbc.DropdownMenuItem("h5ad inspector", href="/h5ad"),                     
                     dbc.DropdownMenuItem("Graphical Analysis", href="/analysis"),                     
                     dbc.DropdownMenuItem("Report", href="/report"),                     
                 ],
@@ -79,10 +78,6 @@ def display_page(pathname):
     if pathname == '/home':
 
         return page_home.layout()
-
-    elif pathname == '/h5ad':
-
-        return page_h5ad.layout()
     
     elif pathname == '/analysis':
 
