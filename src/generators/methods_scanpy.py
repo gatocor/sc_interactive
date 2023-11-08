@@ -96,22 +96,27 @@ def adapt(args, args_info):
         else:
             t = arg[2]
 
-        if POSITION == "plot":
-            vis = f"'{arg[1]}'!=eval(config.active_plot_parameters['{arg[0]}'])"
-            vis2 = f"str({arg[1]})!=config.active_plot_parameters['{arg[0]}']"
+        if isinstance(arg[1],str):
+            a = arg[1].replace('\n'," ")
         else:
-            vis = f"'{arg[1]}'!=eval(config.active_node_parameters['{arg[0]}'])"
-            vis2 = f"str({arg[1]})!=config.active_node_parameters['{arg[0]}']"
+            a = arg[1]
+
+        if POSITION == "plot":
+            vis = f"'{a}'!=eval(config.active_plot_parameters['{arg[0]}'])"
+            vis2 = f"str({a})!=config.active_plot_parameters['{arg[0]}']"
+        elif POSITION == "parameters":
+            vis = f"'{a}'!=eval(config.active_node_parameters['{arg[0]}'])"
+            vis2 = f"str({a})!=config.active_node_parameters['{arg[0]}']"
 
         if arg[2] != None:
-            if isinstance(arg[1],str):
+            if isinstance(a,str):
                 method = f"""
     dict(
         input='Input', 
         name='{arg[0]}', 
         description="{res}", 
         visible=dict(function="{vis} or config.show_{POSITION}"),
-        properties=dict(value="'{arg[1]}'",type="text")
+        properties=dict(value="'{a}'",type="text")
     )"""
                 codearg = f"""
         {arg[0]}=type_formater(kwargs["{arg[0]}"],{t}),"""
@@ -218,9 +223,9 @@ print("Uncomplete functions: ", COUNT)
 avoid = ["palettes","paga_compare"]
 plot = [("pl",i) for i in dir(sc.pl) if not i.startswith("_") and i.islower() and i not in avoid]
 
-POSITION = "plot"
 for plot_module, plot_function in plot:
     METHOD = plot_function
+    POSITION = "plot"
     # print(plot_function)
     try:
         code = f"args = inspect.getfullargspec(sc.{plot_module}.{plot_function})"
@@ -229,7 +234,7 @@ for plot_module, plot_function in plot:
         exec(code_info,locals(),globals())
         plot_c, plot_kargs, plot_n_args = adapt(args, args_info)
         
-        executioncode = f"[{c}]"
+        executioncode = f"[{plot_c}]"
 
         figs = f"""
     fig = sc.{plot_module}.{plot_function}(
@@ -240,6 +245,8 @@ for plot_module, plot_function in plot:
         code = f"""
 import numpy
 from numpy import inf
+import scanpy
+import pandas
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import scipy

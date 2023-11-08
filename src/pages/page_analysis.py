@@ -311,8 +311,7 @@ def parameters_eval(args, populate = None, count = 0):
                 if populate == "execution":
                     config.active_node_parameters[args[i]["name"]] = value
                 elif populate == "plot":
-                    pos = get_node_pos(config.selected)
-                    config.graph[pos]["data"]["plot"][args[i]["name"]] = value
+                    config.active_plot_parameters[args[i]["name"]] = value
 
     elif type(args) == dict:
         if "function" in args.keys():
@@ -336,7 +335,7 @@ def method_create_pars(args_type):
         for j in method_args:
             config.active_node_parameters[j["name"]] = j["properties"]["value"]
     elif args_type == "plot":
-        if config.selec_plot != None:
+        if config.selected_plot != None:
             method_args = config.methods_plot[config.selected_plot]["args"]
             for j in method_args:
                 config.active_plot_parameters[j["name"]] = j["properties"]["value"]
@@ -345,7 +344,7 @@ def method_create_pars(args_type):
 
     args = parameters_eval(method_args, args_type)
 
-def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_header="args"):
+def make_arguments(id, arg_list, loaded_args={}, plot=False, add_header="args"):
 
     if arg_list == []:
         return []
@@ -455,7 +454,7 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
                 )
             )
 
-    if add_execution_button:
+    if not plot:
         if config.show_parameters:
             l.append(
                 html.Div(
@@ -473,11 +472,17 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
     else:
         if config.show_plot:
             l.append(
-                    dbc.Button("Show Less Arguments",id="analysis_unfold_plot_button",color="gray")
+                html.Div(
+                    dbc.Button("Show Less Arguments",id="analysis_unfold_plot_button",color="dark"),
+                    className="d-grid gap-2"
+                )
             )
         else:
             l.append(
-                    dbc.Button("Show More Arguments",id="analysis_unfold_plot_button",color="gray")
+                html.Div(
+                    dbc.Button("Show More Arguments",id="analysis_unfold_plot_button",color="dark"),
+                    className="d-grid gap-2"
+                )
             )
 
     return l
@@ -489,13 +494,9 @@ def load_node(name):
 
     method = get_node(name)['data']['method']
     args = get_node(name)['data']['parameters']
-    plot_args = get_node(name)['data']['plot']
     l = make_arguments(method, config.methods[method]["args"], args)
     l3 = []
     p = []
-    if get_node(name)['data']['computed']:
-        l3 = make_arguments(method, config.methods[method]["args"]["plot"], plot_args, add_execution_button=False, add_header="plot")
-        p = config.methods[method]["plot"]()
             
     return l, l3, p
 
@@ -582,7 +583,7 @@ for method in config.methods_plot.keys():
 
             if i['input'] == 'Input':
                 input = f"Input('analysis_{i['name']}','value'),"
-                up = f"config.active_node_parameters['{i['name']}'] = data"
+                up = f"config.active_plot_parameters['{i['name']}'] = data"
                 args = "data"
             # elif i['input'] == 'Dropdown':
             #     input = f"Input('analysis_{i['name']}','value'),"
@@ -603,26 +604,27 @@ for method in config.methods_plot.keys():
 # Plot
             add_function = f"""
 @app.callback(
-    Output("analysis_plotargs","children", allow_duplicate=True),
+    # Output("analysis_plotargs","children", allow_duplicate=True),
+    Output("dumb","children", allow_duplicate=True),
     {input}
     prevent_initial_call=True
 )
 def change_parameter_{i['name']}({args}):
 
-    method = get_node(config.selected)["data"]["method"]
-    if '{i['name']}' not in [i['name'] for i in config.methods[method]["args"]]:
-        raise PreventUpdate()
+    # method = get_node(config.selected)["data"]["method"]
+    # if '{i['name']}' not in [i['name'] for i in config.methods[method]["args"]]:
+    #     raise PreventUpdate()
 
-    if config.block_callback['{i['name']}']:
-        config.block_callback['{i['name']}'] = False
-        raise PreventUpdate()
+    # if config.block_callback['{i['name']}']:
+    #     config.block_callback['{i['name']}'] = False
+    #     raise PreventUpdate()
 
     {up}
-    clean_arguments('{i['name']}', config.methods_plot[method]["args"], config.active_plot_parameters)
-    args_object = make_arguments(method, config.methods_plot[method]["args"], config.active_plot_parameters)
-    config.block_callback['{i['name']}'] = False
+    # clean_arguments('{i['name']}', config.methods_plot[method]["args"], config.active_plot_parameters)
+    # args_object = make_arguments(method, config.methods_plot[method]["args"], config.active_plot_parameters)
+    # config.block_callback['{i['name']}'] = False
 
-    return args_object
+    return ""#args_object
 """
 
             exec(add_function, globals(), locals())
@@ -901,6 +903,26 @@ def execute(n_clicks, warning_computed):
 
 @app.callback(
     Output('analysis_plotargs', 'children', allow_duplicate=True),
+    Input('analysis_plot_dropdown', 'value'),
+    prevent_initial_call=True
+)
+def graph_new_node(plot_type):
+
+    if plot_type != None:
+
+        #Create parameters
+        config.selected_plot = plot_type
+
+        method_create_pars("plot")
+
+        l = make_arguments(method, config.methods_plot[plot_type]["args"], config.active_plot_parameters, plot=True)
+
+        return l
+    else:
+        raise PreventUpdate()
+
+@app.callback(
+    Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
     Output('analysis_inspector', 'children', allow_duplicate=True),
     [
@@ -908,12 +930,12 @@ def execute(n_clicks, warning_computed):
     ],
     prevent_initial_call=True
 )
-def execute(n_clicks):
+def execute_plot(n_clicks):
 
     if n_clicks != None:
             
         node_data = get_node(config.selected)['data']
-        plot_args_object = make_arguments(node_data['method'], config.methods[node_data['method']]["args"]["plot"], add_execution_button=False, add_header="plot")
+        plot_args_object = make_arguments(node_data['method'], config.methods[node_data['method']]["args"]["plot"], plot=False)
         plot = config.methods[node_data['method']]["plot"]()
 
         inspector = print_to_string(config.adata)
@@ -1123,6 +1145,26 @@ def unfold_execution(n_clicks):
 
         method = get_node(config.selected)["data"]["method"]
         args_object = make_arguments(method, config.methods[method]["args"], config.active_node_parameters)
+
+        return args_object
+
+    else:
+
+        raise PreventUpdate()
+
+@app.callback(
+    Output("analysis_plotargs","children",allow_duplicate=True),
+    Input("analysis_unfold_plot_button","n_clicks"),
+    prevent_initial_call=True
+)
+def unfold_plot(n_clicks):
+
+    if n_clicks != None:
+
+        config.show_plot = not config.show_plot
+
+        method = config.selected_plot
+        args_object = make_arguments(method, config.methods_plot[method]["args"], config.active_plot_parameters, plot=True)
 
         return args_object
 

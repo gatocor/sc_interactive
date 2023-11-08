@@ -1,6 +1,8 @@
 
 import numpy
 from numpy import inf
+import scanpy
+import pandas
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import scipy
@@ -67,100 +69,212 @@ config.methods_plot["dotplot"] = dict(
     args = [
     dict(
         input='Input', 
-        name='min_dist', 
-        description="<class 'float'>", 
-        visible=dict(function="str(0.5)!=config.active_node_parameters['min_dist'] or config.show_parameters"),
-        properties=dict(value="0.5",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='spread', 
-        description="<class 'float'>", 
-        visible=dict(function="str(1.0)!=config.active_node_parameters['spread'] or config.show_parameters"),
-        properties=dict(value="1.0",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='n_components', 
-        description="<class 'int'>", 
-        visible=dict(function="str(2)!=config.active_node_parameters['n_components'] or config.show_parameters"),
-        properties=dict(value="2",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='maxiter', 
-        description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['maxiter'] or config.show_parameters"),
+        name='use_raw', 
+        description="typing.Optional[bool]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['use_raw'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
-        name='alpha', 
-        description="<class 'float'>", 
-        visible=dict(function="str(1.0)!=config.active_node_parameters['alpha'] or config.show_parameters"),
-        properties=dict(value="1.0",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='gamma', 
-        description="<class 'float'>", 
-        visible=dict(function="str(1.0)!=config.active_node_parameters['gamma'] or config.show_parameters"),
-        properties=dict(value="1.0",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='negative_sample_rate', 
-        description="<class 'int'>", 
-        visible=dict(function="str(5)!=config.active_node_parameters['negative_sample_rate'] or config.show_parameters"),
-        properties=dict(value="5",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='init_pos', 
-        description="typing.Union[typing.Literal['paga', 'spectral', 'random'], numpy.ndarray, str]", 
-        visible=dict(function="'spectral'!=eval(config.active_node_parameters['init_pos']) or config.show_parameters"),
-        properties=dict(value="'spectral'",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='random_state', 
-        description="typing.Union[str, int, numpy.random.mtrand.RandomState]", 
-        visible=dict(function="str(0)!=config.active_node_parameters['random_state'] or config.show_parameters"),
-        properties=dict(value="0",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='a', 
-        description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['a'] or config.show_parameters"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='b', 
-        description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['b'] or config.show_parameters"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='copy', 
+        name='log', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=config.active_node_parameters['copy'] or config.show_parameters"),
+        visible=dict(function="str(False)!=config.active_plot_parameters['log'] or config.show_plot"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
-        name='method', 
-        description="typing.Literal['umap', 'rapids']", 
-        visible=dict(function="'umap'!=eval(config.active_node_parameters['method']) or config.show_parameters"),
-        properties=dict(value="'umap'",type="text")
+        name='num_categories', 
+        description="<class 'int'>", 
+        visible=dict(function="str(7)!=config.active_plot_parameters['num_categories'] or config.show_plot"),
+        properties=dict(value="7",type="text")
     ),
     dict(
         input='Input', 
-        name='neighbors_key', 
+        name='expression_cutoff', 
+        description="<class 'float'>", 
+        visible=dict(function="str(0.0)!=config.active_plot_parameters['expression_cutoff'] or config.show_plot"),
+        properties=dict(value="0.0",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='mean_only_expressed', 
+        description="<class 'bool'>", 
+        visible=dict(function="str(False)!=config.active_plot_parameters['mean_only_expressed'] or config.show_plot"),
+        properties=dict(value="False",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='cmap', 
+        description="<class 'str'>", 
+        visible=dict(function="'Reds'!=eval(config.active_plot_parameters['cmap']) or config.show_plot"),
+        properties=dict(value="'Reds'",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='dot_max', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['dot_max'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='dot_min', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['dot_min'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='standard_scale', 
+        description="typing.Optional[typing.Literal['var', 'group']]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['standard_scale'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='smallest_dot', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(0.0)!=config.active_plot_parameters['smallest_dot'] or config.show_plot"),
+        properties=dict(value="0.0",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='title', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['neighbors_key'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_plot_parameters['title'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='colorbar_title', 
+        description="typing.Optional[str]", 
+        visible=dict(function="'Mean expression in group'!=eval(config.active_plot_parameters['colorbar_title']) or config.show_plot"),
+        properties=dict(value="'Mean expression in group'",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='size_title', 
+        description="typing.Optional[str]", 
+        visible=dict(function="'Fraction of cells in group (%)'!=eval(config.active_plot_parameters['size_title']) or config.show_plot"),
+        properties=dict(value="'Fraction of cells in group (%)'",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='figsize', 
+        description="typing.Optional[typing.Tuple[float, float]]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['figsize'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='dendrogram', 
+        description="typing.Union[bool, str]", 
+        visible=dict(function="str(False)!=config.active_plot_parameters['dendrogram'] or config.show_plot"),
+        properties=dict(value="False",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='gene_symbols', 
+        description="typing.Optional[str]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['gene_symbols'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='var_group_positions', 
+        description="typing.Optional[typing.Sequence[typing.Tuple[int, int]]]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['var_group_positions'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='var_group_labels', 
+        description="typing.Optional[typing.Sequence[str]]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['var_group_labels'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='var_group_rotation', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['var_group_rotation'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='layer', 
+        description="typing.Optional[str]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['layer'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='swap_axes', 
+        description="typing.Optional[bool]", 
+        visible=dict(function="str(False)!=config.active_plot_parameters['swap_axes'] or config.show_plot"),
+        properties=dict(value="False",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='dot_color_df', 
+        description="typing.Optional[pandas.core.frame.DataFrame]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['dot_color_df'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='show', 
+        description="typing.Optional[bool]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='save', 
+        description="typing.Union[str, bool, str]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='ax', 
+        description="typing.Optional[scanpy.plotting._utils._AxesSubplot]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['ax'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='return_fig', 
+        description="typing.Optional[bool]", 
+        visible=dict(function="str(False)!=config.active_plot_parameters['return_fig'] or config.show_plot"),
+        properties=dict(value="False",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='vmin', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['vmin'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='vmax', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['vmax'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='vcenter', 
+        description="typing.Optional[float]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['vcenter'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='norm', 
+        description="typing.Optional[matplotlib.colors.Normalize]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['norm'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),],
 

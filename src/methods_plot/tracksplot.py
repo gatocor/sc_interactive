@@ -1,6 +1,8 @@
 
 import numpy
 from numpy import inf
+import scanpy
+import pandas
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import scipy
@@ -47,100 +49,72 @@ config.methods_plot["tracksplot"] = dict(
     args = [
     dict(
         input='Input', 
-        name='min_dist', 
-        description="<class 'float'>", 
-        visible=dict(function="str(0.5)!=config.active_node_parameters['min_dist'] or config.show_parameters"),
-        properties=dict(value="0.5",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='spread', 
-        description="<class 'float'>", 
-        visible=dict(function="str(1.0)!=config.active_node_parameters['spread'] or config.show_parameters"),
-        properties=dict(value="1.0",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='n_components', 
-        description="<class 'int'>", 
-        visible=dict(function="str(2)!=config.active_node_parameters['n_components'] or config.show_parameters"),
-        properties=dict(value="2",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='maxiter', 
-        description="typing.Optional[int]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['maxiter'] or config.show_parameters"),
+        name='use_raw', 
+        description="typing.Optional[bool]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['use_raw'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),
     dict(
         input='Input', 
-        name='alpha', 
-        description="<class 'float'>", 
-        visible=dict(function="str(1.0)!=config.active_node_parameters['alpha'] or config.show_parameters"),
-        properties=dict(value="1.0",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='gamma', 
-        description="<class 'float'>", 
-        visible=dict(function="str(1.0)!=config.active_node_parameters['gamma'] or config.show_parameters"),
-        properties=dict(value="1.0",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='negative_sample_rate', 
-        description="<class 'int'>", 
-        visible=dict(function="str(5)!=config.active_node_parameters['negative_sample_rate'] or config.show_parameters"),
-        properties=dict(value="5",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='init_pos', 
-        description="typing.Union[typing.Literal['paga', 'spectral', 'random'], numpy.ndarray, str]", 
-        visible=dict(function="'spectral'!=eval(config.active_node_parameters['init_pos']) or config.show_parameters"),
-        properties=dict(value="'spectral'",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='random_state', 
-        description="typing.Union[str, int, numpy.random.mtrand.RandomState]", 
-        visible=dict(function="str(0)!=config.active_node_parameters['random_state'] or config.show_parameters"),
-        properties=dict(value="0",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='a', 
-        description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['a'] or config.show_parameters"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='b', 
-        description="typing.Optional[float]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['b'] or config.show_parameters"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='copy', 
+        name='log', 
         description="<class 'bool'>", 
-        visible=dict(function="str(False)!=config.active_node_parameters['copy'] or config.show_parameters"),
+        visible=dict(function="str(False)!=config.active_plot_parameters['log'] or config.show_plot"),
         properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
-        name='method', 
-        description="typing.Literal['umap', 'rapids']", 
-        visible=dict(function="'umap'!=eval(config.active_node_parameters['method']) or config.show_parameters"),
-        properties=dict(value="'umap'",type="text")
+        name='dendrogram', 
+        description="typing.Union[bool, str]", 
+        visible=dict(function="str(False)!=config.active_plot_parameters['dendrogram'] or config.show_plot"),
+        properties=dict(value="False",type="text")
     ),
     dict(
         input='Input', 
-        name='neighbors_key', 
+        name='gene_symbols', 
         description="typing.Optional[str]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['neighbors_key'] or config.show_parameters"),
+        visible=dict(function="str(None)!=config.active_plot_parameters['gene_symbols'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='var_group_positions', 
+        description="typing.Optional[typing.Sequence[typing.Tuple[int, int]]]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['var_group_positions'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='var_group_labels', 
+        description="typing.Optional[typing.Sequence[str]]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['var_group_labels'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='layer', 
+        description="typing.Optional[str]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['layer'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='show', 
+        description="typing.Optional[bool]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['show'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='save', 
+        description="typing.Union[str, bool, str]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['save'] or config.show_plot"),
+        properties=dict(value="None",type="text")
+    ),
+    dict(
+        input='Input', 
+        name='figsize', 
+        description="typing.Optional[typing.Tuple[float, float]]", 
+        visible=dict(function="str(None)!=config.active_plot_parameters['figsize'] or config.show_plot"),
         properties=dict(value="None",type="text")
     ),],
 
