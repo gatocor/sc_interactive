@@ -24,7 +24,7 @@ for i in os.listdir("./methods"):
 tab_h5ad = dbc.Card(
     [
         dbc.CardBody(
-            id='h5ad_inspector',
+            id='analysis_inspector',
             children = [],
             # width='50%',
         )
@@ -713,6 +713,7 @@ def graph_new_node(_):
     Output('analysis_args', 'children', allow_duplicate=True),
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
+    Output('analysis_inspector', 'children', allow_duplicate=True),
     [
         Input('new-proceed', 'n_clicks')
     ],
@@ -794,7 +795,9 @@ def graph_new_node(_, input, output, method, cytoscape):
     #load interactive plots
     l, l3, p = load_node(name)
 
-    return False, config.graph, graph2table(), name, l, l3, p 
+    inspector = print_to_string(config.adata)
+
+    return False, config.graph, graph2table(), name, l, l3, p, html.Pre(inspector)
 
 #Execute analysis button
 @app.callback(
@@ -965,6 +968,7 @@ def delete_cancel(n_clicks):
     Output('analysis_args', 'children', allow_duplicate=True),
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
+    Output('analysis_inspector', 'children', allow_duplicate=True),
     [
         Input('graph_load_button', 'n_clicks')
     ],
@@ -1001,7 +1005,9 @@ def load_analysis(_, name):
 
         l, l3, p = load_node(name)
 
-        return config.graph, name, l, l3, p
+        inspector = print_to_string(config.adata)
+
+        return config.graph, name, l, l3, p, html.Pre(inspector)
     
     else:
         raise PreventUpdate()

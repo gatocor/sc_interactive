@@ -7,6 +7,7 @@ import os
 from shutil import rmtree, copyfile
 from copy import deepcopy
 import typing
+import io
 
 from dash import dash_table
 from dash import dcc
@@ -413,6 +414,13 @@ def get_from_table(table, filter={}, properties={}):
                 properties_dict[j].append(properties[j](i[j]))
 
     return properties_dict
+
+def print_to_string(*args, **kwargs):
+    output = io.StringIO()
+    print(*args, file=output, **kwargs)
+    contents = output.getvalue()
+    output.close()
+    return contents
 
 def json_serializable(uns):
 
