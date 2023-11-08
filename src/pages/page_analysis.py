@@ -21,6 +21,88 @@ for i in os.listdir("./methods"):
 # Layout
 ############################################################################################################################################
 ############################################################################################################################################
+tab_algorithm = dbc.Card(
+    [
+        dbc.CardBody(
+            id='analysis_args',
+            children = [],
+            # width='50%',
+            style=ARGUMENTBOXSTYLE
+        ),
+        dbc.CardFooter(
+            children=[dbc.Button("Execute",id="analysis_execute_button")],
+            style=ARGUMENTBOXSTYLE
+        ),
+    ],
+    className="mt-3",
+)
+tab_plot = dbc.Row([
+    dbc.Col(
+        dbc.Card(
+            [
+                dbc.CardBody(
+                    id='analysis_plotargs',
+                    children = [],
+                    # width='50%',
+                    style=ARGUMENTBOXSTYLE
+                ),
+                dbc.CardFooter(
+                    children=[
+                        dbc.Button("Execute",id="analysis_execute_button"),
+                    ],
+                    style=ARGUMENTBOXSTYLE
+                ),
+            ],
+            className="mt-3",
+        ),
+    ),
+    dbc.Col(
+        dbc.Card(
+            [
+                dbc.CardBody(
+                    id='analysis_plot',
+                    children = [],
+                    # width='50%',
+                    style=ARGUMENTBOXSTYLE
+                ),
+                dbc.CardFooter(
+                    children=[
+                        dbc.Button("Save Image",id="analysis_saveimage_button"),
+                    ],
+                    style=ARGUMENTBOXSTYLE
+                ),
+            ],
+            className="mt-3",
+        )
+    )
+])
+tab_report = dbc.Card(
+    children = [
+        dbc.CardHeader(
+            children = [
+                dbc.Row([
+                    dbc.Col(
+                        dbc.Switch(id="analysis-show-editor",value=False,label="Activate editor"),
+                    ),
+                ])
+            ]
+        ),
+        dbc.CardBody(
+            id='analysis_report',
+            children = [],
+            # width='50%',
+            style=ARGUMENTBOXSTYLE
+        ),
+        dbc.CardFooter(
+            children=[
+                dbc.Button(id="analysis-save-report",children="Save Report",disabled=False)
+            ],
+            style=ARGUMENTBOXSTYLE
+        ),
+    ],
+    className="mt-3",
+)
+
 def layout():
     return dbc.Container(
         [
@@ -161,24 +243,19 @@ def layout():
                 is_open=False,
                 color="danger"
             ),
-            dbc.Row(id = 'analysis_args',
-                    children = [],
-                    # width='50%',
-                    style=ARGUMENTBOXSTYLE
+            dbc.Alert(
+                [
+                    html.H1(id="analysis_name",children="Raw"),
+                    dbc.Tabs(
+                        [
+                            dbc.Tab(tab_algorithm, label="Algorithm"),
+                            dbc.Tab(tab_plot, label="Plot"),
+                            dbc.Tab(tab_report, label="Report"),
+                        ]
                     ),
-            dbc.Row(id='analysis_postargs',
-                    children=[],  
-                    # width='50%',
-                    style=ARGUMENTBOXSTYLE
-                    ),
-            dbc.Row(id='analysis_plotargs',
-                    children=[],  
-                    # width='50%',
-                    style=ARGUMENTBOXSTYLE
-                    ),
-            dbc.Row(id='analysis_plot',
-                    children=[]
-                    )
+                ],
+                color="dark", 
+            ),
         ],
         fluid=True
     )
@@ -259,33 +336,7 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
     for i in arglist:
         config.block_callback[i["name"]] = True
 
-    l = [
-        dbc.Col(
-            dbc.Row(html.H1("Additional arguments")),
-        ),
-    ]
-    if add_header == "args":
-        l = [
-            dbc.Row(
-                [
-                    dbc.Col(
-                        html.H1(config.selected, id="analysis_name")
-                    ),
-                ],
-                align="center"
-            )
-        ]
-    elif add_header == "plot":
-        l = [
-            dbc.Col(
-                dbc.Row(html.H1("Plot arguments")),
-            ),
-            dbc.Col(
-                dbc.Row(
-                    dbc.Button("Save Image",id="analysis_saveimage_button", class_name="btn btn-primary btn-sm"),
-                )
-            )
-        ]
+    l = []
 
     for i,arg in enumerate(arglist):
 
@@ -394,9 +445,6 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
             l.append(
                     dbc.Button("More Arguments",id="analysis_unfold_execution_button",color="gray")
             )
-        l.append(
-                dbc.Button("Execute",id="analysis_execute_button")
-        )
     else:
         if config.show_plot:
             l.append(
@@ -418,15 +466,13 @@ def load_node(name):
     args = get_node(name)['data']['parameters']
     plot_args = get_node(name)['data']['plot']
     l = make_arguments(method, config.methods[method]["args"]["execution"], args)
-    l2 = []
     l3 = []
     p = []
     if get_node(name)['data']['computed']:
-        l2 = make_arguments(method, config.methods[method]["args"]["postexecution"], args, add_execution_button=False, add_header="postargs")
         l3 = make_arguments(method, config.methods[method]["args"]["plot"], plot_args, add_execution_button=False, add_header="plot")
         p = config.methods[method]["plot"]()
             
-    return l, l2, l3, p
+    return l, l3, p
 
 ############################################################################################################################################
 ############################################################################################################################################
@@ -439,7 +485,6 @@ methods_implemented = []
 for method in config.methods.keys():
 
     for i in deepcopy(config.methods[method]["args"]["execution"])+\
-                deepcopy(config.methods[method]["args"]["postexecution"])+\
                 deepcopy(config.methods[method]["args"]["plot"]):
 
         m_i = (i['name'],i['input'])
@@ -451,25 +496,21 @@ for method in config.methods.keys():
             if i['input'] == 'Input':
                 input = f"Input('analysis_{i['name']}','value'),"
                 up = f"config.active_node_parameters['{i['name']}'] = data"
-                up_post = f"config.graph[get_node_pos(config.selected)]['data']['parameters']['{i['name']}'] = data"
                 up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
                 args = "data"
             elif i['input'] == 'Dropdown':
                 input = f"Input('analysis_{i['name']}','value'),"
                 up = f"config.active_node_parameters['{i['name']}'] = data"
-                up_post = f"config.graph[get_node_pos(config.selected)]['data']['parameters']['{i['name']}'] = data"
                 up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
                 args = "data"
             elif i['input'] == 'BooleanSwitch':
                 input = f"Input('analysis_{i['name']}','on'),"
                 up = f"config.active_node_parameters['{i['name']}'] = data"
-                up_post = f"config.graph[get_node_pos(config.selected)]['data']['parameters']['{i['name']}'] = data"
                 up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
                 args = "data"
             elif i['input'] == 'AgTable':
                 input = f"Input('analysis_{i['name']}','cellValueChanged'), State('analysis_{i['name']}','rowData'),"
                 up = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.active_node_parameters['{i['name']}'] = data"
-                up_post = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.graph[get_node_pos(config.selected)]['data']['parameters']['{i['name']}'] = data"
                 up_plot = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
                 args = "cell, data"
 
@@ -504,29 +545,18 @@ def change_parameter_{i['name']}({args}):
 
             exec(add_function, globals(), locals())
 
-#Postexecution and Plot
+# Plot
             add_function = f"""
 @app.callback(
-    Output("analysis_postargs","children", allow_duplicate=True),
     Output("analysis_plotargs","children", allow_duplicate=True),
     Output("analysis_plot","children", allow_duplicate=True),
     {input}
     prevent_initial_call=True
 )
-def change_postparameter_{i['name']}({args}):
+def change_plotparameter_{i['name']}({args}):
 
     method = get_node(config.selected)["data"]["method"]
-    if '{i['name']}' in [i['name'] for i in config.methods[method]["args"]["postexecution"]]:
-
-        if '{i['name']}' in config.block_callback.keys():
-            if config.block_callback['{i['name']}']:
-                config.block_callback['{i['name']}'] = False
-                raise PreventUpdate()
-
-        {up_post}
-        set_parameters(dict({i['name']}=data), 'parameters')
-    
-    elif '{i['name']}' in [i['name'] for i in config.methods[method]["args"]["plot"]]:
+    if '{i['name']}' in [i['name'] for i in config.methods[method]["args"]["plot"]]:
     
         if '{i['name']}' in config.block_callback.keys():
             if config.block_callback['{i['name']}']:
@@ -542,14 +572,6 @@ def change_postparameter_{i['name']}({args}):
 
     method = get_node(config.selected)["data"]["method"]
 
-    post_args = deepcopy(config.methods[method]["args"]["postexecution"])
-    deactivate = False
-    for i in post_args:
-        config.block_callback[i['name']] = True
-    config.block_callback['{i['name']}'] = False
-    clean_arguments('{i['name']}', config.methods[method]["args"]["postexecution"], get_node(config.selected)['data']['parameters'])
-    post_args_object = make_arguments(method, post_args, loaded_args=get_node(config.selected)['data']['parameters'], add_execution_button=False, add_header="postargs")
-
     plot_args = deepcopy(config.methods[method]["args"]["plot"])
     deactivate = False
     clean_arguments('{i['name']}', config.methods[method]["args"]["plot"], get_node(config.selected)['data']['plot'])
@@ -558,7 +580,7 @@ def change_postparameter_{i['name']}({args}):
 
     plot = config.methods[method]['plot']()
 
-    return post_args_object, plot_args_object, plot
+    return plot_args_object, plot
 """
 
             exec(add_function, globals(), locals())
@@ -682,8 +704,8 @@ def graph_new_node(_):
     Output('new-modal', 'is_open', allow_duplicate=True),
     Output('graph_cytoscape', 'elements', allow_duplicate=True),
     Output('graph_table', 'data', allow_duplicate=True),
+    Output('analysis_name','children',allow_duplicate=True),
     Output('analysis_args', 'children', allow_duplicate=True),
-    Output('analysis_postargs', 'children', allow_duplicate=True),
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
     [
@@ -765,15 +787,14 @@ def graph_new_node(_, input, output, method, cytoscape):
         node_reassign_input(output,name)
 
     #load interactive plots
-    l, l2, l3, p = load_node(name)
+    l, l3, p = load_node(name)
 
-    return False, config.graph, graph2table(), l, l2, l3, p 
+    return False, config.graph, graph2table(), name, l, l3, p 
 
 #Execute analysis button
 @app.callback(
     Output('graph_cytoscape', 'elements', allow_duplicate=True),
     Output('execute-computed-modal', 'is_open', allow_duplicate=True),
-    Output('analysis_postargs', 'children', allow_duplicate=True),
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
     Output('execution-error', 'is_open', allow_duplicate=True),
@@ -818,21 +839,20 @@ def execute(n_clicks, warning_computed, plot):
 
         #save parameters
         set_parameters(config.active_node_parameters, 'parameters')
-        method_create_pars(["postexecution","plot"])
+        method_create_pars(["plot"])
 
         #Activate node
         activate_node(config.selected)
         deactivate_downstream(config.selected)
 
         node_data = get_node(config.selected)['data']
-        post_args_object = make_arguments(node_data['method'], config.methods[node_data['method']]["args"]["postexecution"], add_execution_button=False, add_header="postargs")
         plot_args_object = make_arguments(node_data['method'], config.methods[node_data['method']]["args"]["plot"], add_execution_button=False, add_header="plot")
         plot = config.methods[node_data['method']]["plot"]()
 
         save_adata()
         save_graph()
 
-        return config.graph, warning_computed, post_args_object, plot_args_object, plot, False, ""
+        return config.graph, warning_computed, plot_args_object, plot, False, ""
 
     else:
 
@@ -864,7 +884,6 @@ def delete(n_clicks, value):
 @app.callback(
     Output('graph_cytoscape', 'elements', allow_duplicate=True),
     Output('analysis_args', 'children', allow_duplicate=True),
-    Output('analysis_postargs', 'children', allow_duplicate=True),
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
     Output('delete-modal', 'is_open', allow_duplicate=True),
@@ -893,10 +912,10 @@ def delete_confirmation(n_clicks, val):
         
         else:
 
-            l, l2, l3, p = load_node(config.selected)
+            l, l3, p = load_node(config.selected)
             modal = False
 
-            return config.graph, l, l2, l3, p, modal, val
+            return config.graph, l, l3, p, modal, val
     
     else:
 
@@ -922,8 +941,8 @@ def delete_cancel(n_clicks):
 #Load button
 @app.callback(
     Output('graph_cytoscape', 'elements', allow_duplicate=True),
+    Output('analysis_name','children',allow_duplicate=True),
     Output('analysis_args', 'children', allow_duplicate=True),
-    Output('analysis_postargs', 'children', allow_duplicate=True),
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
     [
@@ -960,9 +979,9 @@ def load_analysis(_, name):
         # method_create_pars(["execution"])
         # # set_active_node_parameters({i["name"]:get_value(i) for i in args.copy()})
 
-        l, l2, l3, p = load_node(name)
+        l, l3, p = load_node(name)
 
-        return config.graph, l, l2, l3, p
+        return config.graph, name, l, l3, p
     
     else:
         raise PreventUpdate()
