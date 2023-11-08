@@ -459,25 +459,25 @@ def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_
         if config.show_parameters:
             l.append(
                 html.Div(
-                    dbc.Button("Less Arguments",id="analysis_unfold_execution_button",color="dark"),
+                    dbc.Button("Show Less Arguments",id="analysis_unfold_execution_button",color="dark"),
                     className="d-grid gap-2"
                 )
             )
         else:
             l.append(
                 html.Div(
-                    dbc.Button("More Arguments",id="analysis_unfold_execution_button",color="dark"),
+                    dbc.Button("Show More Arguments",id="analysis_unfold_execution_button",color="dark"),
                     className="d-grid gap-2"
                 )
             )
     else:
         if config.show_plot:
             l.append(
-                    dbc.Button("Less Arguments",id="analysis_unfold_plot_button",color="gray")
+                    dbc.Button("Show Less Arguments",id="analysis_unfold_plot_button",color="gray")
             )
         else:
             l.append(
-                    dbc.Button("More Arguments",id="analysis_unfold_plot_button",color="gray")
+                    dbc.Button("Show More Arguments",id="analysis_unfold_plot_button",color="gray")
             )
 
     return l
@@ -569,16 +569,16 @@ def change_parameter_{i['name']}({args}):
 
             exec(add_function, globals(), locals())
 
-methods_implemented = []
-for method in config.methods.keys():
+methods_plot_implemented = []
+for method in config.methods_plot.keys():
 
-    for i in deepcopy(config.methods[method]["args"]):
+    for i in deepcopy(config.methods_plot[method]["args"]):
 
         m_i = (i['name'],i['input'])
 
-        if m_i not in methods_implemented:
+        if m_i not in methods_plot_implemented:
 
-            methods_implemented.append(m_i)
+            methods_plot_implemented.append(m_i)
 
             if i['input'] == 'Input':
                 input = f"Input('analysis_{i['name']}','value'),"
@@ -885,7 +885,6 @@ def execute(n_clicks, warning_computed):
 
         #save parameters
         set_parameters(config.active_node_parameters, 'parameters')
-        method_create_pars(["plot"])
 
         #Activate node
         activate_node(config.selected)
