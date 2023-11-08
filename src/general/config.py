@@ -12,6 +12,7 @@ show_parameters = False
 show_plot = False
 
 active_node_parameters = {}
+active_plot_parameters = {}
 max_x = 0
 selected = 'Raw'
 
@@ -22,10 +23,7 @@ methods = {
             "make_new_h5ad" : True
         },
 
-        "args": {
-            "execution" : [],
-            "postexecution" : [],
-            "plot" : []
-        } 
+        "args": []
     }
 }
+methods_plot = {}

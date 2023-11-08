@@ -319,6 +319,12 @@ def deep_substitute(object, origin, target):
 
 #     config.adata.uns = deep_substitute(config.adata.uns, origin = "__None__", target = None)
 
+def get_plot_methods(name):
+
+    options = [i for i in config.methods_plot.keys() if name in i] + PLOTMETHODSGENERIC
+
+    return options
+
 def get_name(name):
     return config.selected+"--"+name
 

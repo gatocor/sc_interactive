@@ -48,8 +48,6 @@ models += [("tl",i) for i in dir(sc.tl) if i in include]
 # models += [("epp",i) for i in dir(sc.external.pp) if not i.startswith("_") and i not in ["base","utils"]]
 # models += [("etl",i) for i in dir(sc.external.tl) if not i.startswith("_") and i not in ["base","utils"]]
 
-plot = [("pl",i) for i in dir(sc.pl) if not i.startswith("_")]
-
 print([i[1] for i in models])
 
 # for model in models:
@@ -98,6 +96,13 @@ def adapt(args, args_info):
         else:
             t = arg[2]
 
+        if POSITION == "plot":
+            vis = f"'{arg[1]}'!=eval(config.active_plot_parameters['{arg[0]}'])"
+            vis2 = f"str({arg[1]})!=config.active_plot_parameters['{arg[0]}']"
+        else:
+            vis = f"'{arg[1]}'!=eval(config.active_node_parameters['{arg[0]}'])"
+            vis2 = f"str({arg[1]})!=config.active_node_parameters['{arg[0]}']"
+
         if arg[2] != None:
             if isinstance(arg[1],str):
                 method = f"""
@@ -105,7 +110,7 @@ def adapt(args, args_info):
         input='Input', 
         name='{arg[0]}', 
         description="{res}", 
-        visible=dict(function="'{arg[1]}'!=eval(config.active_node_parameters['{arg[0]}']) or config.show_{POSITION}"),
+        visible=dict(function="{vis} or config.show_{POSITION}"),
         properties=dict(value="'{arg[1]}'",type="text")
     )"""
                 codearg = f"""
@@ -117,7 +122,7 @@ def adapt(args, args_info):
         input='Input', 
         name='{arg[0]}', 
         description="{res}", 
-        visible=dict(function="str({arg[1]})!=config.active_node_parameters['{arg[0]}'] or config.show_{POSITION}"),
+        visible=dict(function="{vis2} or config.show_{POSITION}"),
         properties=dict(value="{arg[1]}",type="text")
     )"""
                 codearg = f"""
@@ -158,57 +163,22 @@ for module,i in models:
     exec(code_info,locals(),globals())
     c, kargs, n_args = adapt(args, args_info)
 
-    ps = [j for j in plot if i in j[1]]
-    figs = ""
-    plot_c = ""
-    POSITION = "plot"
-    if len(ps)>0:
-        for plot_module, plot_function in ps[:1]:
-            code = f"args = inspect.getfullargspec(sc.{plot_module}.{plot_function})"
-            exec(code,locals(),globals())
-            code_info = f"args_info = sc.{plot_module}.{plot_function}.__doc__"
-            exec(code_info,locals(),globals())
-            plot_c, plot_kargs, plot_n_args = adapt(args, args_info)
-
-            figs += f"""
-    fig = sc.{plot_module}.{plot_function}(
-        config.adata,{plot_kargs}
-    )
-"""
-
     if n_args <= 1:
         executioncode = "[ARGINPUT,"
         executioncode += c
         executioncode += "]"
 
-        plot_executioncode = "["
-        plot_executioncode += plot_c
-        plot_executioncode += "]"
-
-
         code = f"""
 import numpy
 from numpy import inf
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
 import scanpy as sc
 import louvain
 import scipy
 import leidenalg
-import plotly.tools as tls
-import cycler
-import matplotlib      # pip install matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
-import base64
-from io import BytesIO
+
 from general import *
 
-{i.lower()}_args = dict(
-    execution = {executioncode},
-    postexecution = [],
-    plot = {plot_executioncode}
-)
+{i.lower()}_args = {executioncode}
 
 def {i.lower()}_f(adata,kwargs):
 
@@ -217,21 +187,6 @@ def {i.lower()}_f(adata,kwargs):
     )
         
     return
-
-def {i.lower()}_plot():
-
-    kwargs = get_node(config.selected)['data']['plot']
-    {figs}
-
-    # Save it to a temporary buffer.
-    buf = BytesIO()
-    fig.savefig(buf, format="png")
-    # Embed the result in the html output.
-    fig_data = base64.b64encode(buf.getbuffer()).decode("ascii")
-    fig_bar_matplotlib = f'data:image/png;base64,'+fig_data
-    fig =  html.Img(id='bar-graph-matplotlib',src=fig_bar_matplotlib)
-
-    return fig
 
 config.methods["{i.lower()}"] = dict(
         
@@ -244,8 +199,6 @@ config.methods["{i.lower()}"] = dict(
 
     function = {i.lower()}_f,
 
-    plot = {i.lower()}_plot,
-
 )
 """
         
@@ -257,3 +210,78 @@ config.methods["{i.lower()}"] = dict(
             outfile.write(code)
 
 print("Uncomplete functions: ", COUNT)
+
+
+########################################################################################################################################
+# PLOT
+########################################################################################################################################
+avoid = ["palettes","paga_compare"]
+plot = [("pl",i) for i in dir(sc.pl) if not i.startswith("_") and i.islower() and i not in avoid]
+
+POSITION = "plot"
+for plot_module, plot_function in plot:
+    METHOD = plot_function
+    # print(plot_function)
+    try:
+        code = f"args = inspect.getfullargspec(sc.{plot_module}.{plot_function})"
+        exec(code,locals(),globals())
+        code_info = f"args_info = sc.{plot_module}.{plot_function}.__doc__"
+        exec(code_info,locals(),globals())
+        plot_c, plot_kargs, plot_n_args = adapt(args, args_info)
+        
+        executioncode = f"[{c}]"
+
+        figs = f"""
+    fig = sc.{plot_module}.{plot_function}(
+        config.adata,{plot_kargs}
+    )
+"""
+
+        code = f"""
+import numpy
+from numpy import inf
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+import scipy
+import plotly.tools as tls
+import cycler
+import matplotlib      # pip install matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import base64
+from io import BytesIO
+
+from general import *
+
+def {plot_function.lower()}_plot():
+
+    kwargs = config.selected_plot_parameters
+    {figs}
+    # Save it to a temporary buffer.
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    # Embed the result in the html output.
+    fig_data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    fig_bar_matplotlib = f'data:image/png;base64,'+fig_data
+    fig =  html.Img(id='bar-graph-matplotlib',src=fig_bar_matplotlib)
+
+    return fig
+
+config.methods_plot["{plot_function.lower()}"] = dict(
+    
+    args = {executioncode},
+
+    function = {plot_function.lower()}_plot
+)
+"""
+        
+        code = code.replace("NoneType","str")
+        code = re.sub(r'return_fig=.*,',"return_fig=True,", code)
+        # exec(code, locals(), globals())
+        file = f"../methods_plot/{plot_function.lower()}.py"
+        with open(file,"w") as outfile:
+            outfile.write(code)
+
+    except:
+        # None
+        print("Wrong ",plot_function)

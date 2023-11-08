@@ -247,3 +247,15 @@ ARGUMENTBOXSTYLE = {"background-color":"transparent"}
 
 PLOTHEIGHT = 1000
 PLOTWIDTH = 1000
+PLOTMETHODSGENERIC = [
+    "matrix",
+    "clustermap",
+    "correlation_matrix",
+    "dendogram",
+    "dotplot",
+    "heatmap",
+    "matrixplot",
+    "scatter",
+    "spatial",
+    "violin"
+]

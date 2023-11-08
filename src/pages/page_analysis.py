@@ -16,6 +16,11 @@ for i in os.listdir("./methods"):
         f = f"from methods.{i[:-3]} import *"
         exec(f)
 
+for i in os.listdir("./methods_plot"):
+    if i.endswith(".py"):
+        f = f"from methods_plot.{i[:-3]} import *"
+        exec(f)
+
 ############################################################################################################################################
 ############################################################################################################################################
 # Layout
@@ -39,6 +44,15 @@ tab_plot = dbc.Row([
     dbc.Col(
         dbc.Card(
             [
+                dbc.CardBody(
+                    dcc.Dropdown(
+                        id='analysis_plot_dropdown',
+                        value = None,
+                        clearable = True,
+                        options = []
+                    )
+                    # width='50%',
+                ),
                 dbc.CardBody(
                     id='analysis_plotargs',
                     children = [],
@@ -315,15 +329,21 @@ def parameters2args(args, populate):
 
     return {i["name"]:get_value(i) for i in args}    
 
-def method_create_pars(args_list):
+def method_create_pars(args_type):
 
-    method_args = config.methods[get_node(config.selected)["data"]["method"]]["args"]
-    for i in args_list:
-        if i == "execution":
-            for j in method_args[i]:
-                config.active_node_parameters[j["name"]] = j["properties"]["value"]
-            pos = get_node_pos(config.selected)
-        args = parameters_eval(method_args[i], i)
+    if args_type == "execution":
+        method_args = config.methods[get_node(config.selected)["data"]["method"]]["args"]
+        for j in method_args:
+            config.active_node_parameters[j["name"]] = j["properties"]["value"]
+    elif args_type == "plot":
+        if config.selec_plot != None:
+            method_args = config.methods_plot[config.selected_plot]["args"]
+            for j in method_args:
+                config.active_plot_parameters[j["name"]] = j["properties"]["value"]
+            else:
+                return None
+
+    args = parameters_eval(method_args, args_type)
 
 def make_arguments(id, arg_list, loaded_args={}, add_execution_button=True, add_header="args"):
 
@@ -470,7 +490,7 @@ def load_node(name):
     method = get_node(name)['data']['method']
     args = get_node(name)['data']['parameters']
     plot_args = get_node(name)['data']['plot']
-    l = make_arguments(method, config.methods[method]["args"]["execution"], args)
+    l = make_arguments(method, config.methods[method]["args"], args)
     l3 = []
     p = []
     if get_node(name)['data']['computed']:
@@ -489,8 +509,7 @@ def load_node(name):
 methods_implemented = []
 for method in config.methods.keys():
 
-    for i in deepcopy(config.methods[method]["args"]["execution"])+\
-                deepcopy(config.methods[method]["args"]["plot"]):
+    for i in deepcopy(config.methods[method]["args"]):
 
         m_i = (i['name'],i['input'])
 
@@ -503,21 +522,21 @@ for method in config.methods.keys():
                 up = f"config.active_node_parameters['{i['name']}'] = data"
                 up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
                 args = "data"
-            elif i['input'] == 'Dropdown':
-                input = f"Input('analysis_{i['name']}','value'),"
-                up = f"config.active_node_parameters['{i['name']}'] = data"
-                up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
-                args = "data"
-            elif i['input'] == 'BooleanSwitch':
-                input = f"Input('analysis_{i['name']}','on'),"
-                up = f"config.active_node_parameters['{i['name']}'] = data"
-                up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
-                args = "data"
-            elif i['input'] == 'AgTable':
-                input = f"Input('analysis_{i['name']}','cellValueChanged'), State('analysis_{i['name']}','rowData'),"
-                up = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.active_node_parameters['{i['name']}'] = data"
-                up_plot = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
-                args = "cell, data"
+            # elif i['input'] == 'Dropdown':
+            #     input = f"Input('analysis_{i['name']}','value'),"
+            #     up = f"config.active_node_parameters['{i['name']}'] = data"
+            #     up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
+            #     args = "data"
+            # elif i['input'] == 'BooleanSwitch':
+            #     input = f"Input('analysis_{i['name']}','on'),"
+            #     up = f"config.active_node_parameters['{i['name']}'] = data"
+            #     up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
+            #     args = "data"
+            # elif i['input'] == 'AgTable':
+            #     input = f"Input('analysis_{i['name']}','cellValueChanged'), State('analysis_{i['name']}','rowData'),"
+            #     up = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.active_node_parameters['{i['name']}'] = data"
+            #     up_plot = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
+            #     args = "cell, data"
 
             add_input = ""
             if i["name"] == "input":
@@ -533,7 +552,7 @@ for method in config.methods.keys():
 def change_parameter_{i['name']}({args}):
 
     method = get_node(config.selected)["data"]["method"]
-    if '{i['name']}' not in [i['name'] for i in config.methods[method]["args"]["execution"]]:
+    if '{i['name']}' not in [i['name'] for i in config.methods[method]["args"]]:
         raise PreventUpdate()
 
     if config.block_callback['{i['name']}']:
@@ -541,8 +560,8 @@ def change_parameter_{i['name']}({args}):
         raise PreventUpdate()
 
     {up}
-    clean_arguments('{i['name']}', config.methods[method]["args"]["execution"], config.active_node_parameters)
-    args_object = make_arguments(method, config.methods[method]["args"]["execution"], config.active_node_parameters)
+    clean_arguments('{i['name']}', config.methods[method]["args"], config.active_node_parameters)
+    args_object = make_arguments(method, config.methods[method]["args"], config.active_node_parameters)
     config.block_callback['{i['name']}'] = False
 
     return args_object
@@ -550,90 +569,108 @@ def change_parameter_{i['name']}({args}):
 
             exec(add_function, globals(), locals())
 
+methods_implemented = []
+for method in config.methods.keys():
+
+    for i in deepcopy(config.methods[method]["args"]):
+
+        m_i = (i['name'],i['input'])
+
+        if m_i not in methods_implemented:
+
+            methods_implemented.append(m_i)
+
+            if i['input'] == 'Input':
+                input = f"Input('analysis_{i['name']}','value'),"
+                up = f"config.active_node_parameters['{i['name']}'] = data"
+                args = "data"
+            # elif i['input'] == 'Dropdown':
+            #     input = f"Input('analysis_{i['name']}','value'),"
+            #     up = f"config.active_node_parameters['{i['name']}'] = data"
+            #     up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
+            #     args = "data"
+            # elif i['input'] == 'BooleanSwitch':
+            #     input = f"Input('analysis_{i['name']}','on'),"
+            #     up = f"config.active_node_parameters['{i['name']}'] = data"
+            #     up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
+            #     args = "data"
+            # elif i['input'] == 'AgTable':
+            #     input = f"Input('analysis_{i['name']}','cellValueChanged'), State('analysis_{i['name']}','rowData'),"
+            #     up = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.active_node_parameters['{i['name']}'] = data"
+            #     up_plot = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
+            #     args = "cell, data"
+
 # Plot
             add_function = f"""
 @app.callback(
     Output("analysis_plotargs","children", allow_duplicate=True),
-    Output("analysis_plot","children", allow_duplicate=True),
     {input}
     prevent_initial_call=True
 )
-def change_plotparameter_{i['name']}({args}):
+def change_parameter_{i['name']}({args}):
 
     method = get_node(config.selected)["data"]["method"]
-    if '{i['name']}' in [i['name'] for i in config.methods[method]["args"]["plot"]]:
-    
-        if '{i['name']}' in config.block_callback.keys():
-            if config.block_callback['{i['name']}']:
-                config.block_callback['{i['name']}'] = False
-                raise PreventUpdate()
-
-        {up_plot}
-        set_parameters(dict({i['name']}=data), 'parameters')
-
-    else:
-    
+    if '{i['name']}' not in [i['name'] for i in config.methods[method]["args"]]:
         raise PreventUpdate()
 
-    method = get_node(config.selected)["data"]["method"]
+    if config.block_callback['{i['name']}']:
+        config.block_callback['{i['name']}'] = False
+        raise PreventUpdate()
 
-    plot_args = deepcopy(config.methods[method]["args"]["plot"])
-    deactivate = False
-    clean_arguments('{i['name']}', config.methods[method]["args"]["plot"], get_node(config.selected)['data']['plot'])
-    plot_args_object = make_arguments(method, plot_args, loaded_args=get_node(config.selected)['data']['plot'], add_execution_button=False, add_header="plot")
+    {up}
+    clean_arguments('{i['name']}', config.methods_plot[method]["args"], config.active_plot_parameters)
+    args_object = make_arguments(method, config.methods_plot[method]["args"], config.active_plot_parameters)
     config.block_callback['{i['name']}'] = False
 
-    plot = config.methods[method]['plot']()
-
-    return plot_args_object, plot
+    return args_object
 """
 
             exec(add_function, globals(), locals())
 
-#Delete row ag
-            if i['input'] == "AgTable" and 'deleteRows' in i.keys():
+# #Delete row ag
+#             if i['input'] == "AgTable" and 'deleteRows' in i.keys():
 
-                if i['deleteRows']:
+#                 if i['deleteRows']:
 
-                    add_function = f"""
-@app.callback(
-    Output('analysis_{i['name']}', "rowData", allow_duplicate=True),
-    Input('analysis_{i['name']}', "virtualRowData"),
-    State('analysis_{i['name']}', "rowData"),
-    prevent_initial_call=True,
-)
-def delete_rows_{i['name']}(row, row2):
+#                     add_function = f"""
+# @app.callback(
+#     Output('analysis_{i['name']}', "rowData", allow_duplicate=True),
+#     Input('analysis_{i['name']}', "virtualRowData"),
+#     State('analysis_{i['name']}', "rowData"),
+#     prevent_initial_call=True,
+# )
+# def delete_rows_{i['name']}(row, row2):
 
-    if row != None:
+#     if row != None:
         
-        config.active_node_parameters["{i['name']}"] = row
+#         config.active_node_parameters["{i['name']}"] = row
 
-    return row
-"""
+#     return row
+# """
             
-                    exec(add_function, globals(), locals())
+#                     exec(add_function, globals(), locals())
 
-#Add row ag
-            if i['input'] == "AgTable" and 'addRows' in i.keys():
+# #Add row ag
+#             if i['input'] == "AgTable" and 'addRows' in i.keys():
 
-                add_function = f"""
-@app.callback(
-    Output("analysis_{i['name']}","rowData", allow_duplicate=True),
-    Input("analysis_{i['name']}_button","n_clicks"),
-    State("analysis_{i['name']}","rowData"),
-    prevent_initial_call = True
-)
-def add_row_{i['name']}(n_clicks, c):
+#                 add_function = f"""
+# @app.callback(
+#     Output("analysis_{i['name']}","rowData", allow_duplicate=True),
+#     Input("analysis_{i['name']}_button","n_clicks"),
+#     State("analysis_{i['name']}","rowData"),
+#     prevent_initial_call = True
+# )
+# def add_row_{i['name']}(n_clicks, c):
 
-    if n_clicks:
+#     if n_clicks:
 
-        c.append(
-            {i['addRows']}
-        )        
+#         c.append(
+#             {i['addRows']}
+#         )        
 
-    return c
-"""
-                exec(add_function, globals(), locals())
+#     return c
+# """
+#                 exec(add_function, globals(), locals())
 
 #Update Dropdown (change of cytoscape)
 @app.callback(
@@ -714,6 +751,8 @@ def graph_new_node(_):
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
     Output('analysis_inspector', 'children', allow_duplicate=True),
+    Output('analysis_plot_dropdown', 'options', allow_duplicate=True),
+    Output('analysis_plot_dropdown', 'value', allow_duplicate=True),
     [
         Input('new-proceed', 'n_clicks')
     ],
@@ -769,7 +808,7 @@ def graph_new_node(_, input, output, method, cytoscape):
     config.selected = name
     select_node(config.selected)
     #Create parameters
-    method_create_pars(["execution"])
+    method_create_pars("execution")
     #Create active
     config.active_node_parameters["input"] = input
     set_parameters(config.active_node_parameters, "parameters")
@@ -797,7 +836,9 @@ def graph_new_node(_, input, output, method, cytoscape):
 
     inspector = print_to_string(config.adata)
 
-    return False, config.graph, graph2table(), name, l, l3, p, html.Pre(inspector)
+    plot_options = get_plot_methods(method)
+
+    return False, config.graph, graph2table(), name, l, l3, p, html.Pre(inspector), plot_options, None
 
 #Execute analysis button
 @app.callback(
@@ -972,6 +1013,8 @@ def delete_cancel(n_clicks):
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
     Output('analysis_inspector', 'children', allow_duplicate=True),
+    Output('analysis_plot_dropdown', 'options', allow_duplicate=True),
+    Output('analysis_plot_dropdown', 'value', allow_duplicate=True),
     [
         Input('graph_load_button', 'n_clicks')
     ],
@@ -1010,7 +1053,9 @@ def load_analysis(_, name):
 
         inspector = print_to_string(config.adata)
 
-        return config.graph, name, l, l3, p, html.Pre(inspector)
+        plot_options = get_plot_methods(method)
+
+        return config.graph, name, l, l3, p, html.Pre(inspector), plot_options, None
     
     else:
         raise PreventUpdate()
@@ -1078,7 +1123,7 @@ def unfold_execution(n_clicks):
         config.show_parameters = not config.show_parameters
 
         method = get_node(config.selected)["data"]["method"]
-        args_object = make_arguments(method, config.methods[method]["args"]["execution"], config.active_node_parameters)
+        args_object = make_arguments(method, config.methods[method]["args"], config.active_node_parameters)
 
         return args_object
 

@@ -1,23 +1,14 @@
 
 import numpy
 from numpy import inf
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
 import scanpy as sc
 import louvain
 import scipy
 import leidenalg
-import plotly.tools as tls
-import cycler
-import matplotlib      # pip install matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
-import base64
-from io import BytesIO
+
 from general import *
 
-dpt_args = dict(
-    execution = [ARGINPUT,
+dpt_args = [ARGINPUT,
     dict(
         input='Input', 
         name='n_dcs', 
@@ -59,38 +50,7 @@ dpt_args = dict(
         description="<class 'bool'>", 
         visible=dict(function="str(False)!=config.active_node_parameters['copy'] or config.show_parameters"),
         properties=dict(value="False",type="text")
-    ),],
-    postexecution = [],
-    plot = [
-    dict(
-        input='Input', 
-        name='color_map', 
-        description="typing.Union[str, matplotlib.colors.Colormap, str]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['color_map'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='palette', 
-        description="typing.Union[typing.Sequence[str], cycler.Cycler, str]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['palette'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='show', 
-        description="typing.Optional[bool]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['show'] or config.show_plot"),
-        properties=dict(value="None",type="text")
-    ),
-    dict(
-        input='Input', 
-        name='save', 
-        description="typing.Union[bool, str, str]", 
-        visible=dict(function="str(None)!=config.active_node_parameters['save'] or config.show_plot"),
-        properties=dict(value="None",type="text")
     ),]
-)
 
 def dpt_f(adata,kwargs):
 
@@ -106,29 +66,6 @@ def dpt_f(adata,kwargs):
         
     return
 
-def dpt_plot():
-
-    kwargs = get_node(config.selected)['data']['plot']
-    
-    fig = sc.pl.dpt_groups_pseudotime(
-        config.adata,
-        color_map=type_formater(kwargs["color_map"],typing.Union[str, matplotlib.colors.Colormap, str]),
-        palette=type_formater(kwargs["palette"],typing.Union[typing.Sequence[str], cycler.Cycler, str]),
-        show=type_formater(kwargs["show"],typing.Optional[bool]),
-        save=type_formater(kwargs["save"],typing.Union[bool, str, str]),
-    )
-
-
-    # Save it to a temporary buffer.
-    buf = BytesIO()
-    fig.savefig(buf, format="png")
-    # Embed the result in the html output.
-    fig_data = base64.b64encode(buf.getbuffer()).decode("ascii")
-    fig_bar_matplotlib = f'data:image/png;base64,'+fig_data
-    fig =  html.Img(id='bar-graph-matplotlib',src=fig_bar_matplotlib)
-
-    return fig
-
 config.methods["dpt"] = dict(
         
     properties=dict(
@@ -139,7 +76,5 @@ config.methods["dpt"] = dict(
     args = dpt_args,
 
     function = dpt_f,
-
-    plot = dpt_plot,
 
 )
