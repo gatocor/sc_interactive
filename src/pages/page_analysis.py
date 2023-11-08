@@ -21,17 +21,6 @@ for i in os.listdir("./methods"):
 # Layout
 ############################################################################################################################################
 ############################################################################################################################################
-tab_h5ad = dbc.Card(
-    [
-        dbc.CardBody(
-            id='analysis_inspector',
-            children = [],
-            # width='50%',
-        )
-    ],
-    color="#CED4DA",
-    className="mt-3",
-)
 tab_algorithm = dbc.Card(
     [
         dbc.CardBody(
@@ -97,6 +86,17 @@ tab_report = dbc.Card(
         dbc.CardFooter(
             children = dbc.Button(id="analysis-save-report",children="Save Report",disabled=False),
         ),
+    ],
+    color="#CED4DA",
+    className="mt-3",
+)
+tab_h5ad = dbc.Card(
+    [
+        dbc.CardBody(
+            id='analysis_inspector',
+            children = [],
+            # width='50%',
+        )
     ],
     color="#CED4DA",
     className="mt-3",
@@ -862,6 +862,7 @@ def execute(n_clicks, warning_computed):
 @app.callback(
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
+    Output('analysis_inspector', 'children', allow_duplicate=True),
     [
         Input('analysis_execute_plot_button', 'n_clicks')
     ],
@@ -875,7 +876,9 @@ def execute(n_clicks):
         plot_args_object = make_arguments(node_data['method'], config.methods[node_data['method']]["args"]["plot"], add_execution_button=False, add_header="plot")
         plot = config.methods[node_data['method']]["plot"]()
 
-        return plot_args_object, plot
+        inspector = print_to_string(config.adata)
+
+        return plot_args_object, plot, html.Pre(inspector)
 
     else:
 
@@ -1062,3 +1065,23 @@ def savefigure(n_clicks,fig):
             config.report += f"![](./figures/{config.selected}_{count}.png)\n"
 
     return ""
+
+@app.callback(
+    Output("analysis_args","children",allow_duplicate=True),
+    Input("analysis_unfold_execution_button","n_clicks"),
+    prevent_initial_call=True
+)
+def unfold_execution(n_clicks):
+
+    if n_clicks != None:
+
+        config.show_parameters = not config.show_parameters
+
+        method = get_node(config.selected)["data"]["method"]
+        args_object = make_arguments(method, config.methods[method]["args"]["execution"], config.active_node_parameters)
+
+        return args_object
+
+    else:
+
+        raise PreventUpdate()
