@@ -1053,6 +1053,7 @@ def load_analysis(_, name):
 
         #adata
         node = get_node(name)["data"]
+        method = node["method"]
         if node["h5ad_file"] != config.h5ad_file:
             #reload file previous to the model
             load_adata(f"{config.analysis_folder}/h5ad/{node['h5ad_file']}")
