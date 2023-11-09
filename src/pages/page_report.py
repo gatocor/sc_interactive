@@ -115,21 +115,3 @@ def editor(value):
     else:
 
         raise PreventUpdate()
-
-def markdown_to_dash(value):
-    
-    res = re.findall(r'\!\[.*\]\(.*?\)', value)
-
-    l = []
-    for i in res:
-        pre, value = value.split(i)
-        l += [dcc.Markdown(children=pre)]
-        img_source = i.split("](")[1][:-1]
-        img = Image.open(config.analysis_folder+"/report/"+img_source)
-        l += [html.Img(
-                src=img,
-                width="100%")]
-        
-    l += [dcc.Markdown(children=value)]
-        
-    return l

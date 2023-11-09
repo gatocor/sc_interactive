@@ -2,6 +2,7 @@ from dash import dcc, html, dash_table, Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import dash_cytoscape as cyto
+import dash_editor_components
 
 import os
 from traceback import format_exc
@@ -1037,6 +1038,7 @@ def delete_cancel(n_clicks):
     Output('analysis_inspector', 'children', allow_duplicate=True),
     Output('analysis_plot_dropdown', 'options', allow_duplicate=True),
     Output('analysis_plot_dropdown', 'value', allow_duplicate=True),
+    Output("analysis_report","children", allow_duplicate=True),
     [
         Input('graph_load_button', 'n_clicks')
     ],
@@ -1077,7 +1079,12 @@ def load_analysis(_, name):
 
         plot_options = get_plot_methods(method)
 
-        return config.graph, name, l, l3, p, html.Pre(inspector), plot_options, None
+        report = [
+            dbc.Col(id="analysis-markdown", children=markdown_to_dash(config.report)),
+        ]
+
+
+        return config.graph, name, l, l3, p, html.Pre(inspector), plot_options, None, report
     
     else:
         raise PreventUpdate()
@@ -1110,7 +1117,7 @@ def save(n_clicks):
     return ""
 
 @app.callback(
-    Output("dumb","children",allow_duplicate=True),
+    Output("analysis-markdown", "children", allow_duplicate=True),
     Input("analysis_saveimage_button","n_clicks"),
     State("analysis_plot","children"),
     prevent_initial_call=True
@@ -1131,7 +1138,13 @@ def savefigure(n_clicks,fig):
 
             config.report += f"![](./figures/{config.selected}_{count}.png)\n"
 
-    return ""
+        l = markdown_to_dash(config.report)
+
+        return l
+    
+    else:
+
+        raise PreventUpdate()
 
 @app.callback(
     Output("analysis_args","children",allow_duplicate=True),
@@ -1169,6 +1182,61 @@ def unfold_plot(n_clicks):
 
         return args_object
 
+    else:
+
+        raise PreventUpdate()
+
+@app.callback(
+    Output("analysis_report","children", allow_duplicate=True),
+    Input("analysis-show-editor","value"),
+    prevent_initial_call=True
+)
+def activate_report(val):
+        
+    if val != None:
+
+        l = markdown_to_dash(config.report)
+
+        if val:
+
+            d = [
+                    dbc.Row([
+                            dbc.Col(id="analysis-markdown", children=l),
+                            dbc.Col(
+                                dash_editor_components.PythonEditor(
+                                    id='analysis-editor',
+                                    value=config.report
+                                )
+                            ),
+                    ])
+                ]
+            
+        else:
+
+            d = [
+                    dbc.Col(id="analysis-markdown", children=l),
+                ]
+
+        return d
+
+    else:
+
+        raise PreventUpdate() 
+
+@app.callback(
+    Output("analysis-markdown","children", allow_duplicate=True),
+    Input("analysis-editor","value"),
+    prevent_initial_call=True
+)
+def editor(value):
+
+    if value:
+        config.report = value
+
+        l = markdown_to_dash(value)
+
+        return l
+    
     else:
 
         raise PreventUpdate()
