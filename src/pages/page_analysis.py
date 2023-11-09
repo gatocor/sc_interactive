@@ -844,7 +844,7 @@ def graph_new_node(_, input, output, method, cytoscape):
 
     plot_options = get_plot_methods(method)
 
-    return False, config.graph, graph2table(), name, l, l3, p, html.Pre(inspector), plot_options, None
+    return False, config.graph, graph2table(), name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), plot_options, None
 
 #Execute analysis button
 @app.callback(
@@ -1101,7 +1101,7 @@ def load_analysis(_, name):
         ]
 
 
-        return config.graph, name, l, l3, p, html.Pre(inspector), plot_options, None, report
+        return config.graph, name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), plot_options, None, report
     
     else:
         raise PreventUpdate()
