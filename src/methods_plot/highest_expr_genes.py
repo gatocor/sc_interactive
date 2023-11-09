@@ -31,7 +31,7 @@ def highest_expr_genes_plot():
 
     # Save it to a temporary buffer.
     buf = BytesIO()
-    fig.savefig(buf, format="png")
+    fig.savefig(buf, format="png", transparent=True)
     # Embed the result in the html output.
     fig_data = base64.b64encode(buf.getbuffer()).decode("ascii")
     fig_bar_matplotlib = f'data:image/png;base64,'+fig_data
