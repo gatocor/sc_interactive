@@ -17,6 +17,7 @@ max_x = 0
 selected = 'Raw'
 selected_plot = None
 figure = None
+add_method = None
 
 methods = {
     "Raw" : {

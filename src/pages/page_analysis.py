@@ -15,15 +15,43 @@ from app import *
 
 from general import *
 
-for i in os.listdir("./methods"):
-    if i.endswith(".py"):
-        f = f"from methods.{i[:-3]} import *"
-        exec(f)
+methods_menus = []
+d = {}
+for folder, dirs, files in os.walk("./methods"):
 
-for i in os.listdir("./methods_plot"):
-    if i.endswith(".py"):
-        f = f"from methods_plot.{i[:-3]} import *"
-        exec(f)
+    if not folder.endswith("__pycache__"):
+        d[folder] = []
+
+        for i in files:
+            if i.endswith(".py") and i != "__init__.py":
+                module = f"{folder.replace('.py','').replace('./','').replace('/','.')}.{i.replace('.py','')}"
+                f = f"from {module} import *"
+                exec(f)
+
+                id = folder[1:]+"/"+i.replace('.py','')
+                d[folder].append(dbc.DropdownMenuItem(i.replace('.py',''),id=id))
+                methods_menus.append(id)
+
+        folder_parent = folder
+        while len(folder_parent.split("/")) > 2:
+            name = ""
+            for i in folder_parent.split("/")[:-1]:
+                name += i+"/"
+            folder_kid = folder_parent.split("/")[-1]
+            folder_parent = name[:-1]
+
+            d[folder_parent].append(dbc.DropdownMenu(d[folder],label=folder_kid,size="md",className="mb-3",color="light"))
+# print(d["./methods"][0])
+
+print(methods_menus)
+
+for folder, dirs, files in os.walk("./methods_plot"):
+
+    for i in files:
+        if i.endswith(".py") and i != "__init__.py":
+            module = f"{folder.replace('.py','').replace('./','').replace('/','.')}.{i.replace('.py','')}"
+            f = f"from {module} import *"
+            exec(f)
 
 ############################################################################################################################################
 ############################################################################################################################################
@@ -225,19 +253,8 @@ def layout():
                         ),
                     ),
                     dbc.Col(
-                        dcc.Dropdown(
-                            id='graph_dropdown_analysis',
-                            value=[i for i in config.methods.keys() if i != "Raw"][0],
-                            options=[{"value":i, "label":i} for i,j in config.methods.items() if i != "Raw"],
-                            clearable=False,
-                        )
+                        children = dbc.DropdownMenu([d["./methods"][0]],label="Add New Method",id = 'graph_dropdown_analysis',size="md",className="mb-3",),
                     ),
-                    dbc.Col(
-                        dbc.Button(
-                            id='graph_new_button',
-                            children="New"
-                        )
-                    )
                 ]
             ),
             dbc.Row(
@@ -727,17 +744,53 @@ def graph_new_modal(innode):
 
     return None, l
 
-@app.callback(
+code = ""
+for i in methods_menus:
+
+    code += f"""
+    Input("{i}", "n_clicks"),"""
+
+code = f"""@app.callback(
     Output('new-modal', 'is_open', allow_duplicate=True),
     Output('new-dropdown-before', 'value', allow_duplicate=True),
     Output('new-dropdown-before', 'options', allow_duplicate=True),
-    Input('graph_new_button', 'n_clicks'),
-    State('graph_dropdown_load', 'value'),
+    # Output("graph_dropdown_analysis", "children"),
+    {code}
+    State("graph_dropdown_load","value"),
     prevent_initial_call=True
 )
-def graph_new_modal(_,load):
+def graph_new_node(*_):
+    ctx = dash.callback_context
+    load = ctx.triggered[0]["prop_id"].split(".")[0].split("/")[-1]
 
-    return True, load, node_names()
+    print(ctx.triggered[0]["prop_id"])
+    config.add_method = load
+
+    return True, _[-1], node_names()
+"""
+# print(code)
+exec(code)
+
+# code = ""
+# for i in methods_menus:
+
+#     code += f"""
+#     Input("{i}", "n_clicks"),"""
+
+# code = f"""@app.callback(
+#     Output("graph_dropdown_analysis", "isOpen"),
+#     # Output("graph_dropdown_analysis", "children"),
+#     {code}
+#     prevent_initial_call=True
+# )
+# def hide_show_submenu(*_):
+#     ctx = dash.callback_context
+#     input_id = ctx.triggered[0]["prop_id"].split(".")[0]
+#     # return "d-block" if input_id == "graph_dropdown_analysis" else "d-none"
+#     return False
+# """
+# print(code)
+# exec(code)
 
 @app.callback(
     Output('new-modal', 'is_open', allow_duplicate=True),
@@ -765,15 +818,15 @@ def graph_new_node(_):
     [
         State('new-dropdown-before', 'value'),
         State('new-dropdown-after', 'value'),
-        State('graph_dropdown_analysis', 'value'),
         State('graph_cytoscape', 'layout'),
     ],
     prevent_initial_call=True
 )
-def graph_new_node(_, input, output, method, cytoscape):
+def graph_new_node(_, input, output, cytoscape):
 
     #Make new name
-    name = method
+    method = config.add_method
+    name = config.add_method
     nodes = node_names()
     count = 0
     while name in nodes:

@@ -229,7 +229,7 @@ config.methods["{i.lower()}"] = dict(
         code = code.replace("NoneType","str")
         code = re.sub(r'return_fig=.*,',"return_fig=True,", code)
         # exec(code, locals(), globals())
-        file = f"../methods/{i.lower()}.py"
+        file = f"../methods/scanpy/{module}/{i.lower()}.py"
         with open(file,"w") as outfile:
             outfile.write(code)
 
@@ -297,7 +297,7 @@ config.methods_plot["{plot_function.lower()}"] = dict(
         code = re.sub(r'return_fig=.*,',"return_fig=False,", code)
         code = re.sub(r'ax=.*,',"ax=ax,", code)
         # exec(code, locals(), globals())
-        file = f"../methods_plot/{plot_function.lower()}.py"
+        file = f"../methods_plot/scanpy/{plot_module}/{plot_function.lower()}.py"
         with open(file,"w") as outfile:
             outfile.write(code)
 
