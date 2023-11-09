@@ -11,8 +11,6 @@ import cycler
 import matplotlib      # pip install matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-import base64
-from io import BytesIO
 
 from general import *
 
@@ -33,13 +31,6 @@ def rank_genes_groups_dotplot_plot():
         key=type_formater(kwargs["key"],typing.Optional[str]),
     )
 
-    # Save it to a temporary buffer.
-    buf = BytesIO()
-    fig.savefig(buf, format="png", transparent=True)
-    # Embed the result in the html output.
-    fig_data = base64.b64encode(buf.getbuffer()).decode("ascii")
-    fig_bar_matplotlib = f'data:image/png;base64,'+fig_data
-    fig =  html.Img(id='bar-graph-matplotlib',src=fig_bar_matplotlib)
 
     return fig
 

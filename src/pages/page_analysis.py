@@ -6,6 +6,9 @@ import dash_editor_components
 
 import os
 from traceback import format_exc
+import base64
+from io import BytesIO
+from matplotlib.figure import Figure
 
 from app import app
 from app import *
@@ -935,7 +938,20 @@ def execute_plot(n_clicks, plot_type):
     if n_clicks != None:
             
         try:
-            plot = config.methods_plot[plot_type]['function']()
+            fig = config.methods_plot[plot_type]['function']()
+            config.figure = fig
+
+            if isinstance(fig,Figure):
+                # Save it to a temporary buffer.
+                buf = BytesIO()
+                fig.savefig(buf, format="png", transparent=True)
+                # Embed the result in the html output.
+                fig_data = base64.b64encode(buf.getbuffer()).decode("ascii")
+                fig_bar_matplotlib = f'data:image/png;base64,'+fig_data
+                plot =  html.Img(id='bar-graph-matplotlib',src=fig_bar_matplotlib)
+            else:
+                print("bonico")
+
         except BaseException as e:
             l = [html.H2("Node failed to execute.")]
             for i in format_exc().split("\n"):
@@ -1127,17 +1143,30 @@ def savefigure(n_clicks,fig):
 
     if n_clicks != None:
 
-        figs = get_figures(fig)
+        if isinstance(config.figure,Figure):
 
-        count = 0
-        for fig in figs:
+            count = 0
             namefig = f"{config.analysis_folder}/report/figures/{config.selected}_{count}.png"
             while os.path.isfile(namefig):
                 count += 1
                 namefig = f"{config.analysis_folder}/report/figures/{config.selected}_{count}.png"
-            fig.write_image(namefig)
+            config.figure.savefig(namefig,transparent=True)            
 
             config.report += f"![](./figures/{config.selected}_{count}.png)\n"
+
+        else:
+
+            figs = get_figures(fig)
+
+            count = 0
+            for fig in figs:
+                namefig = f"{config.analysis_folder}/report/figures/{config.selected}_{count}.png"
+                while os.path.isfile(namefig):
+                    count += 1
+                    namefig = f"{config.analysis_folder}/report/figures/{config.selected}_{count}.png"
+                fig.write_image(namefig)
+
+                config.report += f"![](./figures/{config.selected}_{count}.png)\n"
 
         l = markdown_to_dash(config.report)
 
