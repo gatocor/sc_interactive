@@ -26,7 +26,11 @@ methods = {
             "make_new_h5ad" : True
         },
 
-        "args": []
+        "args": [],
+
+        "plots":[],
+
+        "report":""
     }
 }
 methods_plot = {}

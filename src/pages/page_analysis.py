@@ -116,6 +116,24 @@ tab_plot = dbc.Row([
         )
     )
 ])
+tab_saved_images = dbc.Card(
+    [
+        dbc.CardBody(
+            id='analysis_plots_list',
+            children = [],
+            # width='50%',
+        ),
+        dbc.CardFooter(
+            children=[
+                dcc.Dropdown(id="analysis_saved_plots_dropdown",options=[]),
+                dbc.Button("Delete Image",id="analysis_saved_plots_remove",style={"background-color":"red"}),
+                dbc.Button("Reload Image",id="analysis_saved_plots_upload"),
+            ],
+        ),
+    ],
+    color="#CED4DA",
+    className="mt-3",
+)
 tab_report = dbc.Card(
     children = [
         dbc.CardHeader(
@@ -288,6 +306,7 @@ def layout():
                         [
                             dbc.Tab(tab_algorithm, label="Algorithm"),
                             dbc.Tab(tab_plot, label="Plot"),
+                            dbc.Tab(tab_saved_images, label="Saved Plots"),
                             dbc.Tab(tab_report, label="Report"),
                             dbc.Tab(tab_h5ad, label="Object Inspector"),
                             dbc.Tab(tab_info, label="Algorithm Information"),
@@ -548,23 +567,7 @@ for method in config.methods.keys():
             if i['input'] == 'Input':
                 input = f"Input('analysis_{i['name']}','value'),"
                 up = f"config.active_node_parameters['{i['name']}'] = data"
-                up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
                 args = "data"
-            # elif i['input'] == 'Dropdown':
-            #     input = f"Input('analysis_{i['name']}','value'),"
-            #     up = f"config.active_node_parameters['{i['name']}'] = data"
-            #     up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
-            #     args = "data"
-            # elif i['input'] == 'BooleanSwitch':
-            #     input = f"Input('analysis_{i['name']}','on'),"
-            #     up = f"config.active_node_parameters['{i['name']}'] = data"
-            #     up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
-            #     args = "data"
-            # elif i['input'] == 'AgTable':
-            #     input = f"Input('analysis_{i['name']}','cellValueChanged'), State('analysis_{i['name']}','rowData'),"
-            #     up = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.active_node_parameters['{i['name']}'] = data"
-            #     up_plot = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
-            #     args = "cell, data"
 
             add_input = ""
             if i["name"] == "input":
@@ -612,21 +615,6 @@ for method in config.methods_plot.keys():
                 input = f"Input('analysis_{i['name']}','value'),"
                 up = f"config.active_plot_parameters['{i['name']}'] = data"
                 args = "data"
-            # elif i['input'] == 'Dropdown':
-            #     input = f"Input('analysis_{i['name']}','value'),"
-            #     up = f"config.active_node_parameters['{i['name']}'] = data"
-            #     up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
-            #     args = "data"
-            # elif i['input'] == 'BooleanSwitch':
-            #     input = f"Input('analysis_{i['name']}','on'),"
-            #     up = f"config.active_node_parameters['{i['name']}'] = data"
-            #     up_plot = f"config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
-            #     args = "data"
-            # elif i['input'] == 'AgTable':
-            #     input = f"Input('analysis_{i['name']}','cellValueChanged'), State('analysis_{i['name']}','rowData'),"
-            #     up = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.active_node_parameters['{i['name']}'] = data"
-            #     up_plot = f"if cell != None: data[cell['rowIndex']] = cell['data']; config.graph[get_node_pos(config.selected)]['data']['plot']['{i['name']}'] = data"
-            #     args = "cell, data"
 
 # Plot
             add_function = f"""
@@ -853,7 +841,8 @@ def graph_new_node(_, input, output, cytoscape):
             'opacity':.3,
             'summary':'', 
             'parameters':{"input":input},
-            'plot':{}
+            'plots':[],
+            'report':""
         }, 
         'position':{'x':config.max_x + 30,'y':0},
     }
@@ -865,6 +854,7 @@ def graph_new_node(_, input, output, cytoscape):
         innode = get_node(input)["data"]
         load_adata(f"{config.analysis_folder}/h5ad/{innode['h5ad_file']}")
 
+    config.report = ""
     #Create node
     config.graph.append(node)
     #Create block callbacks
@@ -888,7 +878,7 @@ def graph_new_node(_, input, output, cytoscape):
         config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
     else:
         config.graph[pos]["data"]["h5ad_file"] = innode["data"]["h5ad_file"]
-
+    
     edge_add(input, config.selected)
 
     if output:
@@ -1117,6 +1107,7 @@ def delete_cancel(n_clicks):
     Output('analysis_plot_dropdown', 'options', allow_duplicate=True),
     Output('analysis_plot_dropdown', 'value', allow_duplicate=True),
     Output("analysis_report","children", allow_duplicate=True),
+    Output("analysis_plots_list", "children", allow_duplicate=True),
     [
         Input('graph_load_button', 'n_clicks')
     ],
@@ -1143,6 +1134,7 @@ def load_analysis(_, name):
         #Create active
         pos = get_node_pos(name)
         config.active_node_parameters = deepcopy(config.graph[pos]["data"]["parameters"])
+        config.report = deepcopy(config.graph[pos]["data"]["report"])
         #Selected
         unselect_node(config.selected)
         config.selected = name
@@ -1164,7 +1156,19 @@ def load_analysis(_, name):
             dbc.Col(id="analysis-markdown", children=markdown_to_dash(config.report)),
         ]
 
-        return True, config.graph, name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), html.Pre(info, style={"white-space":"pre-wrap"}), plot_options, None, report
+        cols = [
+            {"field":"style"},
+            {"field":"fig"},
+        ]
+
+        table = dag.AgGrid(
+                rowData=config.graph[pos]['data']['plots'],
+                columnDefs=cols,
+                defaultColDef={"editable": True},
+                columnSize="sizeToFit",
+            )
+
+        return True, config.graph, name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), html.Pre(info, style={"white-space":"pre-wrap"}), plot_options, None, report, table
     
     else:
         raise PreventUpdate()
@@ -1197,14 +1201,17 @@ def save(n_clicks):
     return ""
 
 @app.callback(
-    Output("analysis-markdown", "children", allow_duplicate=True),
+    Output("analysis-show-editor", "children", allow_duplicate=True),
+    Output("analysis_report","children", allow_duplicate=True),
+    Output("analysis_plots_list", "children", allow_duplicate=True),
     Input("analysis_saveimage_button","n_clicks"),
     State("analysis_plot","children"),
+    State("analysis_plot_dropdown","value"),
     prevent_initial_call=True
 )
-def savefigure(n_clicks,fig):
+def savefigure(n_clicks,fig,style):
 
-    if n_clicks != None:
+    if n_clicks != None and style != None:
 
         if isinstance(config.figure,Figure):
 
@@ -1214,8 +1221,6 @@ def savefigure(n_clicks,fig):
                 count += 1
                 namefig = f"{config.analysis_folder}/report/figures/{config.selected}_{count}.png"
             config.figure.savefig(namefig,transparent=True)            
-
-            config.report += f"![](./figures/{config.selected}_{count}.png)\n"
 
         else:
 
@@ -1229,11 +1234,30 @@ def savefigure(n_clicks,fig):
                     namefig = f"{config.analysis_folder}/report/figures/{config.selected}_{count}.png"
                 fig.write_image(namefig)
 
-                config.report += f"![](./figures/{config.selected}_{count}.png)\n"
 
-        l = markdown_to_dash(config.report)
+        pos = get_node_pos(config.selected)
+        config.graph[pos]['data']['plots'].append(
+            {
+                "style":style,
+                "parameters":deepcopy(config.active_plot_parameters),
+                "fig":f"{config.selected}_{count}.png"
+            }
+        )
+        config.report += f"![](./figures/{config.selected}_{count}.png)\n"
+        config.graph[pos]['data']['report'] = config.report
 
-        return l
+        save_graph()
+
+        report = dbc.Col(id="analysis-markdown", children=markdown_to_dash(config.report))
+
+        table = dag.AgGrid(
+                rowData=config.graph[pos]['data']['plots'],
+                columnDefs=[{"field":"style"},{"field":"fig"}],
+                defaultColDef={"editable": True},
+                columnSize="sizeToFit",
+            )
+
+        return False, report, table
     
     else:
 
@@ -1329,6 +1353,23 @@ def editor(value):
         l = markdown_to_dash(value)
 
         return l
+    
+    else:
+
+        raise PreventUpdate()
+    
+@app.callback(
+    Output("dumb","children", allow_duplicate=True),
+    Input("analysis-save-report","n_click"),
+    prevent_initial_call=True
+)
+def editor(value):
+
+    if value:
+
+        save_graph()
+
+        return ""
     
     else:
 
