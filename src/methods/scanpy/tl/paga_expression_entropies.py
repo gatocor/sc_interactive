@@ -29,4 +29,6 @@ config.methods["paga_expression_entropies"] = dict(
 
     function = paga_expression_entropies_f,
 
+    docs = sc.tl.paga_expression_entropies.__doc__
+
 )

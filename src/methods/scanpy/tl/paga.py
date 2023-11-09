@@ -69,4 +69,6 @@ config.methods["paga"] = dict(
 
     function = paga_f,
 
+    docs = sc.tl.paga.__doc__
+
 )

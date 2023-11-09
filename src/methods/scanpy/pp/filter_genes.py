@@ -77,4 +77,6 @@ config.methods["filter_genes"] = dict(
 
     function = filter_genes_f,
 
+    docs = sc.pp.filter_genes.__doc__
+
 )

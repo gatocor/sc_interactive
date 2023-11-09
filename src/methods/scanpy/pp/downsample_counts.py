@@ -29,4 +29,6 @@ config.methods["downsample_counts"] = dict(
 
     function = downsample_counts_f,
 
+    docs = sc.pp.downsample_counts.__doc__
+
 )

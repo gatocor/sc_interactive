@@ -61,4 +61,6 @@ config.methods["diffmap"] = dict(
 
     function = diffmap_f,
 
+    docs = sc.tl.diffmap.__doc__
+
 )

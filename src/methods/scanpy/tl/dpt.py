@@ -77,4 +77,6 @@ config.methods["dpt"] = dict(
 
     function = dpt_f,
 
+    docs = sc.tl.dpt.__doc__
+
 )

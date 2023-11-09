@@ -53,4 +53,6 @@ config.methods["combat"] = dict(
 
     function = combat_f,
 
+    docs = sc.pp.combat.__doc__
+
 )

@@ -101,4 +101,6 @@ config.methods["normalize_total"] = dict(
 
     function = normalize_total_f,
 
+    docs = sc.pp.normalize_total.__doc__
+
 )

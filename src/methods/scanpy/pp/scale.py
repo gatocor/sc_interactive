@@ -29,4 +29,6 @@ config.methods["scale"] = dict(
 
     function = scale_f,
 
+    docs = sc.pp.scale.__doc__
+
 )

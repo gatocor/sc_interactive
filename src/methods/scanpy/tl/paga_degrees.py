@@ -29,4 +29,6 @@ config.methods["paga_degrees"] = dict(
 
     function = paga_degrees_f,
 
+    docs = sc.tl.paga_degrees.__doc__
+
 )

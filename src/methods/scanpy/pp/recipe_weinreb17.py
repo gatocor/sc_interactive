@@ -77,4 +77,6 @@ config.methods["recipe_weinreb17"] = dict(
 
     function = recipe_weinreb17_f,
 
+    docs = sc.pp.recipe_weinreb17.__doc__
+
 )

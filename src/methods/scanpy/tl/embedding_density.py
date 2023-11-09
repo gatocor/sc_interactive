@@ -61,4 +61,6 @@ config.methods["embedding_density"] = dict(
 
     function = embedding_density_f,
 
+    docs = sc.tl.embedding_density.__doc__
+
 )

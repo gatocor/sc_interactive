@@ -133,4 +133,6 @@ config.methods["louvain"] = dict(
 
     function = louvain_f,
 
+    docs = sc.tl.louvain.__doc__
+
 )

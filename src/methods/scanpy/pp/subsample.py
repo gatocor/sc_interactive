@@ -61,4 +61,6 @@ config.methods["subsample"] = dict(
 
     function = subsample_f,
 
+    docs = sc.pp.subsample.__doc__
+
 )

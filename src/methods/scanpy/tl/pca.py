@@ -109,4 +109,6 @@ config.methods["pca"] = dict(
 
     function = pca_f,
 
+    docs = sc.tl.pca.__doc__
+
 )

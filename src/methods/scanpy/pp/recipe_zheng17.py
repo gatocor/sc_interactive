@@ -61,4 +61,6 @@ config.methods["recipe_zheng17"] = dict(
 
     function = recipe_zheng17_f,
 
+    docs = sc.pp.recipe_zheng17.__doc__
+
 )

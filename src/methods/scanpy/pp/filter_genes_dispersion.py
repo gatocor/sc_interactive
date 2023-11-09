@@ -109,4 +109,6 @@ config.methods["filter_genes_dispersion"] = dict(
 
     function = filter_genes_dispersion_f,
 
+    docs = sc.pp.filter_genes_dispersion.__doc__
+
 )

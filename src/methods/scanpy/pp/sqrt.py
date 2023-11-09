@@ -53,4 +53,6 @@ config.methods["sqrt"] = dict(
 
     function = sqrt_f,
 
+    docs = sc.pp.sqrt.__doc__
+
 )

@@ -29,4 +29,6 @@ config.methods["log1p"] = dict(
 
     function = log1p_f,
 
+    docs = sc.pp.log1p.__doc__
+
 )

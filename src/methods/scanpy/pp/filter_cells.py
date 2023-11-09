@@ -77,4 +77,6 @@ config.methods["filter_cells"] = dict(
 
     function = filter_cells_f,
 
+    docs = sc.pp.filter_cells.__doc__
+
 )

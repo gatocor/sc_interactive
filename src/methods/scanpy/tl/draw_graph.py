@@ -109,4 +109,6 @@ config.methods["draw_graph"] = dict(
 
     function = draw_graph_f,
 
+    docs = sc.tl.draw_graph.__doc__
+
 )

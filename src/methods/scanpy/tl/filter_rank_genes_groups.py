@@ -29,4 +29,6 @@ config.methods["filter_rank_genes_groups"] = dict(
 
     function = filter_rank_genes_groups_f,
 
+    docs = sc.tl.filter_rank_genes_groups.__doc__
+
 )

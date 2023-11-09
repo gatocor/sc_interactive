@@ -141,4 +141,6 @@ config.methods["umap"] = dict(
 
     function = umap_f,
 
+    docs = sc.tl.umap.__doc__
+
 )

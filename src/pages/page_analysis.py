@@ -41,9 +41,6 @@ for folder, dirs, files in os.walk("./methods"):
             folder_parent = name[:-1]
 
             d[folder_parent].append(dbc.DropdownMenu(d[folder],label=folder_kid,size="md",className="mb-3",color="light"))
-# print(d["./methods"][0])
-
-print(methods_menus)
 
 for folder, dirs, files in os.walk("./methods_plot"):
 
@@ -147,6 +144,17 @@ tab_h5ad = dbc.Card(
     color="#CED4DA",
     className="mt-3",
 )
+tab_info = dbc.Card(
+    [
+        dbc.CardBody(
+            id='analysis_info',
+            children = [],
+            # width='50%',
+        )
+    ],
+    color="#CED4DA",
+    className="mt-3",
+)
 
 def layout():
     return dbc.Container(
@@ -230,32 +238,27 @@ def layout():
                 ]
             ),
             dbc.Row(
-                children=[
-                    dbc.Col(
+                children=dbc.ButtonGroup([
                         dcc.Dropdown(
                             id='graph_dropdown_load',
                             value=None,
                             options=node_names(),
                             clearable=True,
-                        )
-                    ),
-                    dbc.Col(
+                            className="mb-3"
+                        ),
                         dbc.Button(
                             id='graph_load_button',
-                            children="Load"
-                        )
-                    ),
-                    dbc.Col(
+                            children="Load",
+                            className="mb-3"
+                        ),
                         dbc.Button(
                             children="Delete",
                             id="analysis_delete_button", 
                             style={"background-color":"red"}, 
+                            className="mb-3"
                         ),
-                    ),
-                    dbc.Col(
-                        children = dbc.DropdownMenu([d["./methods"][0]],label="Add New Method",id = 'graph_dropdown_analysis',size="md",className="mb-3",),
-                    ),
-                ]
+                        dbc.DropdownMenu([d["./methods"][0]],label="Add New Method",id = 'graph_dropdown_analysis',className="mb-3",),
+                ],size="md",className="mb-2")
             ),
             dbc.Row(
                 cyto.Cytoscape(
@@ -280,13 +283,14 @@ def layout():
             dbc.Alert(
                 id="node_analysis",
                 children=[
-                    html.H1(id="analysis_name",children="Raw"),
+                    html.H1(id="analysis_name",children=["Raw"]),
                     dbc.Tabs(
                         [
                             dbc.Tab(tab_algorithm, label="Algorithm"),
                             dbc.Tab(tab_plot, label="Plot"),
                             dbc.Tab(tab_report, label="Report"),
                             dbc.Tab(tab_h5ad, label="Object Inspector"),
+                            dbc.Tab(tab_info, label="Algorithm Information"),
                         ]
                     ),
                 ],
@@ -1109,6 +1113,7 @@ def delete_cancel(n_clicks):
     Output('analysis_plotargs', 'children', allow_duplicate=True),
     Output('analysis_plot', 'children', allow_duplicate=True),
     Output('analysis_inspector', 'children', allow_duplicate=True),
+    Output('analysis_info', 'children', allow_duplicate=True),
     Output('analysis_plot_dropdown', 'options', allow_duplicate=True),
     Output('analysis_plot_dropdown', 'value', allow_duplicate=True),
     Output("analysis_report","children", allow_duplicate=True),
@@ -1153,12 +1158,13 @@ def load_analysis(_, name):
 
         plot_options = get_plot_methods(method)
 
+        info = config.methods[method]["docs"]
+
         report = [
             dbc.Col(id="analysis-markdown", children=markdown_to_dash(config.report)),
         ]
 
-
-        return True, config.graph, name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), plot_options, None, report
+        return True, config.graph, name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), html.Pre(info, style={"white-space":"pre-wrap"}), plot_options, None, report
     
     else:
         raise PreventUpdate()

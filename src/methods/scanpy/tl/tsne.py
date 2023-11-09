@@ -109,4 +109,6 @@ config.methods["tsne"] = dict(
 
     function = tsne_f,
 
+    docs = sc.tl.tsne.__doc__
+
 )

@@ -109,4 +109,6 @@ config.methods["neighbors"] = dict(
 
     function = neighbors_f,
 
+    docs = sc.pp.neighbors.__doc__
+
 )

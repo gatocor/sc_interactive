@@ -101,4 +101,6 @@ config.methods["calculate_qc_metrics"] = dict(
 
     function = calculate_qc_metrics_f,
 
+    docs = sc.pp.calculate_qc_metrics.__doc__
+
 )

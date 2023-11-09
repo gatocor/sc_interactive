@@ -53,4 +53,6 @@ config.methods["recipe_seurat"] = dict(
 
     function = recipe_seurat_f,
 
+    docs = sc.pp.recipe_seurat.__doc__
+
 )

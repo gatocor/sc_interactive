@@ -223,6 +223,8 @@ config.methods["{i.lower()}"] = dict(
 
     function = {i.lower()}_f,
 
+    docs = sc.{module}.{i}.__doc__
+
 )
 """
         
@@ -290,6 +292,8 @@ config.methods_plot["{plot_function.lower()}"] = dict(
     args = {executioncode},
 
     function = {plot_function.lower()}_plot
+
+    docs = sc.{plot_module}.{i}.__doc__
 )
 """
         

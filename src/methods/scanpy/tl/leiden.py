@@ -125,4 +125,6 @@ config.methods["leiden"] = dict(
 
     function = leiden_f,
 
+    docs = sc.tl.leiden.__doc__
+
 )

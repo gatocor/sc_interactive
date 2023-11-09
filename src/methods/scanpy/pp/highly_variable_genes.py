@@ -133,4 +133,6 @@ config.methods["highly_variable_genes"] = dict(
 
     function = highly_variable_genes_f,
 
+    docs = sc.pp.highly_variable_genes.__doc__
+
 )
