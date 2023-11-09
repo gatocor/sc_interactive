@@ -278,7 +278,8 @@ def layout():
                 color="danger"
             ),
             dbc.Alert(
-                [
+                id="node_analysis",
+                children=[
                     html.H1(id="analysis_name",children="Raw"),
                     dbc.Tabs(
                         [
@@ -290,6 +291,7 @@ def layout():
                     ),
                 ],
                 color="dark", 
+                is_open=False
             ),
         ],
         fluid=True
@@ -802,6 +804,7 @@ def graph_new_node(_):
     return False
 
 @app.callback(
+    Output('node_analysis', 'is_open', allow_duplicate=True),
     Output('new-modal', 'is_open', allow_duplicate=True),
     Output('graph_cytoscape', 'elements', allow_duplicate=True),
     Output('graph_table', 'data', allow_duplicate=True),
@@ -897,7 +900,7 @@ def graph_new_node(_, input, output, cytoscape):
 
     plot_options = get_plot_methods(method)
 
-    return False, config.graph, graph2table(), name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), plot_options, None
+    return True, False, config.graph, graph2table(), name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), plot_options, None
 
 #Execute analysis button
 @app.callback(
@@ -1099,6 +1102,7 @@ def delete_cancel(n_clicks):
 
 #Load button
 @app.callback(
+    Output('node_analysis', 'is_open', allow_duplicate=True),
     Output('graph_cytoscape', 'elements', allow_duplicate=True),
     Output('analysis_name','children',allow_duplicate=True),
     Output('analysis_args', 'children', allow_duplicate=True),
@@ -1154,7 +1158,7 @@ def load_analysis(_, name):
         ]
 
 
-        return config.graph, name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), plot_options, None, report
+        return True, config.graph, name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), plot_options, None, report
     
     else:
         raise PreventUpdate()
