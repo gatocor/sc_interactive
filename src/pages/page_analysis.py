@@ -288,7 +288,7 @@ def layout():
                             style={"background-color":"red"}, 
                             className="mb-3"
                         ),
-                        dbc.DropdownMenu([d["./methods"][0]],label="Add New Method",id = 'graph_dropdown_analysis',className="mb-3",),
+                        dbc.DropdownMenu(d["./methods"][:2],label="Add New Method",id = 'graph_dropdown_analysis',className="mb-3",),
                 ],size="md",className="mb-2")
             ),
             dbc.Row(
@@ -897,6 +897,7 @@ def graph_new_node(_, input, output, new, cytoscape):
     if node["data"]["new_h5ad"]:
         config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
     elif innode["data"]["id"] == "Raw":
+        config.graph[pos]["data"]["type"] = "QC_saved"
         config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
     else:
         config.graph[pos]["data"]["h5ad_file"] = innode["data"]["h5ad_file"]
@@ -1382,13 +1383,15 @@ def editor(value):
     
 @app.callback(
     Output("dumb","children", allow_duplicate=True),
-    Input("analysis-save-report","n_click"),
+    Input("analysis-save-report","n_clicks"),
     prevent_initial_call=True
 )
 def editor(value):
 
     if value:
 
+        pos = get_node_pos(config.selected)
+        config.graph[pos]["data"]["report"] = config.report
         save_graph()
 
         return ""

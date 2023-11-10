@@ -14,7 +14,10 @@ RAWNODE = {
             'opacity':1,
             'summary':'Raw', 
             'image':'../assets/Raw.png',
-            'parameters':{'input':None}}, 
+            'parameters':{'input':None},
+            'report':'',
+            'plots':[]
+        },
         'position':{'x':0,'y':0},
     }
 

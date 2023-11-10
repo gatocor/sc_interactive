@@ -23,14 +23,13 @@ methods = {
     "Raw" : {
         "properties" : {
             "type" : "Raw",
-            "make_new_h5ad" : True
         },
 
         "args": [],
 
         "plots":[],
 
-        "report":""
+        "docs":[]
     }
 }
 methods_plot = {}
