@@ -13,7 +13,7 @@ paga_degrees_args = [ARGINPUT,]
 def paga_degrees_f(adata,kwargs):
 
     sc.tl.paga_degrees(
-        adata,
+        config.adata,
     )
         
     return

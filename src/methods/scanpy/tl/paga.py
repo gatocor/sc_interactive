@@ -48,7 +48,7 @@ paga_args = [ARGINPUT,
 def paga_f(adata,kwargs):
 
     sc.tl.paga(
-        adata,
+        config.adata,
         groups=type_formater(kwargs["groups"],typing.Optional[str]),
         use_rna_velocity=type_formater(kwargs["use_rna_velocity"],bool),
         model=type_formater(kwargs["model"],typing.Literal['v1.2', 'v1.0']),

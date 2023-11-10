@@ -13,7 +13,7 @@ filter_rank_genes_groups_args = [ARGINPUT,]
 def filter_rank_genes_groups_f(adata,kwargs):
 
     sc.tl.filter_rank_genes_groups(
-        adata,
+        config.adata,
     )
         
     return

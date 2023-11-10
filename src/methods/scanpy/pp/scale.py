@@ -13,7 +13,7 @@ scale_args = [ARGINPUT,]
 def scale_f(adata,kwargs):
 
     sc.pp.scale(
-        adata,
+        config.adata,
     )
         
     return

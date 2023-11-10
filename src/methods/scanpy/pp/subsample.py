@@ -41,7 +41,7 @@ subsample_args = [ARGINPUT,
 def subsample_f(adata,kwargs):
 
     sc.pp.subsample(
-        adata,
+        config.adata,
         fraction=type_formater(kwargs["fraction"],typing.Optional[float]),
         n_obs=type_formater(kwargs["n_obs"],typing.Optional[int]),
         random_state=type_formater(kwargs["random_state"],typing.Union[str, int, numpy.random.mtrand.RandomState]),

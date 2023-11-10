@@ -104,7 +104,7 @@ highly_variable_genes_args = [ARGINPUT,
 def highly_variable_genes_f(adata,kwargs):
 
     sc.pp.highly_variable_genes(
-        adata,
+        config.adata,
         layer=type_formater(kwargs["layer"],typing.Optional[str]),
         n_top_genes=type_formater(kwargs["n_top_genes"],typing.Optional[int]),
         min_disp=type_formater(kwargs["min_disp"],typing.Optional[float]),

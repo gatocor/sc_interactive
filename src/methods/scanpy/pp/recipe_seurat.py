@@ -34,7 +34,7 @@ recipe_seurat_args = [ARGINPUT,
 def recipe_seurat_f(adata,kwargs):
 
     sc.pp.recipe_seurat(
-        adata,
+        config.adata,
         log=type_formater(kwargs["log"],bool),
         plot=type_formater(kwargs["plot"],bool),
         copy=type_formater(kwargs["copy"],bool),

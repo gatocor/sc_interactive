@@ -771,12 +771,10 @@ def graph_new_node(*_):
     ctx = dash.callback_context
     load = ctx.triggered[0]["prop_id"].split(".")[0].split("/")[-1]
 
-    print(ctx.triggered[0]["prop_id"])
     config.add_method = load
 
     return True, _[-1], node_names()
 """
-# print(code)
 exec(code)
 
 # code = ""
@@ -797,7 +795,6 @@ exec(code)
 #     # return "d-block" if input_id == "graph_dropdown_analysis" else "d-none"
 #     return False
 # """
-# print(code)
 # exec(code)
 
 @app.callback(
@@ -925,6 +922,7 @@ def graph_new_node(_, input, output, new, cytoscape):
     Output('execute-computed-modal', 'is_open', allow_duplicate=True),
     Output('execution-error', 'is_open', allow_duplicate=True),
     Output('execution-error', 'children', allow_duplicate=True),
+    Output('analysis_inspector', 'children', allow_duplicate=True),
     [
         Input('analysis_execute_button', 'n_clicks')
     ],
@@ -972,7 +970,9 @@ def execute(n_clicks, warning_computed):
         save_adata()
         save_graph()
 
-        return config.graph, warning_computed, False, ""
+        inspector = print_to_string(config.adata)
+
+        return config.graph, warning_computed, False, "", html.Pre(inspector, style={"white-space":"pre-wrap"})
 
     else:
 
@@ -1409,11 +1409,7 @@ def plot_info(value):
 
     if value != None:
 
-        print("holi")
-
         docs = config.methods_plot[value]["docs"]
-
-        print(docs)
 
         return html.Pre(docs, style={"white-space":"pre-wrap"})
     

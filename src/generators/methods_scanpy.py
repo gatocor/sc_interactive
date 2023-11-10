@@ -207,7 +207,7 @@ from general import *
 def {i.lower()}_f(adata,kwargs):
 
     sc.{module}.{i}(
-        adata,{kargs}
+        config.adata,{kargs}
     )
         
     return

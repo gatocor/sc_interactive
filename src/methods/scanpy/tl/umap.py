@@ -111,7 +111,7 @@ umap_args = [ARGINPUT,
 def umap_f(adata,kwargs):
 
     sc.tl.umap(
-        adata,
+        config.adata,
         min_dist=type_formater(kwargs["min_dist"],float),
         spread=type_formater(kwargs["spread"],float),
         n_components=type_formater(kwargs["n_components"],int),

@@ -83,7 +83,7 @@ pca_args = [ARGINPUT,
 def pca_f(adata,kwargs):
 
     sc.pp.pca(
-        adata,
+        config.adata,
         n_comps=type_formater(kwargs["n_comps"],typing.Optional[int]),
         zero_center=type_formater(kwargs["zero_center"],typing.Optional[bool]),
         svd_solver=type_formater(kwargs["svd_solver"],str),

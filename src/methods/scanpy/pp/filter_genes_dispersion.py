@@ -83,7 +83,7 @@ filter_genes_dispersion_args = [ARGINPUT,
 def filter_genes_dispersion_f(adata,kwargs):
 
     sc.pp.filter_genes_dispersion(
-        adata,
+        config.adata,
         flavor=type_formater(kwargs["flavor"],typing.Literal['seurat', 'cell_ranger']),
         min_disp=type_formater(kwargs["min_disp"],typing.Optional[float]),
         max_disp=type_formater(kwargs["max_disp"],typing.Optional[float]),

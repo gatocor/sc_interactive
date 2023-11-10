@@ -41,7 +41,7 @@ diffmap_args = [ARGINPUT,
 def diffmap_f(adata,kwargs):
 
     sc.tl.diffmap(
-        adata,
+        config.adata,
         n_comps=type_formater(kwargs["n_comps"],int),
         neighbors_key=type_formater(kwargs["neighbors_key"],typing.Optional[str]),
         random_state=type_formater(kwargs["random_state"],typing.Union[str, int, numpy.random.mtrand.RandomState]),

@@ -41,7 +41,7 @@ embedding_density_args = [ARGINPUT,
 def embedding_density_f(adata,kwargs):
 
     sc.tl.embedding_density(
-        adata,
+        config.adata,
         basis=type_formater(kwargs["basis"],str),
         groupby=type_formater(kwargs["groupby"],typing.Optional[str]),
         key_added=type_formater(kwargs["key_added"],typing.Optional[str]),

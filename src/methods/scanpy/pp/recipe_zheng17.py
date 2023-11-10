@@ -41,7 +41,7 @@ recipe_zheng17_args = [ARGINPUT,
 def recipe_zheng17_f(adata,kwargs):
 
     sc.pp.recipe_zheng17(
-        adata,
+        config.adata,
         n_top_genes=type_formater(kwargs["n_top_genes"],int),
         log=type_formater(kwargs["log"],bool),
         plot=type_formater(kwargs["plot"],bool),

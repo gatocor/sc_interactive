@@ -34,7 +34,7 @@ sqrt_args = [ARGINPUT,
 def sqrt_f(adata,kwargs):
 
     sc.pp.sqrt(
-        adata,
+        config.adata,
         copy=type_formater(kwargs["copy"],bool),
         chunked=type_formater(kwargs["chunked"],bool),
         chunk_size=type_formater(kwargs["chunk_size"],typing.Optional[int]),

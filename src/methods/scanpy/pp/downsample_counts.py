@@ -13,7 +13,7 @@ downsample_counts_args = [ARGINPUT,]
 def downsample_counts_f(adata,kwargs):
 
     sc.pp.downsample_counts(
-        adata,
+        config.adata,
     )
         
     return

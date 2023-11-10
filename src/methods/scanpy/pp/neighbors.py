@@ -83,7 +83,7 @@ neighbors_args = [ARGINPUT,
 def neighbors_f(adata,kwargs):
 
     sc.pp.neighbors(
-        adata,
+        config.adata,
         n_neighbors=type_formater(kwargs["n_neighbors"],int),
         n_pcs=type_formater(kwargs["n_pcs"],typing.Optional[int]),
         use_rep=type_formater(kwargs["use_rep"],typing.Optional[str]),

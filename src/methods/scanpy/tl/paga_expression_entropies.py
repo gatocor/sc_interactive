@@ -13,7 +13,7 @@ paga_expression_entropies_args = [ARGINPUT,]
 def paga_expression_entropies_f(adata,kwargs):
 
     sc.tl.paga_expression_entropies(
-        adata,
+        config.adata,
     )
         
     return

@@ -34,7 +34,7 @@ combat_args = [ARGINPUT,
 def combat_f(adata,kwargs):
 
     sc.pp.combat(
-        adata,
+        config.adata,
         key=type_formater(kwargs["key"],str),
         covariates=type_formater(kwargs["covariates"],typing.Optional[typing.Collection[str]]),
         inplace=type_formater(kwargs["inplace"],bool),

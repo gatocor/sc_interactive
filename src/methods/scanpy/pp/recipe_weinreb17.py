@@ -55,7 +55,7 @@ recipe_weinreb17_args = [ARGINPUT,
 def recipe_weinreb17_f(adata,kwargs):
 
     sc.pp.recipe_weinreb17(
-        adata,
+        config.adata,
         log=type_formater(kwargs["log"],bool),
         mean_threshold=type_formater(kwargs["mean_threshold"],float),
         cv_threshold=type_formater(kwargs["cv_threshold"],int),

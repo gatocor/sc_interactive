@@ -97,7 +97,7 @@ leiden_args = [ARGINPUT,
 def leiden_f(adata,kwargs):
 
     sc.tl.leiden(
-        adata,
+        config.adata,
         resolution=type_formater(kwargs["resolution"],float),
         restrict_to=type_formater(kwargs["restrict_to"],typing.Optional[typing.Tuple[str, typing.Sequence[str]]]),
         random_state=type_formater(kwargs["random_state"],typing.Union[str, int, numpy.random.mtrand.RandomState]),

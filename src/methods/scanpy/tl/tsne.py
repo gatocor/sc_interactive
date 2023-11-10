@@ -83,7 +83,7 @@ tsne_args = [ARGINPUT,
 def tsne_f(adata,kwargs):
 
     sc.tl.tsne(
-        adata,
+        config.adata,
         n_pcs=type_formater(kwargs["n_pcs"],typing.Optional[int]),
         use_rep=type_formater(kwargs["use_rep"],typing.Optional[str]),
         perplexity=type_formater(kwargs["perplexity"],typing.Union[float, int]),

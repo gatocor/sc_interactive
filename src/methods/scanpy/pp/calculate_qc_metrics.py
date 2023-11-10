@@ -76,7 +76,7 @@ calculate_qc_metrics_args = [ARGINPUT,
 def calculate_qc_metrics_f(adata,kwargs):
 
     sc.pp.calculate_qc_metrics(
-        adata,
+        config.adata,
         expr_type=type_formater(kwargs["expr_type"],str),
         var_type=type_formater(kwargs["var_type"],str),
         qc_vars=type_formater(kwargs["qc_vars"],typing.Collection[str]),

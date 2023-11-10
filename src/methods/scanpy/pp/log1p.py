@@ -13,7 +13,7 @@ log1p_args = [ARGINPUT,]
 def log1p_f(adata,kwargs):
 
     sc.pp.log1p(
-        adata,
+        config.adata,
     )
         
     return

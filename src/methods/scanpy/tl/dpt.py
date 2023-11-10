@@ -55,7 +55,7 @@ dpt_args = [ARGINPUT,
 def dpt_f(adata,kwargs):
 
     sc.tl.dpt(
-        adata,
+        config.adata,
         n_dcs=type_formater(kwargs["n_dcs"],int),
         n_branchings=type_formater(kwargs["n_branchings"],int),
         min_group_size=type_formater(kwargs["min_group_size"],float),

@@ -76,7 +76,7 @@ normalize_total_args = [ARGINPUT,
 def normalize_total_f(adata,kwargs):
 
     sc.pp.normalize_total(
-        adata,
+        config.adata,
         target_sum=type_formater(kwargs["target_sum"],typing.Optional[float]),
         exclude_highly_expressed=type_formater(kwargs["exclude_highly_expressed"],bool),
         max_fraction=type_formater(kwargs["max_fraction"],float),

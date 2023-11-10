@@ -55,7 +55,7 @@ filter_cells_args = [ARGINPUT,
 def filter_cells_f(adata,kwargs):
 
     sc.pp.filter_cells(
-        adata,
+        config.adata,
         min_counts=type_formater(kwargs["min_counts"],typing.Optional[int]),
         min_genes=type_formater(kwargs["min_genes"],typing.Optional[int]),
         max_counts=type_formater(kwargs["max_counts"],typing.Optional[int]),

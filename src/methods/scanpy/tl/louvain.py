@@ -104,7 +104,7 @@ louvain_args = [ARGINPUT,
 def louvain_f(adata,kwargs):
 
     sc.tl.louvain(
-        adata,
+        config.adata,
         resolution=type_formater(kwargs["resolution"],typing.Optional[float]),
         random_state=type_formater(kwargs["random_state"],typing.Union[str, int, numpy.random.mtrand.RandomState]),
         restrict_to=type_formater(kwargs["restrict_to"],typing.Optional[typing.Tuple[str, typing.Sequence[str]]]),

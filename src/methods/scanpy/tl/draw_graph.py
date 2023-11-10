@@ -83,7 +83,7 @@ draw_graph_args = [ARGINPUT,
 def draw_graph_f(adata,kwargs):
 
     sc.tl.draw_graph(
-        adata,
+        config.adata,
         layout=type_formater(kwargs["layout"],typing.Literal['fr', 'drl', 'kk', 'grid_fr', 'lgl', 'rt', 'rt_circular', 'fa']),
         init_pos=type_formater(kwargs["init_pos"],typing.Union[str, bool, str]),
         root=type_formater(kwargs["root"],typing.Optional[int]),
