@@ -861,7 +861,8 @@ def graph_new_node(_, input, output, new, cytoscape):
             'parameters':{"input":input},
             'plots':[],
             'report':"",
-            'new_h5ad':new
+            'new_h5ad':new,
+            'adata_before':''
         }, 
         'position':{'x':config.max_x + 30,'y':0},
     }
@@ -898,7 +899,8 @@ def graph_new_node(_, input, output, new, cytoscape):
         config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
     else:
         config.graph[pos]["data"]["h5ad_file"] = innode["data"]["h5ad_file"]
-    
+    node['data']['adata_before'] = print_to_string(config.adata)
+
     edge_add(input, config.selected)
 
     if output:
@@ -911,10 +913,17 @@ def graph_new_node(_, input, output, new, cytoscape):
     l, l3, p = load_node(name)
 
     inspector = print_to_string(config.adata)
+    h = [
+        html.H1("Before"),
+        html.Pre(get_node(config.selected)['data']['adata_before'], style={"white-space":"pre-wrap"}),
+        html.H1("After"),
+        html.Pre(inspector, style={"white-space":"pre-wrap"}),
+    ]
 
     plot_options = get_plot_methods(method)
+    
 
-    return True, False, config.graph, graph2table(), name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), plot_options, None, False
+    return True, False, config.graph, graph2table(), name, l, l3, p, h, plot_options, None, False
 
 #Execute analysis button
 @app.callback(
@@ -971,8 +980,14 @@ def execute(n_clicks, warning_computed):
         save_graph()
 
         inspector = print_to_string(config.adata)
+        h = [
+            html.H1("Before"),
+            html.Pre(get_node(config.selected)['data']['adata_before'], style={"white-space":"pre-wrap"}),
+            html.H1("After"),
+            html.Pre(inspector, style={"white-space":"pre-wrap"}),
+        ]
 
-        return config.graph, warning_computed, False, "", html.Pre(inspector, style={"white-space":"pre-wrap"})
+        return config.graph, warning_computed, False, "", h
 
     else:
 
@@ -1170,6 +1185,12 @@ def load_analysis(_, name):
         l, l3, p = load_node(name)
 
         inspector = print_to_string(config.adata)
+        h = [
+            html.H1("Before"),
+            html.Pre(get_node(config.selected)['data']['adata_before'], style={"white-space":"pre-wrap"}),
+            html.H1("After"),
+            html.Pre(inspector, style={"white-space":"pre-wrap"}),
+        ]
 
         plot_options = get_plot_methods(method)
 
@@ -1191,7 +1212,7 @@ def load_analysis(_, name):
                 columnSize="sizeToFit",
             )
 
-        return True, config.graph, name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), html.Pre(info, style={"white-space":"pre-wrap"}), plot_options, None, report, table
+        return True, config.graph, name, l, l3, p, h, html.Pre(info, style={"white-space":"pre-wrap"}), plot_options, None, report, table
     
     else:
         raise PreventUpdate()

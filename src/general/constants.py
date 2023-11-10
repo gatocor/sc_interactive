@@ -16,7 +16,8 @@ RAWNODE = {
             'image':'../assets/Raw.png',
             'parameters':{'input':None},
             'report':'',
-            'plots':[]
+            'plots':[],
+            'adata_before':""
         },
         'position':{'x':0,'y':0},
     }
