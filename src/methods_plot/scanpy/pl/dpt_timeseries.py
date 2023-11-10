@@ -46,5 +46,7 @@ config.methods_plot["dpt_timeseries"] = dict(
         properties=dict(value="True",type="text")
     ),],
 
-    function = dpt_timeseries_plot
+    function = dpt_timeseries_plot,
+
+    docs = sc.pl.umap.__doc__
 )

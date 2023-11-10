@@ -38,5 +38,7 @@ config.methods_plot["filter_genes_dispersion"] = dict(
         properties=dict(value="False",type="text")
     ),],
 
-    function = filter_genes_dispersion_plot
+    function = filter_genes_dispersion_plot,
+
+    docs = sc.pl.umap.__doc__
 )

@@ -110,5 +110,7 @@ config.methods_plot["tracksplot"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = tracksplot_plot
+    function = tracksplot_plot,
+
+    docs = sc.pl.umap.__doc__
 )

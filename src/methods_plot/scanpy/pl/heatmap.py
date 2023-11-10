@@ -182,5 +182,7 @@ config.methods_plot["heatmap"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = heatmap_plot
+    function = heatmap_plot,
+
+    docs = sc.pl.umap.__doc__
 )

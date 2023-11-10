@@ -54,5 +54,7 @@ config.methods_plot["sim"] = dict(
         properties=dict(value="False",type="text")
     ),],
 
-    function = sim_plot
+    function = sim_plot,
+
+    docs = sc.pl.umap.__doc__
 )

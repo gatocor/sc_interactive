@@ -30,5 +30,7 @@ config.methods_plot["timeseries"] = dict(
     
     args = [],
 
-    function = timeseries_plot
+    function = timeseries_plot,
+
+    docs = sc.pl.umap.__doc__
 )

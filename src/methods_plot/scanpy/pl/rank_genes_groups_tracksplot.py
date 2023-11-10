@@ -86,5 +86,7 @@ config.methods_plot["rank_genes_groups_tracksplot"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = rank_genes_groups_tracksplot_plot
+    function = rank_genes_groups_tracksplot_plot,
+
+    docs = sc.pl.umap.__doc__
 )

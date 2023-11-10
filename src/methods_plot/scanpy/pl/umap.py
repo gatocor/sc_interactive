@@ -374,5 +374,7 @@ config.methods_plot["umap"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = umap_plot
+    function = umap_plot,
+
+    docs = sc.pl.umap.__doc__
 )

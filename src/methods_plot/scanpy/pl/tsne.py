@@ -374,5 +374,7 @@ config.methods_plot["tsne"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = tsne_plot
+    function = tsne_plot,
+
+    docs = sc.pl.umap.__doc__
 )

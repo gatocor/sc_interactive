@@ -38,5 +38,7 @@ config.methods_plot["timeseries_as_heatmap"] = dict(
         properties=dict(value="()",type="text")
     ),],
 
-    function = timeseries_as_heatmap_plot
+    function = timeseries_as_heatmap_plot,
+
+    docs = sc.pl.umap.__doc__
 )

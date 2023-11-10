@@ -54,5 +54,7 @@ config.methods_plot["pca_loadings"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = pca_loadings_plot
+    function = pca_loadings_plot,
+
+    docs = sc.pl.umap.__doc__
 )

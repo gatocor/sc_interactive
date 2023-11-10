@@ -173,6 +173,17 @@ tab_info = dbc.Card(
     color="#CED4DA",
     className="mt-3",
 )
+tab_info_plot = dbc.Card(
+    [
+        dbc.CardBody(
+            id='analysis_info_plot',
+            children = [],
+            # width='50%',
+        )
+    ],
+    color="#CED4DA",
+    className="mt-3",
+)
 
 def layout():
     return dbc.Container(
@@ -310,6 +321,7 @@ def layout():
                             dbc.Tab(tab_report, label="Report"),
                             dbc.Tab(tab_h5ad, label="Object Inspector"),
                             dbc.Tab(tab_info, label="Algorithm Information"),
+                            dbc.Tab(tab_info_plot, label="Plot Algorithm Information"),
                         ]
                     ),
                 ],
@@ -1370,6 +1382,27 @@ def editor(value):
         save_graph()
 
         return ""
+    
+    else:
+
+        raise PreventUpdate()
+    
+@app.callback(
+    Output("analysis_info_plot","children", allow_duplicate=True),
+    Input("analysis_plot_dropdown","value"),
+    prevent_initial_call=True
+)
+def plot_info(value):
+
+    if value != None:
+
+        print("holi")
+
+        docs = config.methods_plot[value]["docs"]
+
+        print(docs)
+
+        return html.Pre(docs, style={"white-space":"pre-wrap"})
     
     else:
 

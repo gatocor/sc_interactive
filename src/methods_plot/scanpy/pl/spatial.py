@@ -438,5 +438,7 @@ config.methods_plot["spatial"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = spatial_plot
+    function = spatial_plot,
+
+    docs = sc.pl.umap.__doc__
 )

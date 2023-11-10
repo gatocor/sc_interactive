@@ -30,5 +30,7 @@ config.methods_plot["matrix"] = dict(
     
     args = [],
 
-    function = matrix_plot
+    function = matrix_plot,
+
+    docs = sc.pl.umap.__doc__
 )

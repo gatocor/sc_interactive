@@ -206,5 +206,7 @@ config.methods_plot["paga_path"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = paga_path_plot
+    function = paga_path_plot,
+
+    docs = sc.pl.umap.__doc__
 )

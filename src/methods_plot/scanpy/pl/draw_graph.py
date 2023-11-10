@@ -382,5 +382,7 @@ config.methods_plot["draw_graph"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = draw_graph_plot
+    function = draw_graph_plot,
+
+    docs = sc.pl.umap.__doc__
 )

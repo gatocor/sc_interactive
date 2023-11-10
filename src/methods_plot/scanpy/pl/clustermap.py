@@ -46,5 +46,7 @@ config.methods_plot["clustermap"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = clustermap_plot
+    function = clustermap_plot,
+
+    docs = sc.pl.umap.__doc__
 )

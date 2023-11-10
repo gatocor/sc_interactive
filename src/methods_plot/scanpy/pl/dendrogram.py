@@ -86,5 +86,7 @@ config.methods_plot["dendrogram"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = dendrogram_plot
+    function = dendrogram_plot,
+
+    docs = sc.pl.umap.__doc__
 )

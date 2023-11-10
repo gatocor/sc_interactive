@@ -214,5 +214,7 @@ config.methods_plot["scatter"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = scatter_plot
+    function = scatter_plot,
+
+    docs = sc.pl.umap.__doc__
 )

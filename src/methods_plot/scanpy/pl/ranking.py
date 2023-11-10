@@ -46,5 +46,7 @@ config.methods_plot["ranking"] = dict(
         properties=dict(value="''",type="text")
     ),],
 
-    function = ranking_plot
+    function = ranking_plot,
+
+    docs = sc.pl.umap.__doc__
 )

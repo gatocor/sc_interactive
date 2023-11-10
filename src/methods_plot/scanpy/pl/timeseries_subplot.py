@@ -46,5 +46,7 @@ config.methods_plot["timeseries_subplot"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = timeseries_subplot_plot
+    function = timeseries_subplot_plot,
+
+    docs = sc.pl.umap.__doc__
 )

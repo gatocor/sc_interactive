@@ -30,5 +30,7 @@ config.methods_plot["pca_overview"] = dict(
     
     args = [],
 
-    function = pca_overview_plot
+    function = pca_overview_plot,
+
+    docs = sc.pl.umap.__doc__
 )

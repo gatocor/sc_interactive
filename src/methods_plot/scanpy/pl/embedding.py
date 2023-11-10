@@ -382,5 +382,7 @@ config.methods_plot["embedding"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = embedding_plot
+    function = embedding_plot,
+
+    docs = sc.pl.umap.__doc__
 )

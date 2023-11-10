@@ -262,5 +262,7 @@ config.methods_plot["dotplot"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = dotplot_plot
+    function = dotplot_plot,
+
+    docs = sc.pl.umap.__doc__
 )

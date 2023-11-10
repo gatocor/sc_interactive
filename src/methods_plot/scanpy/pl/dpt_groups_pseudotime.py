@@ -46,5 +46,7 @@ config.methods_plot["dpt_groups_pseudotime"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = dpt_groups_pseudotime_plot
+    function = dpt_groups_pseudotime_plot,
+
+    docs = sc.pl.umap.__doc__
 )

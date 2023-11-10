@@ -30,5 +30,7 @@ config.methods_plot["paga_adjacency"] = dict(
     
     args = [],
 
-    function = paga_adjacency_plot
+    function = paga_adjacency_plot,
+
+    docs = sc.pl.umap.__doc__
 )

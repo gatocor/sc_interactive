@@ -382,5 +382,7 @@ config.methods_plot["pca"] = dict(
         properties=dict(value="False",type="text")
     ),],
 
-    function = pca_plot
+    function = pca_plot,
+
+    docs = sc.pl.umap.__doc__
 )

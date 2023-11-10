@@ -62,5 +62,7 @@ config.methods_plot["highest_expr_genes"] = dict(
         properties=dict(value="False",type="text")
     ),],
 
-    function = highest_expr_genes_plot
+    function = highest_expr_genes_plot,
+
+    docs = sc.pl.umap.__doc__
 )

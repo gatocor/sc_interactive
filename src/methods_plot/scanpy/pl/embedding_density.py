@@ -158,5 +158,7 @@ config.methods_plot["embedding_density"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = embedding_density_plot
+    function = embedding_density_plot,
+
+    docs = sc.pl.umap.__doc__
 )

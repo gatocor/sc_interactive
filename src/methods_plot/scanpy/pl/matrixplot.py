@@ -214,5 +214,7 @@ config.methods_plot["matrixplot"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = matrixplot_plot
+    function = matrixplot_plot,
+
+    docs = sc.pl.umap.__doc__
 )

@@ -150,5 +150,7 @@ config.methods_plot["violin"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = violin_plot
+    function = violin_plot,
+
+    docs = sc.pl.umap.__doc__
 )

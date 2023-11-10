@@ -262,5 +262,7 @@ config.methods_plot["stacked_violin"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = stacked_violin_plot
+    function = stacked_violin_plot,
+
+    docs = sc.pl.umap.__doc__
 )

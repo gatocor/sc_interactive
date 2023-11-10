@@ -374,5 +374,7 @@ config.methods_plot["diffmap"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = diffmap_plot
+    function = diffmap_plot,
+
+    docs = sc.pl.umap.__doc__
 )

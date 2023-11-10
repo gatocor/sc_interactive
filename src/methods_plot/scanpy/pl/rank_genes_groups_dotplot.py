@@ -94,5 +94,7 @@ config.methods_plot["rank_genes_groups_dotplot"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = rank_genes_groups_dotplot_plot
+    function = rank_genes_groups_dotplot_plot,
+
+    docs = sc.pl.umap.__doc__
 )

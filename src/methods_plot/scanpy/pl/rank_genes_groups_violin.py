@@ -126,5 +126,7 @@ config.methods_plot["rank_genes_groups_violin"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = rank_genes_groups_violin_plot
+    function = rank_genes_groups_violin_plot,
+
+    docs = sc.pl.umap.__doc__
 )

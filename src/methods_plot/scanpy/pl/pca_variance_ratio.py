@@ -46,5 +46,7 @@ config.methods_plot["pca_variance_ratio"] = dict(
         properties=dict(value="False",type="text")
     ),],
 
-    function = pca_variance_ratio_plot
+    function = pca_variance_ratio_plot,
+
+    docs = sc.pl.umap.__doc__
 )

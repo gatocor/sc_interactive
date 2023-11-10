@@ -382,5 +382,7 @@ config.methods_plot["pca_scatter"] = dict(
         properties=dict(value="False",type="text")
     ),],
 
-    function = pca_scatter_plot
+    function = pca_scatter_plot,
+
+    docs = sc.pl.umap.__doc__
 )

@@ -46,5 +46,7 @@ config.methods_plot["highly_variable_genes"] = dict(
         properties=dict(value="True",type="text")
     ),],
 
-    function = highly_variable_genes_plot
+    function = highly_variable_genes_plot,
+
+    docs = sc.pl.umap.__doc__
 )

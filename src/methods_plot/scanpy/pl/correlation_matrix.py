@@ -102,5 +102,7 @@ config.methods_plot["correlation_matrix"] = dict(
         properties=dict(value="None",type="text")
     ),],
 
-    function = correlation_matrix_plot
+    function = correlation_matrix_plot,
+
+    docs = sc.pl.umap.__doc__
 )
