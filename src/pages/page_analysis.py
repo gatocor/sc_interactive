@@ -832,6 +832,9 @@ def graph_new_node(_):
 )
 def graph_new_node(_, input, output, new, cytoscape):
 
+    if input == None:
+        raise PreventUpdate()
+
     #Make new name
     method = config.add_method
     name = config.add_method
@@ -841,7 +844,7 @@ def graph_new_node(_, input, output, new, cytoscape):
         count += 1
         name = f"{method}_{str(count)}"
 
-    if new:
+    if new or input=="Raw":
         typ = "QC_saved"
     else:
         typ = "QC"
@@ -895,7 +898,6 @@ def graph_new_node(_, input, output, new, cytoscape):
     if node["data"]["new_h5ad"]:
         config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
     elif innode["data"]["id"] == "Raw":
-        config.graph[pos]["data"]["type"] = "QC_saved"
         config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
     else:
         config.graph[pos]["data"]["h5ad_file"] = innode["data"]["h5ad_file"]
