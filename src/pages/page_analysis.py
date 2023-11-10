@@ -208,7 +208,9 @@ def layout():
             ),
             dbc.Modal(
                 [
-                    dbc.ModalHeader("New",close_button=False),
+                    dbc.ModalHeader(close_button=False,
+                        children=[html.Div("New"), dbc.Switch(id="new_h5ad",value=False,label="New h5ad")]             
+                    ),
                     dbc.ModalBody(id="new-message",
                                 children=[
                                     html.Div("You are creating a new node. Please select a node to which attach this one and press add."),
@@ -819,17 +821,19 @@ def graph_new_node(_):
     Output('analysis_inspector', 'children', allow_duplicate=True),
     Output('analysis_plot_dropdown', 'options', allow_duplicate=True),
     Output('analysis_plot_dropdown', 'value', allow_duplicate=True),
+    Output('new_h5ad', 'value', allow_duplicate=True),
     [
         Input('new-proceed', 'n_clicks')
     ],
     [
         State('new-dropdown-before', 'value'),
         State('new-dropdown-after', 'value'),
+        State('new_h5ad', 'value'),
         State('graph_cytoscape', 'layout'),
     ],
     prevent_initial_call=True
 )
-def graph_new_node(_, input, output, cytoscape):
+def graph_new_node(_, input, output, new, cytoscape):
 
     #Make new name
     method = config.add_method
@@ -840,12 +844,17 @@ def graph_new_node(_, input, output, cytoscape):
         count += 1
         name = f"{method}_{str(count)}"
 
+    if new:
+        typ = "QC_saved"
+    else:
+        typ = "QC"
+
     node = {
         'data': {
             'id': name, 
             'name': method,
             'method':method, 
-            'type':config.methods[method]["properties"]['type'], 
+            'type':typ, 
             'color': "blue",
             'h5ad_file':None,
             'image': '',
@@ -854,7 +863,8 @@ def graph_new_node(_, input, output, cytoscape):
             'summary':'', 
             'parameters':{"input":input},
             'plots':[],
-            'report':""
+            'report':"",
+            'new_h5ad':new
         }, 
         'position':{'x':config.max_x + 30,'y':0},
     }
@@ -884,7 +894,7 @@ def graph_new_node(_, input, output, cytoscape):
     #Assign new file
     innode = get_node(input)
     pos = get_node_pos(config.selected)
-    if config.methods[node["data"]["method"]]["properties"]["make_new_h5ad"]:
+    if node["data"]["new_h5ad"]:
         config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
     elif innode["data"]["id"] == "Raw":
         config.graph[pos]["data"]["h5ad_file"] = new_h5ad_file()
@@ -906,7 +916,7 @@ def graph_new_node(_, input, output, cytoscape):
 
     plot_options = get_plot_methods(method)
 
-    return True, False, config.graph, graph2table(), name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), plot_options, None
+    return True, False, config.graph, graph2table(), name, l, l3, p, html.Pre(inspector, style={"white-space":"pre-wrap"}), plot_options, None, False
 
 #Execute analysis button
 @app.callback(
